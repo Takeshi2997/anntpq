@@ -1,7 +1,6 @@
 include("./setup.jl")
 include("./ml_core.jl")
 using .Const, .MLcore, InteractiveUtils
-using Flux
 
 function learning(io::IOStream, ϵ::Float32, lr::Float32, it_num::Integer)
 
@@ -32,20 +31,17 @@ end
 
 function main()
 
-    dirname = "./data"
+    dirname = "./datainit"
     rm(dirname, force=true, recursive=true)
     mkdir(dirname)
 
-    dirnameerror = "./error"
+    dirnameerror = "./errorinit"
     rm(dirnameerror, force=true, recursive=true)
     mkdir(dirnameerror)
 
-    MLcore.Func.ANN.load("./datainit/params_at_001.bson")
-
-    g = open("error.txt", "w")
-    for iϵ in 2:Const.iϵmax
+    for iϵ in 1:1
     
-        ϵ = (0.4f0 + 0.5f0 * (iϵ - 1) / Const.iϵmax) * Const.t * Const.dimB
+        ϵ = 0.4f0 * Const.t * Const.dimB
 
         filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
 
@@ -55,8 +51,8 @@ function main()
         energyS = 0.0f0
         energyB = 0.0f0
         numberB = 0.0f0
-        lr      = Const.lr
-        it_num  = Const.it_num
+        lr      = 0.001f0
+        it_num  = 5000
 
         # Learning
         filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
@@ -64,21 +60,8 @@ function main()
         @time error, energyS, energyB, numberB = learning(f, ϵ, lr, it_num) 
         close(f)
 
-        # Write error
-        write(g, string(iϵ))
-        write(g, "\t")
-        write(g, string(error))
-        write(g, "\t")
-        write(g, string(energyS / Const.dimS))
-        write(g, "\t")
-        write(g, string(energyB / Const.dimB))
-        write(g, "\t")
-        write(g, string(numberB / Const.dimB))
-        write(g, "\n")
-
         MLcore.Func.ANN.save(filenameparams)
     end
-    close(g)
 end
 
 main()

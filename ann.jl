@@ -32,7 +32,7 @@ end
 
 function Network()
 
-    func(x::Float32) = tanh(x)    
+    func(x::Float32) = tanh(x)
     layer1 = Dense(Const.layer[1], Const.layer[2], func)
     layer2 = Dense(Const.layer[2], Const.layer[3], func)
     layer3 = Dense(Const.layer[3], Const.layer[4])

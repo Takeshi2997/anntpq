@@ -6,15 +6,15 @@ using .Const, .ANN, LinearAlgebra
 function flip(x::Vector{Float32}, iy::Integer)
 
     xflip = copy(x)
-    xflip[iy] = -xflip[iy]
+    xflip[iy] *= -1f0
     return xflip
 end
 
 function flip2(x::Vector{Float32}, iy::Integer, ix::Integer)
 
     xflip = copy(x)
-    xflip[iy] = -xflip[iy]
-    xflip[ix] = -xflip[ix]
+    xflip[iy] *= -1f0
+    xflip[ix] *= -1f0
     return xflip
 end
 
@@ -63,7 +63,7 @@ function hamiltonianB_shift(x::Vector{Float32},
     if x[iy] != x[iynext]
         xflip = flip2(x, iy, iynext)
         zflip = ANN.forward(xflip)
-        out  += -exp(zflip .- z)
+        out  += exp(zflip .- z)
     end
 
     return Const.t * out + 1.0f0
