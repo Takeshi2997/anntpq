@@ -2,7 +2,7 @@ JL          = ~/.julia/julia
 BASE        = functions.jl setup.jl
 CORE        = ml_core.jl
 OBJS        = main.jl
-INIT        = main_init.jl
+INIT        = init.jl
 CALC        = calculation.jl
 
 main: $(BASE) $(CORE) $(OBJS) $(INIT) $(CALC)

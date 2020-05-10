@@ -38,30 +38,27 @@ function main()
     dirnameerror = "./errorinit"
     rm(dirnameerror, force=true, recursive=true)
     mkdir(dirnameerror)
-
-    for iϵ in 1:1
     
-        ϵ = 0.4f0 * Const.t * Const.dimB
+    ϵ = 0.98f0 * Const.t * Const.dimB
 
-        filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
+    filenameparams = dirname * "/params_at_001.bson"
 
-        # Initialize
-        error   = 0.0f0
-        energy  = 0.0f0
-        energyS = 0.0f0
-        energyB = 0.0f0
-        numberB = 0.0f0
-        lr      = 0.001f0
-        it_num  = 5000
+    # Initialize
+    error   = 0.0f0
+    energy  = 0.0f0
+    energyS = 0.0f0
+    energyB = 0.0f0
+    numberB = 0.0f0
+    lr      = 0.01f0
+    it_num  = 100
 
-        # Learning
-        filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
-        f = open(filename, "w")
-        @time error, energyS, energyB, numberB = learning(f, ϵ, lr, it_num) 
-        close(f)
+    # Learning
+    filename = dirnameerror * "/error001.txt"
+    f = open(filename, "w")
+    @time error, energyS, energyB, numberB = learning(f, ϵ, lr, it_num) 
+    close(f)
 
-        MLcore.Func.ANN.save(filenameparams)
-    end
+    MLcore.Func.ANN.save(filenameparams)
 end
 
 main()

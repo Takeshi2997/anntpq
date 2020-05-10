@@ -34,9 +34,8 @@ function Network()
 
     func(x::Float32) = x * σ(x)
     layer1 = Dense(Const.layer[1], Const.layer[2], func)
-    layer2 = Dense(Const.layer[2], Const.layer[3], func)
-    layer3 = Dense(Const.layer[3], Const.layer[4])
-    f = Chain(layer1, layer2, layer3)
+    layer2 = Dense(Const.layer[2], Const.layer[3])
+    f = Chain(layer1, layer2)
     p = params(f)
     Network(f, p)
 end
