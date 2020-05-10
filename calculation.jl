@@ -74,7 +74,6 @@ end
 
 function calculate()
 
-    cp("./datainit/params_at_001.bson", "./data")
     dirname = "./data"
     f = open("energy_data.txt", "w")
     for iϵ in 1:Const.iϵmax
@@ -104,6 +103,6 @@ function calculate()
 end
 
 calculate()
-# exact_energy()
+exact_energy()
 
 

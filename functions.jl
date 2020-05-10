@@ -34,7 +34,7 @@ function hamiltonianS_shift(x::Vector{Float32},
                             z::Complex{Float32}, ix::Integer)
 
     out = 0.0f0im
-    ixnext = Const.dimB + ix%Const.dimS + 1
+    ixnext = Const.dimB + (ix - Const.dimB) % Const.dimS + 1
     if x[ix] != x[ixnext]
         xflip = flip2(x, ix, ixnext)
         zflip = ANN.forward(xflip)
@@ -48,7 +48,7 @@ function energyS_shift(x::Vector{Float32})
 
     z = ANN.forward(x)
     sum = 0.0f0im
-    for ix in 1:2:Const.dimS-1
+    for ix in Const.dimB+1:2:Const.dimB+Const.dimS-1
         sum += hamiltonianS_shift(x, z, ix)
     end
 
