@@ -25,7 +25,8 @@ function sampling(ϵ::Float32, lr::Float32)
 
         eS = Func.energyS_shift(x)
         eB = Func.energyB_shift(x)
-        e  = eS + eB
+        eI = Func.energyI(x)
+        e  = eS + eB + eI
         energy    += e
         energyS   += eS
         energyB   += eB

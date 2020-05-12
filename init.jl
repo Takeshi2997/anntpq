@@ -39,7 +39,7 @@ function main()
     rm(dirnameerror, force=true, recursive=true)
     mkdir(dirnameerror)
     
-    ϵ = 0.98f0 * Const.t * Const.dimB
+    ϵ = 0.40f0 * Const.t * Const.dimB
 
     filenameparams = dirname * "/params_at_001.bson"
 
@@ -49,8 +49,8 @@ function main()
     energyS = 0.0f0
     energyB = 0.0f0
     numberB = 0.0f0
-    lr      = 0.01f0
-    it_num  = 100
+    lr      = 0.001f0
+    it_num  = 500
 
     # Learning
     filename = dirnameerror * "/error001.txt"

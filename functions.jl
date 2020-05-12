@@ -80,4 +80,30 @@ function energyB_shift(x::Vector{Float32})
     return sum
 end
 
+function hamiltonianI(x::Vector{Float32}, z::Complex{Float32}, 
+                      ix::Integer, iy::Integer)
+
+    out = 0.0f0im
+    if x[ix] != x[iy]
+        xflip = flip2(x, ix, iy)
+        zflip = ANN.forward(xflip)
+        out  += exp(zflip .- z)
+    end
+
+    return Const.λ * out
+end
+
+function energyI(x::Vector{Float32})
+
+    z = ANN.forward(x)
+    sum = 0.0f0im
+    for iy in 1:Const.dimB
+        for ix in Const.dimB+1:Const.dimB+Const.dimS
+            sum += hamiltonianI(x, z, ix, iy)
+        end
+    end
+
+    return sum
+end
+
 end
