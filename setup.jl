@@ -2,12 +2,12 @@ module Const
 
 # System Size
 const dimS = 8
-const dimB = 96
+const dimB = 56
 
 # System Param
 const t = 1.0f0
 const J = 1.0f0
-const λ = 0.1f0
+const λ = 0.01f0
 
 # Repeat Number
 const burnintime = 100
@@ -17,7 +17,7 @@ const iϵmax = 10
 const num = 10000
 
 # Network Params
-const layer = [dimB+dimS, 104, 104, 2]
+const layer = [dimB+dimS, 64, 64, 64, 2]
 const layers_num = length(layer) - 1
 
 # Learning Rate

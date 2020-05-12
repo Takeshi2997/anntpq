@@ -11,9 +11,11 @@ main: $(BASE) $(CORE) $(OBJS) $(CALC) $(MAIL)
 	cp ./datainit/params_at_001.bson ./data
 	$(JL) $(CALC)
 	$(MAIL)
+	sudo shutdown -h now
 
 init: $(BASE) $(INIT)
 	$(JL) $(INIT)
+	sudo shutdown -h now
 
 clean:
 	-rm -f *.txt *.png *.dat
