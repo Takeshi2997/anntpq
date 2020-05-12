@@ -25,7 +25,7 @@ function update(x::Vector{Float32})
         z = ANN.forward(x)
         xflip = flip(x, ix)
         zflip = ANN.forward(xflip)
-        prob = exp(2.0f0 * real(zflip .- z))
+        prob = exp(2.0f0 * real(zflip - z))
         @inbounds x[ix] = ifelse(rand(Float32) < prob, -x₁, x₁)
     end
 end
@@ -63,7 +63,7 @@ function hamiltonianB_shift(x::Vector{Float32},
     if x[iy] != x[iynext]
         xflip = flip2(x, iy, iynext)
         zflip = ANN.forward(xflip)
-        out  += exp(zflip .- z)
+        out  += exp(zflip - z)
     end
 
     return Const.t * out + 1.0f0
@@ -87,7 +87,7 @@ function hamiltonianI(x::Vector{Float32}, z::Complex{Float32},
     if x[ix] != x[iy]
         xflip = flip2(x, ix, iy)
         zflip = ANN.forward(xflip)
-        out  += exp(zflip .- z)
+        out  += exp(zflip - z)
     end
 
     return Const.λ * out
