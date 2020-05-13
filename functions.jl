@@ -48,7 +48,7 @@ function energyS_shift(x::Vector{Float32})
 
     z = ANN.forward(x)
     sum = 0.0f0im
-    sum = @distributed (+) for ix in Const.dimB+1:2:Const.dimB+Const.dimS-1 
+    sum = @distributed (+) for ix in Const.dimB+1:Const.dimB+Const.dimS
         hamiltonianS_shift(x, z, ix)
     end
 
