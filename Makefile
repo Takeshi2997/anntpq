@@ -7,14 +7,14 @@ CALC        = calculation.jl
 MAIL        = ./mail.sh
 
 main: $(BASE) $(CORE) $(OBJS) $(CALC) $(MAIL)
-	$(JL) $(OBJS)
+	$(JL)  $(OBJS)
 	cp ./datainit/params_at_001.bson ./data
-	$(JL) $(CALC)
+	$(JL)  $(CALC)
 	$(MAIL)
 	sudo shutdown -h now
 
 init: $(BASE) $(INIT)
-	$(JL) $(INIT)
+	$(JL)  $(INIT)
 	sudo shutdown -h now
 
 clean:

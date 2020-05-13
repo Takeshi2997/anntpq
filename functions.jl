@@ -1,7 +1,7 @@
 module Func
 include("./setup.jl")
 include("./ann.jl")
-using .Const, .ANN, LinearAlgebra
+using .Const, .ANN, LinearAlgebra, Distributed
 
 function flip(x::Vector{Float32}, iy::Integer)
 
@@ -48,8 +48,8 @@ function energyS_shift(x::Vector{Float32})
 
     z = ANN.forward(x)
     sum = 0.0f0im
-    for ix in Const.dimB+1:2:Const.dimB+Const.dimS-1
-        sum += hamiltonianS_shift(x, z, ix)
+    sum = @distributed (+) for ix in Const.dimB+1:2:Const.dimB+Const.dimS-1 
+        hamiltonianS_shift(x, z, ix)
     end
 
     return sum
@@ -73,15 +73,15 @@ function energyB_shift(x::Vector{Float32})
 
     z = ANN.forward(x)
     sum = 0.0f0im
-    for iy in 1:Const.dimB
-        sum += hamiltonianB_shift(x, z, iy)
+    sum = @distributed (+) for iy in 1:Const.dimB 
+        hamiltonianB_shift(x, z, iy)
     end
 
     return sum
 end
 
-function hamiltonianI(x::Vector{Float32}, z::Complex{Float32}, 
-                      ix::Integer, iy::Integer)
+function hamiltonianI(x::Vector{Float32}, 
+                      z::Complex{Float32}, ix::Integer, iy::Integer)
 
     out = 0.0f0im
     if x[ix] != x[iy]
@@ -97,10 +97,9 @@ function energyI(x::Vector{Float32})
 
     z = ANN.forward(x)
     sum = 0.0f0im
-    for iy in 1:Const.dimB
-        for ix in Const.dimB+1:Const.dimB+Const.dimS
-            sum += hamiltonianI(x, z, ix, iy)
-        end
+    sum = @distributed (+) for ixy in CartesianIndices((Const.dimB+1:Const.dimB+Const.dimS, 1:Const.dimB))
+        ix, iy = Tuple(ixy)
+        hamiltonianI(x, z, ix, iy)
     end
 
     return sum

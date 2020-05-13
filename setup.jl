@@ -7,7 +7,7 @@ const dimB = 56
 # System Param
 const t = 1.0f0
 const J = 1.0f0
-const λ = 0.01f0
+const λ = 0.5f0
 
 # Repeat Number
 const burnintime = 100
