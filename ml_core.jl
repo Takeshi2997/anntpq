@@ -2,8 +2,6 @@ module MLcore
 include("./setup.jl")
 include("./functions.jl")
 using .Const, .Func
-using Flux: Zygote
-using BSON: @load
 
 function sampling(ϵ::Float32, lr::Float32)
 
