@@ -39,7 +39,7 @@ function main()
     rm(dirnameerror, force=true, recursive=true)
     mkdir(dirnameerror)
     
-    ϵ = -0.00001f0 * Const.t * Const.dimB
+    ϵ = -0.63f0 * Const.t * Const.dimB
 
     filenameparams = dirname * "/params_at_001.bson"
 
