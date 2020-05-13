@@ -1,7 +1,7 @@
 include("./setup.jl")
 include("./ml_core.jl")
 using .Const, .MLcore
-using LinearAlgebra, Flux
+using LinearAlgebra
 
 const state = collect(-Const.dimB+1:2:Const.dimB-1)
 
@@ -55,7 +55,7 @@ function exact_energy()
 
     dirname = "./data"
     f = open("exact_energy.txt", "w")
-    for iβ in 1:1000
+    for iβ in 1:5000
         β = iβ * 0.01
    
         ϵ = energy(β)
@@ -64,9 +64,9 @@ function exact_energy()
         write(f, string(β))
         write(f, "\t")
         write(f, string(-3.0 * Const.J / 8.0 * sinh(Const.J * β / 2.0) / 
-                       (exp(Const.J * β / 2.0) + cosh(Const.J * β / 2.0)) + 0.125))
+                       (exp(Const.J * β / 2.0) + cosh(Const.J * β / 2.0))))
         write(f, "\t")
-        write(f, string(ϵ + 1.0))
+        write(f, string(ϵ))
         write(f, "\n")
     end
     close(f)
@@ -91,8 +91,7 @@ function calculate()
         write(f, string(energyS / Const.dimS))
         write(f, "\t")
         write(f, string(-3.0 * Const.J / 8.0 * sinh(Const.J * β / 2.0) / 
-                       (exp(Const.J * β / 2.0) + cosh(Const.J * β / 2.0)) + 
-                      0.125))
+                       (exp(Const.J * β / 2.0) + cosh(Const.J * β / 2.0))))
         write(f, "\t")
         write(f, string(energyB / Const.dimB))
         write(f, "\t")

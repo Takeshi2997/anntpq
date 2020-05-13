@@ -30,33 +30,33 @@ function update(x::Vector{Float32})
     end
 end
 
-function hamiltonianS_shift(x::Vector{Float32},
-                            z::Complex{Float32}, ix::Integer)
+function hamiltonianS(x::Vector{Float32},
+                      z::Complex{Float32}, ix::Integer)
 
-    out = 0.0f0im
+    out = 1.0f0 + 0.0f0im
     ixnext = Const.dimB + (ix - Const.dimB) % Const.dimS + 1
     if x[ix] != x[ixnext]
         xflip = flip2(x, ix, ixnext)
         zflip = ANN.forward(xflip)
-        out  += 1.0f0 - exp(zflip - z)
+        out   = 2.0f0 * exp(zflip - z) - 1.0f0
     end
 
-    return Const.J * out / 2.0f0
+    return -Const.J * out / 4.0f0
 end
 
-function energyS_shift(x::Vector{Float32})
+function energyS(x::Vector{Float32})
 
     z = ANN.forward(x)
     sum = 0.0f0im
     sum = @distributed (+) for ix in Const.dimB+1:Const.dimB+Const.dimS
-        hamiltonianS_shift(x, z, ix)
+        hamiltonianS(x, z, ix)
     end
 
     return sum
 end
 
-function hamiltonianB_shift(x::Vector{Float32}, 
-                            z::Complex{Float32}, iy::Integer)
+function hamiltonianB(x::Vector{Float32}, 
+                      z::Complex{Float32}, iy::Integer)
 
     out = 0.0f0im
     iynext = iy%Const.dimB + 1
@@ -66,15 +66,15 @@ function hamiltonianB_shift(x::Vector{Float32},
         out  += exp(zflip - z)
     end
 
-    return Const.t * out + 1.0f0
+    return Const.t * out
 end
 
-function energyB_shift(x::Vector{Float32})
+function energyB(x::Vector{Float32})
 
     z = ANN.forward(x)
     sum = 0.0f0im
     sum = @distributed (+) for iy in 1:Const.dimB 
-        hamiltonianB_shift(x, z, iy)
+        hamiltonianB(x, z, iy)
     end
 
     return sum

@@ -5,7 +5,7 @@ using .Const, .Func
 
 function sampling(ϵ::Float32, lr::Float32)
 
-    x = ones(Float32, Const.dimB+Const.dimS)
+    x = rand([1.0f0, -1.0f0], Const.dimB+Const.dimS)
     energy  = 0.0f0
     energyS = 0.0f0
     energyB = 0.0f0
@@ -21,8 +21,8 @@ function sampling(ϵ::Float32, lr::Float32)
     for i in 1:Const.iters_num
         Func.update(x)
 
-        eS = Func.energyS_shift(x)
-        eB = Func.energyB_shift(x)
+        eS = Func.energyS(x)
+        eB = Func.energyB(x)
         eI = Func.energyI(x)
         e  = eS + eB + eI
         energy    += e

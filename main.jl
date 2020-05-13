@@ -45,7 +45,7 @@ function main()
     g = open("error.txt", "w")
     for iϵ in 2:Const.iϵmax
     
-        ϵ = (0.4f0 + 0.5f0 * (iϵ - 1) / Const.iϵmax) * Const.t * Const.dimB
+        ϵ = -0.63f0 * (iϵ - 1) / Const.iϵmax * Const.t * Const.dimB
 
         filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
 
