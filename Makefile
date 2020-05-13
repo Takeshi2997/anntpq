@@ -6,13 +6,14 @@ INIT        = init.jl
 CALC        = calculation.jl
 
 main: $(BASE) $(CORE) $(OBJS) $(CALC)
-	$(JL)  $(OBJS)
+	$(JL) $(INIT)
+	$(JL) $(OBJS)
 	cp ./datainit/params_at_001.bson ./data
-	$(JL)  $(CALC)
+	$(JL) $(CALC)
 	sudo shutdown -h now
 
 init: $(BASE) $(INIT)
-	$(JL)  $(INIT)
+	$(JL) $(INIT)
 	sudo shutdown -h now
 
 clean:
