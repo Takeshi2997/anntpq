@@ -4,13 +4,11 @@ CORE        = ml_core.jl
 OBJS        = main.jl
 INIT        = init.jl
 CALC        = calculation.jl
-MAIL        = ./mail.sh
 
-main: $(BASE) $(CORE) $(OBJS) $(CALC) $(MAIL)
+main: $(BASE) $(CORE) $(OBJS) $(CALC)
 	$(JL)  $(OBJS)
 	cp ./datainit/params_at_001.bson ./data
 	$(JL)  $(CALC)
-	$(MAIL)
 	sudo shutdown -h now
 
 init: $(BASE) $(INIT)
