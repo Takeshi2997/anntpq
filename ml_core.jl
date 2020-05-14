@@ -1,9 +1,9 @@
 module MLcore
 include("./setup.jl")
 include("./functions.jl")
-using .Const, .Func
+using .Const, .Func, Distributed
 
-function sampling(ϵ::Float32, lr::Float32)
+@everywhere function sampling(ϵ::Float32, lr::Float32)
 
     x = rand([1.0f0, -1.0f0], Const.dimB+Const.dimS)
     energy  = 0.0f0
