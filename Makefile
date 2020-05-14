@@ -1,4 +1,4 @@
-JL          = ~/.julia/julia -p 4
+JL          = ~/.julia/julia
 BASE        = functions.jl setup.jl ann.jl
 CORE        = ml_core.jl
 OBJS        = main.jl
