@@ -49,7 +49,7 @@ function main()
     energyS = 0.0f0
     energyB = 0.0f0
     numberB = 0.0f0
-    lr      = 0.001f0
+    lr      = 0.0001f0
     it_num  = 5000
 
     # Learning
