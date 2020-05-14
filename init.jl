@@ -1,6 +1,6 @@
 include("./setup.jl")
 include("./ml_core.jl")
-using .Const, .MLcore, InteractiveUtils, Distributed
+using .Const, .MLcore, InteractiveUtils
 
 function learning(io::IOStream, ϵ::Float32, lr::Float32, it_num::Integer)
 
@@ -61,6 +61,5 @@ function main()
     MLcore.Func.ANN.save(filenameparams)
 end
 
-addprocs(1)
 main()
 

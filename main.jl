@@ -1,6 +1,6 @@
 include("./setup.jl")
 include("./ml_core.jl")
-using .Const, .MLcore, InteractiveUtils, Distributed
+using .Const, .MLcore, InteractiveUtils
 using Flux
 
 function learning(io::IOStream, ϵ::Float32, lr::Float32, it_num::Integer)
@@ -81,6 +81,5 @@ function main()
     close(g)
 end
 
-addprocs(1)
 main()
 
