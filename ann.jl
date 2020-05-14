@@ -17,10 +17,10 @@ oe = Vector{Parameters}(undef, Const.layers_num)
 function initO()
 
     for i in 1:Const.layers_num
-        global o[i]  = Parameters(zeros(Complex{Float64}, Const.layer[i+1], Const.layer[i]), 
-                                  zeros(Complex{Float64}, Const.layer[i+1]))
-        global oe[i] = Parameters(zeros(Complex{Float64}, Const.layer[i+1], Const.layer[i]), 
-                                  zeros(Complex{Float64}, Const.layer[i+1]))
+        global o[i]  = Parameters(zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]), 
+                                  zeros(Complex{Float32}, Const.layer[i+1]))
+        global oe[i] = Parameters(zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]), 
+                                  zeros(Complex{Float32}, Const.layer[i+1]))
     end
 end
 
@@ -32,7 +32,7 @@ end
 
 function Network()
 
-    func(x::Float32) = x + x * σ(x)
+    func(x::Float32) = x * σ(x)
     layer1 = Dense(Const.layer[1], Const.layer[2], func)
     layer2 = Dense(Const.layer[2], Const.layer[3], func)
     layer3 = Dense(Const.layer[3], Const.layer[4], func)
