@@ -48,8 +48,8 @@ function energyS(x::Vector{Float32})
 
     z = ANN.forward(x)
     sum = 0.0f0im
-    @simd for ix in Const.dimB+1:Const.dimB+Const.dimS
-        sum += hamiltonianS(x, z, ix)
+    sum = @distributed (+) for ix in Const.dimB+1:Const.dimB+Const.dimS
+        hamiltonianS(x, z, ix)
     end
 
     return sum
@@ -73,8 +73,8 @@ function energyB(x::Vector{Float32})
 
     z = ANN.forward(x)
     sum = 0.0f0im
-    @simd for iy in 1:Const.dimB 
-        sum += hamiltonianB(x, z, iy)
+    sum = @distributed (+) for iy in 1:Const.dimB 
+        hamiltonianB(x, z, iy)
     end
 
     return sum
@@ -97,9 +97,9 @@ function energyI(x::Vector{Float32})
 
     z = ANN.forward(x)
     sum = 0.0f0im
-    @simd for ixy in CartesianIndices((Const.dimB+1:Const.dimB+Const.dimS, 1:Const.dimB))
+    sum = @distributed (+) for ixy in CartesianIndices((Const.dimB+1:Const.dimB+Const.dimS, 1:Const.dimB))
         ix, iy = Tuple(ixy)
-        sum += hamiltonianI(x, z, ix, iy)
+        hamiltonianI(x, z, ix, iy)
     end
 
     return sum
