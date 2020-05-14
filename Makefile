@@ -5,7 +5,7 @@ OBJS        = main.jl
 INIT        = init.jl
 CALC        = calculation.jl
 
-main: $(BASE) $(CORE) $(OBJS) $(CALC)
+main: $(BASE) $(CORE) $(OBJS) 
 	$(JL) $(OBJS)
 
 calc: $(BASE) $(CORE) $(CALC)
@@ -15,7 +15,6 @@ calc: $(BASE) $(CORE) $(CALC)
 
 init: $(BASE) $(INIT)
 	$(JL) $(INIT)
-	sudo shutdown -h now
 
 clean:
 	-rm -f *.txt *.png *.dat nohup.out
