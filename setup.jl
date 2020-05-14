@@ -1,13 +1,13 @@
 module Const
 
 # System Size
-const dimS = 96
-const dimB = 8
+const dimS = 8
+const dimB = 96
 
 # System Param
 const t = 1.0f0
 const J = 1.0f0
-const λ = 0.0f0
+const λ = 0.01f0
 
 # Repeat Number
 const burnintime = 100
