@@ -1,26 +1,26 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote
+using .Const, LinearAlgebra, Flux, Zygote, CuArrays
 using Flux.Optimise: update!
 using BSON: @save
 using BSON: @load
 
-mutable struct Parameters
+mutable struct CuParams
 
-    W::Array{Complex{Float32}, 2}
-    b::Array{Complex{Float32}, 1}
+    W::CuArray{Complex{Float32}, 2}
+    b::CuArray{Complex{Float32}, 1}
 end
 
-o  = Vector{Parameters}(undef, Const.layers_num)
-oe = Vector{Parameters}(undef, Const.layers_num)
+o  = Vector{CuParams}(undef, Const.layers_num)
+oe = Vector{CuParams}(undef, Const.layers_num)
 
 function initO()
 
     for i in 1:Const.layers_num
-        global o[i]  = Parameters(zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]), 
-                                  zeros(Complex{Float32}, Const.layer[i+1]))
-        global oe[i] = Parameters(zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]), 
-                                  zeros(Complex{Float32}, Const.layer[i+1]))
+        W = CuArray(zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]))
+        b = CuArray(zeros(Complex{Float32}, Const.layer[i+1]))
+        global o[i]  = CuParams(W, b)
+        global oe[i] = CuParams(W, b)
     end
 end
 
@@ -33,10 +33,10 @@ end
 function Network()
 
     func(x::Float32) = x + relu(x)
-    layer1 = Dense(Const.layer[1], Const.layer[2], func)
-    layer2 = Dense(Const.layer[2], Const.layer[3], func)
-    layer3 = Dense(Const.layer[3], Const.layer[4], func)
-    layer4 = Dense(Const.layer[4], Const.layer[5])
+    layer1 = Dense(Const.layer[1], Const.layer[2], func) |> gpu
+    layer2 = Dense(Const.layer[2], Const.layer[3], func) |> gpu
+    layer3 = Dense(Const.layer[3], Const.layer[4], func) |> gpu
+    layer4 = Dense(Const.layer[4], Const.layer[5]) |> gpu
     f = Chain(layer1, layer2, layer3, layer4)
     p = params(f)
     Network(f, p)
