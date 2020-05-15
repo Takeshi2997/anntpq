@@ -1,7 +1,7 @@
 module Func
 include("./setup.jl")
 include("./ann.jl")
-using .Const, .ANN, LinearAlgebra
+using .Const, .ANN, LinearAlgebra, Distributed
 
 function flip(x::Vector{Float32}, iy::Integer)
 
@@ -48,7 +48,7 @@ function energyS(x::Vector{Float32})
 
     z = ANN.forward(x)
     sum = 0.0f0im
-    for ix in Const.dimB+1:Const.dimB+Const.dimS
+    @simd for ix in Const.dimB+1:Const.dimB+Const.dimS
         sum += hamiltonianS(x, z, ix)
     end
 
@@ -73,7 +73,7 @@ function energyB(x::Vector{Float32})
 
     z = ANN.forward(x)
     sum = 0.0f0im
-    for iy in 1:Const.dimB 
+    @simd for iy in 1:Const.dimB 
         sum += hamiltonianB(x, z, iy)
     end
 
@@ -97,7 +97,7 @@ function energyI(x::Vector{Float32})
 
     z = ANN.forward(x)
     sum = 0.0f0im
-    for ixy in CartesianIndices((Const.dimB+1:Const.dimB+Const.dimS, 1:Const.dimB))
+    @simd for ixy in CartesianIndices((Const.dimB+1:Const.dimB+Const.dimS, 1:Const.dimB))
         ix, iy = Tuple(ixy)
         sum += hamiltonianI(x, z, ix, iy)
     end
