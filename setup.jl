@@ -12,7 +12,7 @@ const λ = 0.01f0
 # Repeat Number
 const burnintime = 100
 const iters_num = 200
-const it_num = 500
+const it_num = 1000
 const iϵmax = 10
 const num = 10000
 
