@@ -90,9 +90,6 @@ function calculate()
         write(f, "\t")
         write(f, string(energyS / Const.dimS))
         write(f, "\t")
-        write(f, string(-3.0 * Const.J / 8.0 * sinh(Const.J * β / 2.0) / 
-                       (exp(Const.J * β / 2.0) + cosh(Const.J * β / 2.0))))
-        write(f, "\t")
         write(f, string(energyB / Const.dimB))
         write(f, "\t")
         write(f, string(numberB / Const.dimB))
@@ -102,6 +99,5 @@ function calculate()
 end
 
 calculate()
-exact_energy()
 
 
