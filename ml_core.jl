@@ -14,8 +14,8 @@ function sampling(ϵ::Float32, lr::Float32)
     Func.ANN.initO()
 
     for i in 1:Const.burnintime
-
         Func.update(x)
+
     end
 
     for i in 1:Const.iters_num
@@ -23,8 +23,8 @@ function sampling(ϵ::Float32, lr::Float32)
 
         eS = Func.energyS(x)
         eB = Func.energyB(x)
-        eI = Func.energyI(x)
-        e  = eS + eB + eI
+#        eI = Func.energyI(x)
+        e  = eS + eB
         energy    += e
         energyS   += eS
         energyB   += eB
