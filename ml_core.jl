@@ -59,8 +59,8 @@ function calculation_energy()
     for i in 1:Const.num
         Func.update(x)
 
-        eS = Func.energyS_shift(x)
-        eB = Func.energyB_shift(x)
+        eS = Func.energyS(x)
+        eB = Func.energyB(x)
         e  = eS + eB
         energy    += e
         energyS   += eS
