@@ -52,7 +52,6 @@ function calculation_energy()
     numberB = 0.0f0
 
     for i in 1:Const.burnintime
-
         Func.update(x)
     end
 
@@ -66,7 +65,6 @@ function calculation_energy()
         energyS   += eS
         energyB   += eB
         numberB   += sum(x[1:Const.dimB])
-
     end
     energy   = real(energy)  / Const.num
     energyS  = real(energyS) / Const.num
