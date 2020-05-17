@@ -84,7 +84,7 @@ function calculate()
 
         energyS, energyB, numberB = MLcore.calculation_energy()
 
-        β = translate(Float64(energyB - Const.dimB * Const.t))
+        β = translate(Float64(energyB))
         # Write energy
         write(f, string(β))
         write(f, "\t")
