@@ -15,7 +15,6 @@ function sampling(ϵ::Float32, lr::Float32)
 
     for i in 1:Const.burnintime
         Func.update(x)
-
     end
 
     for i in 1:Const.iters_num
