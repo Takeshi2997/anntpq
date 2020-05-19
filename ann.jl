@@ -32,7 +32,7 @@ end
 
 function Network()
 
-    func(x::Float32) = swish(x)
+    func(x::Float32) = x + swish(x)
     layer1  = Dense(Const.layer[1], Const.layer[2], func)
     layer2  = Dense(Const.layer[2], Const.layer[3], func)
     Woutput = randn(Complex{Float32}, Const.layer[4], Const.layer[3])
