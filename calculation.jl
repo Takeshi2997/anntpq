@@ -51,27 +51,6 @@ function translate(u)
     return 1 / t
 end
 
-function exact_energy()
-
-    dirname = "./data"
-    f = open("exact_energy.txt", "w")
-    for iβ in 1:5000
-        β = iβ * 0.01
-   
-        ϵ = energy(β)
-
-        # Write energy
-        write(f, string(β))
-        write(f, "\t")
-        write(f, string(-3.0 * Const.J / 8.0 * sinh(Const.J * β / 2.0) / 
-                       (exp(Const.J * β / 2.0) + cosh(Const.J * β / 2.0))))
-        write(f, "\t")
-        write(f, string(ϵ))
-        write(f, "\n")
-    end
-    close(f)
-end   
-
 function calculate()
 
     dirname = "./data"
@@ -84,7 +63,7 @@ function calculate()
 
         energyS, energyB, numberB = MLcore.calculation_energy()
 
-        β = translate(Float64(energyB))
+        β = translate(Float64(energyB - 1.0))
         # Write energy
         write(f, string(β))
         write(f, "\t")
