@@ -66,7 +66,7 @@ function hamiltonianB(x::Vector{Float32},
         out  += exp(zflip - z)
     end
 
-    return Const.t * out .+ 1.0
+    return Const.t * out + 1.0
 end
 
 function energyB(x::Vector{Float32})
