@@ -46,31 +46,30 @@ end
 
 function calculation_energy()
 
-    x = ones(Float32, Const.dimB+Const.dimS)
-    energy  = 0.0f0
+    s = rand([1.0f0, -1.0f0], Const.dimS)
+    n = rand([1.0f0, -1.0f0], Const.dimB)
     energyS = 0.0f0
     energyB = 0.0f0
     numberB = 0.0f0
 
     for i in 1:Const.burnintime
-        Func.update(x)
+        Func.updateS(s, n)
+        Func.updateB(s, n)
     end
 
-    for i in 1:Const.num
-        Func.update(x)
+    for i in 1:Const.iters_num
+        Func.updateS(s, n)
+        Func.updateB(s, n)
 
-        eS = Func.energyS(x)
-        eB = Func.energyB(x)
-        e  = eS + eB
-        energy    += e
+        eS = Func.energyS(s, n)
+        eB = Func.energyB(s, n)
         energyS   += eS
         energyB   += eB
-        numberB   += sum(x[1:Const.dimB])
+        numberB   += sum(n)
     end
-    energy   = real(energy)  / Const.num
-    energyS  = real(energyS) / Const.num
-    energyB  = real(energyB) / Const.num
-    numberB /= Const.num
+    energyS  = real(energyS) / Const.iters_num
+    energyB  = real(energyB) / Const.iters_num
+    numberB /= Const.iters_num
 
     return energyS, energyB, numberB
 end
