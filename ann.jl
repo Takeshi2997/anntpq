@@ -32,12 +32,10 @@ end
 
 function Network()
 
-    func(x::Float32) = x + swish(x)
+    func(x::Float32) = swish(x)
     layer1  = Dense(Const.layer[1], Const.layer[2], func)
     layer2  = Dense(Const.layer[2], Const.layer[3], func)
-    Woutput = randn(Complex{Float32}, Const.layer[4], Const.layer[3])
-    boutput = zeros(Complex{Float32}, Const.layer[4])
-    layer3  = Dense(Woutput, boutput)
+    layer3  = Dense(Const.layer[3], Const.layer[4])
     f = Chain(layer1, layer2, layer3)
     p = params(f)
     Network(f, p)
@@ -58,9 +56,14 @@ function load(filename)
     Flux.loadparams!(network.f, p)
 end
 
+A = Array(Diagonal(fill(1.0f0, (Const.dimS, Const.dimS))))
+O = zeros(Float32, Const.dimS, Const.dimS)
+const bi = vcat(A, im * A)
+
 function forward(s::Vector{Float32}, n::Vector{Float32})
 
-    return dot(s, network.f(n))
+    sbi = bi * s
+    return dot(sbi, network.f(n))
 end
 
 realloss(s::Vector{Float32}, n::Vector{Float32}) = real(forward(s, n))
