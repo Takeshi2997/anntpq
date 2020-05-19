@@ -5,7 +5,8 @@ using .Const, .Func, Distributed
 
 function sampling(ϵ::Float32, lr::Float32)
 
-    x = rand([1.0f0, -1.0f0], Const.dimB+Const.dimS)
+    s = rand([1.0f0, -1.0f0], Const.dimS)
+    n = rand([1.0f0, -1.0f0], Const.dimB)
     energy  = 0.0f0
     energyS = 0.0f0
     energyB = 0.0f0
@@ -14,21 +15,23 @@ function sampling(ϵ::Float32, lr::Float32)
     Func.ANN.initO()
 
     for i in 1:Const.burnintime
-        Func.update(x)
+        Func.updateS(s, n)
+        Func.updateB(s, n)
     end
 
     for i in 1:Const.iters_num
-        Func.update(x)
+        Func.updateS(s, n)
+        Func.updateB(s, n)
 
-        eS = Func.energyS(x)
-        eB = Func.energyB(x)
+        eS = Func.energyS(s, n)
+        eB = Func.energyB(s, n)
         e  = eS + eB
         energy    += e
         energyS   += eS
         energyB   += eB
-        numberB   += sum(x[1:Const.dimB])
+        numberB   += sum(n)
 
-        Func.ANN.backward(x, e)
+        Func.ANN.backward(s, n, e)
     end
     energy   = real(energy)  / Const.iters_num
     energyS  = real(energyS) / Const.iters_num
