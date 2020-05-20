@@ -62,7 +62,7 @@ const bi = vcat(A, im * A)
 function forward(s::Vector{Float32}, n::Vector{Float32})
 
     sbi = bi * s
-    return dot(sbi, network.f(n))
+    return dot(network.f(n), sbi)
 end
 
 realloss(s::Vector{Float32}, n::Vector{Float32}) = real(forward(s, n))
