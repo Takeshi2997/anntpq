@@ -69,12 +69,12 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     realgs = gradient(() -> realloss(x), network.p)
     imaggs = gradient(() -> imagloss(x), network.p)
     for i in 1:Const.layers_num
-        dw = realgs[network.f[i].W] .+ im * imaggs[network.f[i].W]
-        db = realgs[network.f[i].b] .+ im * imaggs[network.f[i].b]
-        o[i].W  += conj.(dw)
-        o[i].b  += conj.(db)
-        oe[i].W += conj.(dw) * e
-        oe[i].b += conj.(db) * e
+        dw = realgs[network.f[i].W] .- im * imaggs[network.f[i].W]
+        db = realgs[network.f[i].b] .- im * imaggs[network.f[i].b]
+        o[i].W  += dw
+        o[i].b  += db
+        oe[i].W += dw * e
+        oe[i].b += db * e
     end
 end
 
