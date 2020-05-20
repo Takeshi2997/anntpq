@@ -40,9 +40,10 @@ function main()
     rm(dirnameerror, force=true, recursive=true)
     mkdir(dirnameerror)
 
+    MLcore.Func.ANN.init()
+
     g = open("error.txt", "w")
     for iϵ in 1:Const.iϵmax
-        MLcore.Func.ANN.init()
     
         ϵ = (1.0f0 - 0.50f0 * iϵ / Const.iϵmax) * Const.t * Const.dimB
         filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
