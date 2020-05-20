@@ -32,7 +32,7 @@ end
 
 function Network()
 
-    func(x::Float32) = tanh(x)
+    func(x::Float32) = swish(x)
     W1 = randn(Float32, Const.layer[2], Const.layer[1])
     W2 = randn(Float32, Const.layer[3], Const.layer[2])
     W3 = randn(Float32, Const.layer[4], Const.layer[3])
