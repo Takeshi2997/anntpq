@@ -32,11 +32,11 @@ end
 
 function Network()
 
-    func(x::Float32) = swish(x)
-    layer1  = Dense(Const.layer[1], Const.layer[2], func)
-    layer2  = Dense(Const.layer[2], Const.layer[3], func)
-    layer3  = Dense(Const.layer[3], Const.layer[4])
-    f = Chain(layer1, layer2, layer3)
+    func(x::Float32) = x
+    W = randn(Complex{Float32}, Const.dimS, Const.dimB)
+    b = zeros(Complex{Float32}, Const.dimS)
+    layer1  = Dense(W, b)
+    f = Chain(layer1)
     p = params(f)
     Network(f, p)
 end
@@ -56,13 +56,9 @@ function load(filename)
     Flux.loadparams!(network.f, p)
 end
 
-A = Array(Diagonal(fill(1.0f0, (Const.dimS, Const.dimS))))
-const bi = vcat(A, im * A)
-
 function forward(s::Vector{Float32}, n::Vector{Float32})
 
-    sbi = bi * s
-    return dot(network.f(n), sbi)
+    return dot(s, network.f(n))
 end
 
 realloss(s::Vector{Float32}, n::Vector{Float32}) = real(forward(s, n))
@@ -73,12 +69,12 @@ function backward(s::Vector{Float32}, n::Vector{Float32}, e::Complex{Float32})
     realgs = gradient(() -> realloss(s, n), network.p)
     imaggs = gradient(() -> imagloss(s, n), network.p)
     for i in 1:Const.layers_num
-        dw = realgs[network.f[i].W] .+ im * imaggs[network.f[i].W]
-        db = realgs[network.f[i].b] .+ im * imaggs[network.f[i].b]
-        o[i].W  += conj.(dw)
-        o[i].b  += conj.(db)
-        oe[i].W += conj.(dw) * e
-        oe[i].b += conj.(db) * e
+        dw = realgs[network.f[i].W] .- im * imaggs[network.f[i].W]
+        db = realgs[network.f[i].b] .- im * imaggs[network.f[i].b]
+        o[i].W  += dw
+        o[i].b  += db
+        oe[i].W += dw * e
+        oe[i].b += db * e
     end
 end
 
