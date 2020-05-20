@@ -32,7 +32,7 @@ end
 
 function Network()
 
-    func(x::Float32) = x
+    func(x::Float32) = x + σ(x)
     layer1  = Dense(Const.layer[1], Const.layer[2], func)
     layer2  = Dense(Const.layer[2], Const.layer[3], func)
     layer3  = Dense(Const.layer[3], Const.layer[4])
@@ -57,7 +57,6 @@ function load(filename)
 end
 
 A = Array(Diagonal(fill(1.0f0, (Const.dimS, Const.dimS))))
-O = zeros(Float32, Const.dimS, Const.dimS)
 const bi = vcat(A, im * A)
 
 function forward(s::Vector{Float32}, n::Vector{Float32})
