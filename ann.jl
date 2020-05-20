@@ -32,7 +32,7 @@ end
 
 function Network()
 
-    func(x::Float32) = swish(x)
+    func(x::Float32) = tanh(x)
     layer1 = Dense(Const.layer[1], Const.layer[2], func)
     layer2 = Dense(Const.layer[2], Const.layer[3], func)
     layer3 = Dense(Const.layer[3], Const.layer[4])
@@ -58,9 +58,9 @@ end
 
 function init()
 
-    W1 = randn(Float32, Const.layer[2], Const.layer[1]) * sqrt(2.0f0 / Const.layer[1])
-    W2 = randn(Float32, Const.layer[3], Const.layer[2]) * sqrt(2.0f0 / Const.layer[2])
-    W3 = randn(Float32, Const.layer[4], Const.layer[3]) * sqrt(2.0f0 / Const.layer[3])
+    W1 = randn(Float32, Const.layer[2], Const.layer[1]) * sqrt(1.0f0 / Const.layer[1])
+    W2 = randn(Float32, Const.layer[3], Const.layer[2]) * sqrt(1.0f0 / Const.layer[2])
+    W3 = randn(Float32, Const.layer[4], Const.layer[3]) * sqrt(1.0f0 / Const.layer[3])
     b1 = zeros(Float32, Const.layer[2])
     b2 = zeros(Float32, Const.layer[3])
     b3 = zeros(Float32, Const.layer[4])
