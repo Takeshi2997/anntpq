@@ -62,6 +62,18 @@ function load(filename)
     Flux.loadparams!(network.f, p)
 end
 
+function init()
+
+    W1 = randn(Float32, Const.layer[2], Const.layer[1])
+    W2 = randn(Float32, Const.layer[3], Const.layer[2])
+    W3 = randn(Float32, Const.layer[4], Const.layer[3])
+    b1 = zeros(Float32, Const.layer[2])
+    b2 = zeros(Float32, Const.layer[3])
+    b3 = zeros(Float32, Const.layer[4])
+    p  = params([W1, b1], [W2, b2], [W3, b3])
+    Flux.loadparams!(network.f, p)
+end
+
 function forward(x::Vector{Float32})
 
     return network.f(x)[1] .+ im * network.f(x)[2]
