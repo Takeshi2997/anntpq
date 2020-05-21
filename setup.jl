@@ -8,7 +8,7 @@ const dimB = 80
 const t = 1.0f0
 const J = 1.0f0
 const λ = 0.01f0
-const η = 0.1f0
+const η = 0.5f0
 
 # Repeat Number
 const burnintime = 100
