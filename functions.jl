@@ -97,7 +97,7 @@ function energyI(x::Vector{Float32})
 
     z = ANN.forward(x)
     sum = 0.0f0im
-    for ixy in CartesianIndices((Const.dimB+1:Const.dimB+Const.dimS, 1:Const.dimB))
+    @simd for ixy in CartesianIndices((Const.dimB+1:Const.dimB+Const.dimS, 1:Const.dimB))
         ix, iy = Tuple(ixy)
         sum += hamiltonianI(x, z, ix, iy)
     end
