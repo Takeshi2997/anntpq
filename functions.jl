@@ -20,8 +20,8 @@ end
 
 function update(x::Vector{Float32})
 
-    rng = MersenneTwister(123)
-    randamnum = rand(rng, Const.dimB+Const.dimS)
+    rng = MersenneTwister(1234)
+    randamnum = rand(rng, Float32, Const.dimB+Const.dimS)
     for ix in 1:length(x)
         x₁ = x[ix]
         z = ANN.forward(x)
