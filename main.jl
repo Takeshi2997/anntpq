@@ -80,5 +80,6 @@ function main()
     close(g)
 end
 
+CuArrays.allowscalar(true)
 main()
 
