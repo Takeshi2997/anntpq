@@ -80,32 +80,34 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
 
     realgs = gradient(() -> realloss(x), network.p)
     imaggs = gradient(() -> imagloss(x), network.p)
-    for i in 1:Const.layers_num
+    for i in 1:Const.layers_num-1
         dw = realgs[network.f[i].W] .- im * imaggs[network.f[i].W]
+        db = realgs[network.f[i].b] .- im * imaggs[network.f[i].b]
         o[i].W  += dw
         oe[i].W += dw * e
-    end
-    for i in 1:Const.layers_num-1
-        db = realgs[network.f[i].b] .- im * imaggs[network.f[i].b]
         o[i].b  += db
         oe[i].b += db * e
     end
+    dw = realgs[network.f[end].W] .- im * imaggs[network.f[end].W]
+    o[end].W  += dw
+    oe[end].W += dw * e
 end
 
 opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
 
-    for i in 1:Const.layers_num
+    for i in 1:Const.layers_num-1
         ΔW = 4.0f0 * (energy - ϵ) * [(energy - ϵ)^2 - Const.η^2 > 0.0f0] .* 
         real.(oe[i].W .- energy * o[i].W) / Const.iters_num
-        update!(opt(lr), network.f[i].W, ΔW)
-    end
-    for i in 1:Const.layers_num-1
         Δb = 4.0f0 * (energy - ϵ) * [(energy - ϵ)^2 - Const.η^2 > 0.0f0] .* 
         real.(oe[i].b .- energy * o[i].b) / Const.iters_num
+        update!(opt(lr), network.f[i].W, ΔW)
         update!(opt(lr), network.f[i].b, Δb)
     end
+    ΔW = 4.0f0 * (energy - ϵ) * [(energy - ϵ)^2 - Const.η^2 > 0.0f0] .* 
+    real.(oe[end].W .- energy * o[end].W) / Const.iters_num
+    update!(opt(lr), network.f[end].W, ΔW)
 end
 
 end
