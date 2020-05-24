@@ -9,7 +9,6 @@ function sampling(ϵ::Float32, lr::Float32)
     energy  = 0.0f0
     energyS = 0.0f0
     energyB = 0.0f0
-    energyI = 0.0f0
     numberB = 0.0f0
 
     Func.ANN.initO()
@@ -23,12 +22,10 @@ function sampling(ϵ::Float32, lr::Float32)
 
         eS = Func.energyS(x)
         eB = Func.energyB(x)
-        eI = Func.energyI(x)
-        e  = eS + eB + eI
+        e  = eS + eB
         energy    += e
         energyS   += eS
         energyB   += eB
-        energyI   += eI
         numberB   += sum(x[1:Const.dimB])
 
         Func.ANN.backward(x, e)
@@ -36,13 +33,12 @@ function sampling(ϵ::Float32, lr::Float32)
     energy   = real(energy)  / Const.iters_num
     energyS  = real(energyS) / Const.iters_num
     energyB  = real(energyB) / Const.iters_num
-    energyI  = real(energyI) / Const.iters_num
     numberB /= Const.iters_num
     error    = (energy - ϵ)^2
 
     Func.ANN.update(energy, ϵ, lr)
 
-    return error, energyS, energyB, energyI, numberB
+    return error, energyS, energyB, numberB
 end
 
 function calculation_energy()

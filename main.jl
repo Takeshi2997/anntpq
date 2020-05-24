@@ -13,7 +13,7 @@ function learning(io::IOStream, ϵ::Float32, lr::Float32, it_num::Integer)
     for it in 1:it_num
 
         # Calculate expected value
-        error, energyS, energyB, energyI, numberB = MLcore.sampling(ϵ, lr)
+        error, energyS, energyB, numberB = MLcore.sampling(ϵ, lr)
 
         write(io, string(it))
         write(io, "\t")
@@ -22,8 +22,6 @@ function learning(io::IOStream, ϵ::Float32, lr::Float32, it_num::Integer)
         write(io, string(energyS / Const.dimS))
         write(io, "\t")
         write(io, string(energyB / Const.dimB))
-        write(io, "\t")
-        write(io, string(energyI / Const.dimB))
         write(io, "\t")
         write(io, string(numberB / Const.dimB))
         write(io, "\n")
