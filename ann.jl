@@ -62,15 +62,13 @@ function forward(s::Vector{Float32}, n::Vector{Float32})
 end
 
 realloss(s::Vector{Float32}, n::Vector{Float32}) = real(forward(s, n))
-imagloss(s::Vector{Float32}, n::Vector{Float32}) = imag(forward(s, n))
 
 function backward(s::Vector{Float32}, n::Vector{Float32}, e::Complex{Float32})
 
     realgs = gradient(() -> realloss(s, n), network.p)
-    imaggs = gradient(() -> imagloss(s, n), network.p)
     for i in 1:Const.layers_num
-        dw = realgs[network.f[i].W] .- im * imaggs[network.f[i].W]
-        db = realgs[network.f[i].b] .- im * imaggs[network.f[i].b]
+        dw = 2.0 * realgs[network.f[i].W]
+        db = 2.0 * realgs[network.f[i].b]
         o[i].W  += dw
         o[i].b  += db
         oe[i].W += dw * e
