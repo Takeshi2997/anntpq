@@ -40,7 +40,7 @@ function translate(u)
     t = 5.0f0
     tm = 0.0f0
     tv = 0.0f0
-    for n in 1:1
+    for n in 1:5000
         dt = ds(u, t)
         lr_t = 0.1f0 * sqrt(1.0f0 - 0.999f0^n) / (1.0f0 - 0.9f0^n)
         tm += (1.0f0 - 0.9f0) * (dt - tm)
