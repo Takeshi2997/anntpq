@@ -5,41 +5,26 @@ using Flux.Optimise: update!
 using BSON: @save
 using BSON: @load
 
-mutable struct Parameters
-
-    W::Array{Complex{Float32}, 2}
-    b::Array{Complex{Float32}, 1}
-end
-
-o  = Vector{Parameters}(undef, Const.layers_num)
-oe = Vector{Parameters}(undef, Const.layers_num)
-
-function initO()
-
-    global o[1]  = Parameters(zeros(Complex{Float32}, Const.dimS, Const.dimB), 
-                              zeros(Complex{Float32}, Const.dimS))
-    global oe[1] = Parameters(zeros(Complex{Float32}, Const.dimS, Const.dimB), 
-                                  zeros(Complex{Float32}, Const.dimS))
-    global o[2]  = Parameters(zeros(Complex{Float32}, Const.layer[2], Const.layer[1]), 
-                              zeros(Complex{Float32}, Const.layer[2]))
-    global oe[2] = Parameters(zeros(Complex{Float32}, Const.layer[2], Const.layer[1]), 
-                              zeros(Complex{Float32}, Const.layer[2]))
-end
-
 mutable struct Network
 
     f::Flux.Chain
+    g::Flux.Dense
     p::Zygote.Params
+    q::Zygote.Params
 end
 
 function Network()
 
-    func(x::Float32) = tanh(x)
-    layer1 = Dense(Const.dimB, Const.dimS)
-    layer2 = Dense(Const.layer[1], Const.layer[2])
+    func(x::Float32) = x
+    layer1 = Dense(Const.layer[1], Const.layer[2], func)
+    layer2 = Dense(Const.layer[2], Const.layer[3], func)
     f = Chain(layer1, layer2)
     p = params(f)
-    Network(f, p)
+    W = randn(Complex{Float32}, Const.layer[4], Const.layer[3])
+    b = zeros(Complex{Float32}, Const.layer[4])
+    g = Dense(W, b)
+    q = params([W, b])
+    Network(f, g, p, q)
 end
 
 network = Network()
@@ -47,52 +32,53 @@ network = Network()
 function save(filename)
 
     f = getfield(network, :f)
-    @save filename f
+    g = getfield(network, :g)
+    @save filename f g
 end
 
 function load(filename)
 
-    @load filename f
+    @load filename f g
     p = params(f)
+    q = params(g)
     Flux.loadparams!(network.f, p)
+    Flux.loadparams!(network.g, q)
 end
 
 function init()
 
-    W1 = randn(Float32, Const.dimS, Const.dimB)
-    W2 = randn(Float32, Const.layer[2], Const.layer[1])
-    b1 = zeros(Float32, Const.dimS)
-    b2 = zeros(Float32, Const.layer[2])
+    W1 = randn(Float32, Const.layer[2], Const.layer[1]) * sqrt(1.0f0 / Const.layer[1])
+    W2 = randn(Float32, Const.layer[3], Const.layer[2]) * sqrt(1.0f0 / Const.layer[2])
+    b1 = zeros(Float32, Const.layer[2])
+    b2 = zeros(Float32, Const.layer[3])
     p  = params([W1, b1], [W2, b2])
+    W  = -Array(Diagonal(randn(Complex{Float32}, Const.layer[4], Const.layer[3])))
+    b  = zeros(Complex{Float32}, Const.layer[4])
+    q  = params([W, b])
     Flux.loadparams!(network.f, p)
+    Flux.loadparams!(network.g, q)
 end
 
 function forward(x::Vector{Float32})
 
-    @views s = x[Const.dimB+1:end]
-    @views n = x[1:Const.dimB]
-    out = dot(s, network.f[1](n))
-    out = network.f[2]([out])
-
-    return out[1] .+ im * out[2]
+    out = network.f(x)
+    return network.g(out)
 end
 
-realloss(x::Vector{Float32}) = real(forward(x))
-imagloss(x::Vector{Float32}) = imag(forward(x))
+loss(x::Vector{Float32}, h::Vector{Float32}) = real(dot(h, forward(x)))
 
-function backward(x::Vector{Float32}, e::Complex{Float32})
+function backward(x::Vector{Float32}, h::Vector{Float32}, e::Complex{Float32})
 
-    realgs = gradient(() -> realloss(x), network.p)
-    imaggs = gradient(() -> imagloss(x), network.p)
+    gs = gradient(() -> loss(x, h), network.p)
     for i in 1:Const.layers_num-1
-        dw = realgs[network.f[i].W] .- im * imaggs[network.f[i].W]
-        db = realgs[network.f[i].b] .- im * imaggs[network.f[i].b]
+        dw = gs[network.f[i].W]
+        db = gs[network.f[i].b]
         o[i].W  += dw
         oe[i].W += dw * e
         o[i].b  += db
         oe[i].b += db * e
     end
-    dw = realgs[network.f[end].W] .- im * imaggs[network.f[end].W]
+    dw = transpose(network.f(x)) .* h
     o[end].W  += dw
     oe[end].W += dw * e
 end
@@ -110,8 +96,27 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         update!(opt(lr), network.f[i].b, Δb)
     end
     ΔW = 4.0f0 * (energy - ϵ) * [(energy - ϵ)^2 - Const.η^2 > 0.0f0] .* 
-    real.(oe[end].W .- energy * o[end].W) / Const.iters_num
-    update!(opt(lr), network.f[end].W, ΔW)
+    (oe[end].W .- energy * o[end].W) / Const.iters_num
+    update!(opt(lr), network.g.W, ΔW)
+end
+
+mutable struct Parameters
+
+    W::Array{Complex{Float32}, 2}
+    b::Array{Complex{Float32}, 1}
+end
+
+o  = Vector{Parameters}(undef, Const.layers_num)
+oe = Vector{Parameters}(undef, Const.layers_num)
+
+function initO()
+
+    for i in 1:Const.layers_num
+        global o[i]  = Parameters(zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]), 
+                                  zeros(Complex{Float32}, Const.layer[i+1]))
+        global oe[i] = Parameters(zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]), 
+                                  zeros(Complex{Float32}, Const.layer[i+1]))
+    end
 end
 
 end

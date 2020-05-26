@@ -43,7 +43,7 @@ function main()
     MLcore.Func.ANN.init()
 
     g = open("error.txt", "w")
-    for iϵ in 1:1 # Const.iϵmax
+    for iϵ in 1:Const.iϵmax
     
         ϵ = - 0.50f0 * iϵ / Const.iϵmax * Const.t * Const.dimB
         filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
@@ -54,8 +54,8 @@ function main()
         energyS = 0.0f0
         energyB = 0.0f0
         numberB = 0.0f0
-        lr      = ifelse(iϵ > 1, Const.lr, 0.0001f0)
-        it_num  = ifelse(iϵ > 1, Const.it_num, 500)
+        lr      = Const.lr
+        it_num  = Const.it_num
 
         # Learning
         filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
