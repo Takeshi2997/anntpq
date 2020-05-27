@@ -5,6 +5,25 @@ using Flux.Optimise: update!
 using BSON: @save
 using BSON: @load
 
+mutable struct Parameters
+
+    W::Array{Complex{Float32}, 2}
+    b::Array{Complex{Float32}, 1}
+end
+
+o  = Vector{Parameters}(undef, Const.layers_num)
+oe = Vector{Parameters}(undef, Const.layers_num)
+
+function initO()
+
+    for i in 1:Const.layers_num
+        global o[i]  = Parameters(zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]), 
+                                  zeros(Complex{Float32}, Const.layer[i+1]))
+        global oe[i] = Parameters(zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]), 
+                                  zeros(Complex{Float32}, Const.layer[i+1]))
+    end
+end
+
 mutable struct Network
 
     f::Flux.Chain
@@ -16,10 +35,11 @@ end
 function Network()
 
     func(x::Float32) = tanh(x)
-    layer1 = Dense(Const.layer[1], Const.layer[2], func)
-    layer2 = Dense(Const.layer[2], Const.layer[3], func)
-    layer3 = Dense(Const.layer[3], Const.layer[4], func)
-    f = Chain(layer1, layer2, layer3)
+    layer = Vector{Flux.Dense}(undef, Const.layers_num-1)
+    for i in 1:Const.layers_num-1
+        layer[i] = Dense(Const.layer[i], Const.layer[i+1], func)
+    end
+    f = Chain([layer[i] for i in 1:Const.layers_num-1]...)
     p = params(f)
     W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b = zeros(Complex{Float32}, Const.layer[end])
@@ -48,13 +68,13 @@ end
 
 function init()
 
-    W1 = randn(Float32, Const.layer[2], Const.layer[1]) * sqrt(1.0f0 / Const.layer[1])
-    W2 = randn(Float32, Const.layer[3], Const.layer[2]) * sqrt(1.0f0 / Const.layer[2])
-    W3 = randn(Float32, Const.layer[4], Const.layer[3]) * sqrt(1.0f0 / Const.layer[3])
-    b1 = zeros(Float32, Const.layer[2])
-    b2 = zeros(Float32, Const.layer[3])
-    b3 = zeros(Float32, Const.layer[4])
-    p  = params([W1, b1], [W2, b2], [W3, b3])
+    parameters = Vector{Parameters}(undef, Const.layers_num-1)
+    for i in 1:Const.layers_num-1
+        W = randn(Float32, Const.layer[i+1], Const.layer[i]) * sqrt(1.0f0 / Const.layer[i])
+        b = zeros(Float32, Const.layer[i+1])
+        parameters[i] = Parameters(W, b)
+    end
+    p  = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num-1]...)
     W  = Array(Diagonal(randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])))
     b  = zeros(Complex{Float32}, Const.layer[end])
     q  = params([W, b])
@@ -101,25 +121,6 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     ΔW = 4.0f0 * (energy - ϵ) * [(energy - ϵ)^2 - Const.η^2 > 0.0f0] .* 
     (oe[end].W .- energy * o[end].W) / Const.iters_num
     update!(opt(lr), network.g.W, ΔW)
-end
-
-mutable struct Parameters
-
-    W::Array{Complex{Float32}, 2}
-    b::Array{Complex{Float32}, 1}
-end
-
-o  = Vector{Parameters}(undef, Const.layers_num)
-oe = Vector{Parameters}(undef, Const.layers_num)
-
-function initO()
-
-    for i in 1:Const.layers_num
-        global o[i]  = Parameters(zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]), 
-                                  zeros(Complex{Float32}, Const.layer[i+1]))
-        global oe[i] = Parameters(zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]), 
-                                  zeros(Complex{Float32}, Const.layer[i+1]))
-    end
 end
 
 end
