@@ -3,20 +3,19 @@ include("./setup.jl")
 include("./ann.jl")
 using .Const, .ANN, LinearAlgebra, Distributed, Random
 
-function flip(x::Vector{Float32}, iy::Integer)
 
-    xflip = copy(x)
-    xflip[iy] *= -1f0
-    return xflip
+function makeflip()
+
+    flip = Vector{Vector{Float32}}(undef, Const.layer[1])
+    for i in 1:Const.layer[1]
+        o = ones(Float32, Const.layer[1])
+        o[i] *= -1f0
+        flip[i] = o
+    end
+    return flip
 end
 
-function flip2(x::Vector{Float32}, iy::Integer, ix::Integer)
-
-    xflip = copy(x)
-    xflip[iy] *= -1f0
-    xflip[ix] *= -1f0
-    return xflip
-end
+const flip = makeflip()
 
 function update(x::Vector{Float32}, h::Vector{Float32})
 
@@ -30,7 +29,7 @@ function update(x::Vector{Float32}, h::Vector{Float32})
     for ix in 1:l
         x₁ = x[ix]
         z = dot(h, ANN.forward(x))
-        xflip = flip(x, ix)
+        xflip = x .* flip[ix]
         zflip = dot(h, ANN.forward(xflip))
         prob = exp(2.0f0 * real(zflip - z))
         @inbounds x[ix] = ifelse(randamnum[ix] < prob, -x₁, x₁)
@@ -43,7 +42,7 @@ function hamiltonianS(x::Vector{Float32}, h::Vector{Float32},
     out = 1.0f0 + 0.0f0im
     ixnext = Const.dimB + (ix - Const.dimB) % Const.dimS + 1
     if x[ix] != x[ixnext]
-        xflip = flip2(x, ix, ixnext)
+        xflip = x .* flip[ix] .* flip[ixnext]
         zflip = dot(h, ANN.forward(xflip))
         out   = 2.0f0 * exp(zflip - z) - 1.0f0
     end
@@ -68,7 +67,7 @@ function hamiltonianB(x::Vector{Float32}, h::Vector{Float32},
     out = 0.0f0im
     iynext = iy%Const.dimB + 1
     if x[iy] != x[iynext]
-        xflip = flip2(x, iy, iynext)
+        xflip = x .* flip[iy] .* flip[iynext]
         zflip = dot(h, ANN.forward(xflip))
         out  += exp(zflip - z)
     end
@@ -92,7 +91,7 @@ function hamiltonianI(x::Vector{Float32}, h::Vector{Float32},
 
     out = 0.0f0im
     if x[ix] != x[iy]
-        xflip = flip2(x, ix, iy)
+        xflip = x .* flip[ix] .* flip[iy]
         zflip = dot(h, ANN.forward(xflip))
         out  += exp(zflip - z)
     end
