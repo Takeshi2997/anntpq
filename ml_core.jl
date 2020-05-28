@@ -6,7 +6,6 @@ using .Const, .Func, Distributed
 function sampling(ϵ::Float32, lr::Float32)
 
     x = rand([1.0f0, -1.0f0], Const.dimB+Const.dimS)
-    h = rand([1.0f0, -1.0f0], Const.layer[end])
     energy  = 0.0f0
     energyS = 0.0f0
     energyB = 0.0f0
@@ -15,22 +14,22 @@ function sampling(ϵ::Float32, lr::Float32)
     Func.ANN.initO()
 
     for i in 1:Const.burnintime
-        Func.update(x, h)
+        Func.update(x)
     end
 
     for i in 1:Const.iters_num
-        Func.update(x, h)
+        Func.update(x)
 
-        eS = Func.energyS(x, h)
-        eB = Func.energyB(x, h)
-        eI = Func.energyI(x, h)
+        eS = Func.energyS(x)
+        eB = Func.energyB(x)
+        eI = Func.energyI(x)
         e  = eS + eB + eI
         energy    += e
         energyS   += eS
         energyB   += eB
         numberB   += sum(x[1:Const.dimB])
 
-        Func.ANN.backward(x, h, e)
+        Func.ANN.backward(x, e)
     end
     energy   = real(energy)  / Const.iters_num
     energyS  = real(energyS) / Const.iters_num
@@ -52,14 +51,14 @@ function calculation_energy()
     numberB = 0.0f0
 
     for i in 1:Const.burnintime
-        Func.update(x, h)
+        Func.update(x)
     end
 
     for i in 1:Const.num
-        Func.update(x, h)
+        Func.update(x)
 
-        eS = Func.energyS(x, h)
-        eB = Func.energyB(x, h)
+        eS = Func.energyS(x)
+        eB = Func.energyB(x)
         e  = eS + eB
         energy    += e
         energyS   += eS
