@@ -75,8 +75,7 @@ function init()
         parameters[i] = Parameters(W, b)
     end
     p  = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num-1]...)
-    W  = Array(Diagonal(randn(Complex{Float32}, Const.layer[end], Const.layer[end-1]))) * 
-    sqrt(1.0f0 / Const.layer[i])
+    W  = Array(SymTridiagonal(randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])))
     b  = zeros(Complex{Float32}, Const.layer[end])
     q  = params([W, b])
     Flux.loadparams!(network.f, p)
