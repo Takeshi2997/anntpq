@@ -1,7 +1,6 @@
 module ANN
 include("./setup.jl")
 using .Const, LinearAlgebra, Flux, Zygote
-using Flux.Optimise: update!
 using BSON: @save
 using BSON: @load
 
@@ -34,7 +33,7 @@ end
 
 function Network()
 
-    func(x::Float32) = swish(x)
+    func(x::Float32) = tanh(x)
     layer = Vector{Flux.Dense}(undef, Const.layers_num-1)
     for i in 1:Const.layers_num-1
         layer[i] = Dense(Const.layer[i], Const.layer[i+1], func)
@@ -70,12 +69,12 @@ function init()
 
     parameters = Vector{Parameters}(undef, Const.layers_num-1)
     for i in 1:Const.layers_num-1
-        W = randn(Float32, Const.layer[i+1], Const.layer[i]) * sqrt(2.0f0 / Const.layer[i])
+        W = randn(Float32, Const.layer[i+1], Const.layer[i]) * sqrt(1.0f0 / Const.layer[i])
         b = zeros(Float32, Const.layer[i+1])
         parameters[i] = Parameters(W, b)
     end
     p  = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num-1]...)
-    W  = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1]) * sqrt(2.0f0 / Const.layer[end-1])
+    W  = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b  = zeros(Complex{Float32}, Const.layer[end])
     q  = params([W, b])
     Flux.loadparams!(network.f, p)
@@ -102,7 +101,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
         oe[i].b += db * e
     end
     u = network.f(x)
-    v = tanh.(network.g(u))
+    v = tanh.(conj.(network.g(u)))
     dw = transpose(u) .* v
     db = v
     o[end].W  += dw
@@ -111,7 +110,9 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     oe[end].b += db * e
 end
 
-opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
+const ϵ = 1e-8
+
+opt(lr::Float32) = QRMSProp(lr, 0.9)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
 
@@ -119,13 +120,43 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     for i in 1:Const.layers_num-1
         ΔW = α .* real.(oe[i].W .- energy * o[i].W)
         Δb = α .* real.(oe[i].b .- energy * o[i].b)
-        update!(opt(lr), network.f[i].W, ΔW)
-        update!(opt(lr), network.f[i].b, Δb)
+        vW = abs2.(o[i].W)
+        vb = abs2.(o[i].b)
+        update!(opt(lr), network.f[i].W, ΔW, vW)
+        update!(opt(lr), network.f[i].b, Δb, vb)
     end
     ΔW = α .* (oe[end].W .- energy * o[end].W)
     Δb = α .* (oe[end].b .- energy * o[end].b)
-    update!(opt(lr), network.g.W, ΔW)
-    update!(opt(lr), network.g.b, Δb)
+    vW = conj.(o[end].W) .* o[end].W
+    vb = conj.(o[end].b) .* o[end].b
+    update!(opt(lr), network.g.W, ΔW, vW)
+    update!(opt(lr), network.g.b, Δb, vb)
+end
+
+mutable struct QRMSProp
+  eta::Float64
+  rho::Float64
+  acc::IdDict
+end
+
+QRMSProp(η = 0.001, ρ = 0.9) = QRMSProp(η, ρ, IdDict())
+
+function apply!(o::QRMSProp, x, g, Δ)
+  η, ρ = o.eta, o.rho
+  acc = get!(o.acc, x, zero(x))::typeof(x)
+  @. acc = ρ * acc + (1 - ρ) * Δ
+  @. g *= η / (√acc + ϵ)
+end
+
+function update!(opt, x, x̄, x̂)
+  x .-= apply!(opt, x, x̄, x̂)
+end
+
+function update!(opt, xs::Params, gs, o)
+  for x in xs
+    gs[x] == nothing && continue
+    update!(opt, x, gs[x], o)
+  end
 end
 
 end
