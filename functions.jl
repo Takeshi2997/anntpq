@@ -1,6 +1,6 @@
 module Func
 include("./setup.jl")
-include("./ann.jl")
+include("./initann.jl")
 using .Const, .ANN, LinearAlgebra, Distributed, Random
 
 
