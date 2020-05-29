@@ -7,6 +7,7 @@ CALC        = calculation.jl
 main: $(BASE) $(CORE) $(OBJS) $(CALC)
 	$(JL) $(OBJS)
 	$(JL) $(CALC)
+	sudo shutdown -h now
 
 calc: $(BASE) $(CORE) $(CALC)
 	$(JL) $(CALC)
