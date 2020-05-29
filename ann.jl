@@ -31,7 +31,7 @@ end
 
 function Network()
 
-    func(x::Float32) = x + tanh(x)
+    func(x::Float32) = tanh(x)
     output(x::Float32) = log(cosh(x))
     layer = Vector{Flux.Dense}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
@@ -86,7 +86,7 @@ loss(x::Vector{Float32}) = real(forward(x))
 function backward(x::Vector{Float32}, e::Complex{Float32})
 
     gs = gradient(() -> loss(x), network.p)
-    for i in 1:Const.layers_num
+    for i in 1:Const.layers_num-1
         dw = gs[network.f[i].W]
         db = gs[network.f[i].b]
         o[i].W  += dw
@@ -94,6 +94,14 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
         o[i].b  += db
         oe[i].b += db * e
     end
+    u = network.f[1:end-1](x)
+    v = tanh.(u)
+    dw = transpose(u) .* v
+    db = v
+    o[end].W  += dw
+    oe[end].W += dw * e
+    o[end].b  += db
+    oe[end].b += db * e
 end
 
 opt(lr::Float32) = QRMSProp(lr, 0.9)
