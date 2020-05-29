@@ -40,7 +40,7 @@ function Network()
     W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b = zeros(Complex{Float32}, Const.layer[end])
     layer[end] = Dense(W, b)
-    f = Chain([layer[i] for i in 1:Const.layers_num])
+    f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = params(f)
     Network(f, p)
 end
@@ -113,8 +113,8 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     Δb = α .* (oe[end].b .- energy * o[end].b)
     vW = conj.(o[end].W) .* o[end].W
     vb = conj.(o[end].b) .* o[end].b
-    update!(opt(lr), network.g.W, ΔW, vW)
-    update!(opt(lr), network.g.b, Δb, vb)
+    update!(opt(lr), network.f[end].W, ΔW, vW)
+    update!(opt(lr), network.f[end].b, Δb, vb)
 end
 
 const ϵ = 1e-8
