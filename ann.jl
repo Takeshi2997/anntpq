@@ -26,25 +26,23 @@ end
 mutable struct Network
 
     f::Flux.Chain
-    g::Flux.Dense
     p::Zygote.Params
-    q::Zygote.Params
 end
 
 function Network()
 
-    func(x::Float32) = tanh(x)
-    layer = Vector{Flux.Dense}(undef, Const.layers_num-1)
+    func(x::Float32) = x + tanh(x)
+    output(x::Float32) = log(cosh(x))
+    layer = Vector{Flux.Dense}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
         layer[i] = Dense(Const.layer[i], Const.layer[i+1], func)
     end
-    f = Chain([layer[i] for i in 1:Const.layers_num-1]...)
-    p = params(f)
     W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b = zeros(Complex{Float32}, Const.layer[end])
-    g = Dense(W, b)
-    q = params([W, b])
-    Network(f, g, p, q)
+    layer[end] = Dense(W, b)
+    f = Chain([layer[i] for i in 1:Const.layers_num])
+    p = params(f)
+    Network(f, p)
 end
 
 network = Network()
@@ -52,39 +50,35 @@ network = Network()
 function save(filename)
 
     f = getfield(network, :f)
-    g = getfield(network, :g)
-    @save filename f g
+    @save filename f
 end
 
 function load(filename)
 
-    @load filename f g
+    @load filename f
     p = params(f)
-    q = params(g)
     Flux.loadparams!(network.f, p)
-    Flux.loadparams!(network.g, q)
 end
 
 function init()
 
-    parameters = Vector{Parameters}(undef, Const.layers_num-1)
+    parameters = Vector{Parameters}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
         W = randn(Float32, Const.layer[i+1], Const.layer[i]) * sqrt(1.0f0 / Const.layer[i])
         b = zeros(Float32, Const.layer[i+1])
         parameters[i] = Parameters(W, b)
     end
-    p  = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num-1]...)
-    W  = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
+    W  = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1]) * sqrt(1.0f0 / Const.layer[end-1])
     b  = zeros(Complex{Float32}, Const.layer[end])
-    q  = params([W, b])
+    parameters[end] = Parameters(W, b)
+    p  = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num]...)
     Flux.loadparams!(network.f, p)
-    Flux.loadparams!(network.g, q)
 end
 
 function forward(x::Vector{Float32})
 
     out = network.f(x)
-    return sum(log.(cosh.(network.g(out))))
+    return sum(out)
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
@@ -92,7 +86,7 @@ loss(x::Vector{Float32}) = real(forward(x))
 function backward(x::Vector{Float32}, e::Complex{Float32})
 
     gs = gradient(() -> loss(x), network.p)
-    for i in 1:Const.layers_num-1
+    for i in 1:Const.layers_num
         dw = gs[network.f[i].W]
         db = gs[network.f[i].b]
         o[i].W  += dw
@@ -100,17 +94,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
         o[i].b  += db
         oe[i].b += db * e
     end
-    u = network.f(x)
-    v = tanh.(conj.(network.g(u)))
-    dw = transpose(u) .* v
-    db = v
-    o[end].W  += dw
-    oe[end].W += dw * e
-    o[end].b  += db
-    oe[end].b += db * e
 end
-
-const ϵ = 1e-8
 
 opt(lr::Float32) = QRMSProp(lr, 0.9)
 
@@ -132,6 +116,8 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     update!(opt(lr), network.g.W, ΔW, vW)
     update!(opt(lr), network.g.b, Δb, vb)
 end
+
+const ϵ = 1e-8
 
 mutable struct QRMSProp
   eta::Float64
