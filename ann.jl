@@ -39,7 +39,7 @@ function Network()
     end
     W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b = zeros(Complex{Float32}, Const.layer[end])
-    layer[end] = Dense(W, b)
+    layer[end] = Dense(W, b, output)
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = params(f)
     Network(f, p)
