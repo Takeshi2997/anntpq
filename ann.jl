@@ -32,7 +32,7 @@ end
 function Network()
 
     func(x::Float32) = tanh(x)
-    output(x::Float32) = log(cosh(x))
+    output(x::Complex{Float32}) = log(cosh(x))
     layer = Vector{Flux.Dense}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
         layer[i] = Dense(Const.layer[i], Const.layer[i+1], func)
@@ -68,7 +68,8 @@ function init()
         b = zeros(Float32, Const.layer[i+1])
         parameters[i] = Parameters(W, b)
     end
-    W  = exp(im*2f0*π * rand(Const.layer[end], Const.layer[end-1]))
+    W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]) .* 
+    exp(π*im* rand(Float32, Const.layer[end], Const.layer[end-1]))
     b  = zeros(Complex{Float32}, Const.layer[end])
     parameters[end] = Parameters(W, b)
     p  = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num]...)
@@ -95,7 +96,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
         oe[i].b += db * e
     end
     u = network.f[1:end-1](x)
-    v = tanh.(u)
+    v = tanh.(network.f[end].W * u + network.f[end].b)
     dw = transpose(u) .* v
     db = v
     o[end].W  += dw
