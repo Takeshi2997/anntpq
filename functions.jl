@@ -87,7 +87,7 @@ function hamiltonianI(x::Vector{Float32}, z::Complex{Float32},
 
     out = 0.0f0im
     if x[ix] != x[iy]
-        xflip = flip2(x, ix, iy)
+        xflip = x .* flip[ix] .* flip[iy]
         zflip = ANN.forward(xflip)
         out  += exp(zflip - z)
     end
