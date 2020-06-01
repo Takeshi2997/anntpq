@@ -69,7 +69,7 @@ function init()
         parameters[i] = Parameters(W, b)
     end
     W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]) .* 
-    exp(π*im* rand(Float32, Const.layer[end], Const.layer[end-1]))
+    exp.(π*im* rand(Float32, Const.layer[end], Const.layer[end-1]))
     b  = zeros(Complex{Float32}, Const.layer[end])
     parameters[end] = Parameters(W, b)
     p  = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num]...)

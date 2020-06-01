@@ -86,10 +86,8 @@ function hamiltonianI(x::Vector{Float32},
                       z::Complex{Float32}, ix::Integer, iy::Integer)
 
     out = 0.0f0im
-    if x[ix] != x[iy]
-        xflip = x .* flip[ix] .* flip[iy]
-        zflip = ANN.forward(xflip)
-        out  += exp(zflip - z)
+    if x[iy] == 1f0
+        out  += x[ix] * x[iy] / 2f0
     end
 
     return Const.λ * out
