@@ -82,12 +82,14 @@ function energyB(x::Vector{Float32})
     return sum
 end
 
-function hamiltonianI(x::Vector{Float32},
+function hamiltonianI(x::Vector{Float32}, z::Complex{Float32},
                       ix::Integer, iy::Integer)
 
     out = 0.0f0im
-    if x[iy] == 1f0
-        out  += x[ix] * x[iy] / 2f0
+    if x[ix] != x[iy]
+        xflip = flip2(x, ix, iy)
+        zflip = ANN.forward(xflip)
+        out  += exp(zflip - z)
     end
 
     return Const.λ * out
@@ -99,7 +101,7 @@ function energyI(x::Vector{Float32})
     sum = 0.0f0im
     @simd for ixy in CartesianIndices((Const.dimB+1:Const.dimB+Const.dimS, 1:Const.dimB))
         ix, iy = Tuple(ixy)
-        sum += hamiltonianI(x, ix, iy)
+        sum += hamiltonianI(x, z, ix, iy)
     end
 
     return sum
