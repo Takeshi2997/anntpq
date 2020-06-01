@@ -83,7 +83,7 @@ function energyB(x::Vector{Float32})
 end
 
 function hamiltonianI(x::Vector{Float32},
-                      z::Complex{Float32}, ix::Integer, iy::Integer)
+                      ix::Integer, iy::Integer)
 
     out = 0.0f0im
     if x[iy] == 1f0
@@ -99,7 +99,7 @@ function energyI(x::Vector{Float32})
     sum = 0.0f0im
     @simd for ixy in CartesianIndices((Const.dimB+1:Const.dimB+Const.dimS, 1:Const.dimB))
         ix, iy = Tuple(ixy)
-        sum += hamiltonianI(x, z, ix, iy)
+        sum += hamiltonianI(x, ix, iy)
     end
 
     return sum
