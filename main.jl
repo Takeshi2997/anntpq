@@ -45,7 +45,7 @@ function main()
     MLcore.Func.ANN.init()
 
     g = open("error.txt", "w")
-    for iϵ in 0:0 # Const.iϵmax
+    for iϵ in 0:Const.iϵmax
     
         ϵ = (1f0 - 0.5f0 * iϵ / Const.iϵmax) * Const.t * Const.dimB
         filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
