@@ -1,11 +1,11 @@
 module MLcore
 include("./setup.jl")
 include("./functions.jl")
-using .Const, .Func, Distributed
+using .Const, .Func, CuArrays
 
 function sampling(ϵ::Float32, lr::Float32)
 
-    x = rand([1.0f0, -1.0f0], Const.dimB+Const.dimS)
+    x = CuArray(rand([1.0f0, -1.0f0], Const.dimB+Const.dimS))
     energy  = 0.0f0
     energyS = 0.0f0
     energyB = 0.0f0
@@ -44,7 +44,7 @@ end
 
 function calculation_energy()
 
-    x = ones(Float32, Const.dimB+Const.dimS)
+    x = CuArray(rand([1.0f0, -1.0f0], Const.dimB+Const.dimS))
     energy  = 0.0f0
     energyS = 0.0f0
     energyB = 0.0f0

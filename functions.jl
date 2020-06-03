@@ -1,38 +1,37 @@
 module Func
 include("./setup.jl")
 include("./ann.jl")
-using .Const, .ANN, LinearAlgebra, Distributed, Random
+using .Const, .ANN, LinearAlgebra, Random, CuArrays
 
 
 function makeflip()
 
-    flip = Vector{Vector{Float32}}(undef, Const.layer[1])
+    flip = Vector{CuArray{Float32, 1}}(undef, Const.layer[1])
     for i in 1:Const.layer[1]
         o = ones(Float32, Const.layer[1])
         o[i] *= -1f0
-        flip[i] = o
+        flip[i] = CuArray(o)
     end
     return flip
 end
 
 const flip = makeflip()
 
-function update(x::Vector{Float32})
+function update(x::CuArray{Float32, 1})
 
     rng = MersenneTwister(1234)
     l = length(x)
     randamnum = rand(rng, Float32, l)
     for ix in 1:l
-        x₁ = x[ix]
         z = ANN.forward(x)
         xflip = x .* flip[ix]
         zflip = ANN.forward(xflip)
         prob = exp(2.0f0 * real(zflip - z))
-        @inbounds x[ix] = ifelse(randamnum[ix] < prob, -x₁, x₁)
+        @inbounds x = ifelse(randamnum[ix] < prob, xflip, x)
     end
 end
 
-function hamiltonianS(x::Vector{Float32},
+function hamiltonianS(x::CuArray{Float32, 1},
                       z::Complex{Float32}, ix::Integer)
 
     out = 1.0f0 + 0.0f0im
@@ -46,7 +45,7 @@ function hamiltonianS(x::Vector{Float32},
     return -Const.J * out / 4f0 + 1f0 / 4f0
 end
 
-function energyS(x::Vector{Float32})
+function energyS(x::CuArray{Float32, 1})
 
     z = ANN.forward(x)
     sum = 0f0im
@@ -57,7 +56,7 @@ function energyS(x::Vector{Float32})
     return sum
 end
 
-function hamiltonianB(x::Vector{Float32},
+function hamiltonianB(x::CuArray{Float32, 1},
                       z::Complex{Float32}, iy::Integer)
 
     out = 0f0im
@@ -71,7 +70,7 @@ function hamiltonianB(x::Vector{Float32},
     return -Const.t * out + 1f0
 end
 
-function energyB(x::Vector{Float32})
+function energyB(x::CuArray{Float32, 1})
 
     z = ANN.forward(x)
     sum = 0.0f0im
@@ -82,7 +81,7 @@ function energyB(x::Vector{Float32})
     return sum
 end
 
-function hamiltonianI(x::Vector{Float32}, z::Complex{Float32},
+function hamiltonianI(x::CuArray{Float32, 1}, z::Complex{Float32},
                       ix::Integer, iy::Integer)
 
     out = 0.0f0im
@@ -95,7 +94,7 @@ function hamiltonianI(x::Vector{Float32}, z::Complex{Float32},
     return Const.λ * out
 end
 
-function energyI(x::Vector{Float32})
+function energyI(x::CuArray{Float32, 1})
 
     z = ANN.forward(x)
     sum = 0.0f0im

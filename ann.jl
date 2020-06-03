@@ -39,7 +39,7 @@ function Network()
     end
     W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b = zeros(Complex{Float32}, Const.layer[end])
-    layer[end] = Dense(W, b, output)
+    layer[end] = Dense(W, b, output) |> gpu
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = params(f)
     Network(f, p)
@@ -62,15 +62,15 @@ end
 
 function init()
 
-    parameters = Vector{Parameters}(undef, Const.layers_num)
+    parameters = Vector{CuParams}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
-        b = zeros(Float32, Const.layer[i+1])
+        W = CuArray(Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]))
+        b = CuArray(zeros(Float32, Const.layer[i+1]))
         parameters[i] = Parameters(W, b)
     end
-    W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]) .* 
-    exp.(π*im* rand(Float32, Const.layer[end], Const.layer[end-1]))
-    b  = zeros(Complex{Float32}, Const.layer[end])
+    W = CuArray(Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]) .* 
+                exp.(π*im* rand(Float32, Const.layer[end], Const.layer[end-1])))
+    b = CuArray(zeros(Complex{Float32}, Const.layer[end]))
     parameters[end] = Parameters(W, b)
     p  = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num]...)
     Flux.loadparams!(network.f, p)
