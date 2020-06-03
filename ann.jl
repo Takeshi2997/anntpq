@@ -62,15 +62,6 @@ end
 
 function init()
 
-<<<<<<< HEAD
-    W1 = randn(Float32, Const.layer[2], Const.layer[1]) * sqrt(1.0f0 / Const.layer[1])
-    W2 = randn(Float32, Const.layer[3], Const.layer[2]) * sqrt(1.0f0 / Const.layer[2])
-    W3 = randn(Float32, Const.layer[4], Const.layer[3]) * sqrt(1.0f0 / Const.layer[3])
-    b1 = zeros(Float32, Const.layer[2])
-    b2 = zeros(Float32, Const.layer[3])
-    b3 = zeros(Float32, Const.layer[4])
-    p  = params([W1, b1], [W2, b2], [W3, b3])
-=======
     parameters = Vector{Parameters}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
         W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
@@ -82,7 +73,6 @@ function init()
     b  = zeros(Complex{Float32}, Const.layer[end])
     parameters[end] = Parameters(W, b)
     p  = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num]...)
->>>>>>> bm_extended
     Flux.loadparams!(network.f, p)
 end
 
@@ -96,28 +86,15 @@ loss(x::Vector{Float32}) = real(forward(x))
 
 function backward(x::Vector{Float32}, e::Complex{Float32})
 
-<<<<<<< HEAD
-    realgs = gradient(() -> realloss(x), network.p)
-    imaggs = gradient(() -> imagloss(x), network.p)
-    for i in 1:Const.layers_num-1
-        dw = realgs[network.f[i].W] .- im * imaggs[network.f[i].W]
-        db = realgs[network.f[i].b] .- im * imaggs[network.f[i].b]
-=======
     gs = gradient(() -> loss(x), network.p)
     for i in 1:Const.layers_num-1
         dw = gs[network.f[i].W]
         db = gs[network.f[i].b]
->>>>>>> bm_extended
         o[i].W  += dw
         oe[i].W += dw * e
         o[i].b  += db
         oe[i].b += db * e
     end
-<<<<<<< HEAD
-    dw = realgs[network.f[end].W] .- im * imaggs[network.f[end].W]
-    o[end].W  += dw
-    oe[end].W += dw * e
-=======
     u = network.f[1:end-1](x)
     v = tanh.(network.f[end].W * u + network.f[end].b)
     dw = transpose(u) .* v
@@ -126,26 +103,12 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     oe[end].W += dw * e
     o[end].b  += db
     oe[end].b += db * e
->>>>>>> bm_extended
 end
 
 opt(lr::Float32) = QRMSProp(lr, 0.9)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
 
-<<<<<<< HEAD
-    for i in 1:Const.layers_num-1
-        ΔW = 4.0f0 * (energy - ϵ) * [(energy - ϵ)^2 - Const.η^2 > 0.0f0] .* 
-        real.(oe[i].W .- energy * o[i].W) / Const.iters_num
-        Δb = 4.0f0 * (energy - ϵ) * [(energy - ϵ)^2 - Const.η^2 > 0.0f0] .* 
-        real.(oe[i].b .- energy * o[i].b) / Const.iters_num
-        update!(opt(lr), network.f[i].W, ΔW)
-        update!(opt(lr), network.f[i].b, Δb)
-    end
-    ΔW = 4.0f0 * (energy - ϵ) * [(energy - ϵ)^2 - Const.η^2 > 0.0f0] .* 
-    real.(oe[end].W .- energy * o[end].W) / Const.iters_num
-    update!(opt(lr), network.f[end].W, ΔW)
-=======
     α = 4.0f0 * (energy - ϵ) * [(energy - ϵ)^2 - Const.η^2 > 0.0f0] / Const.iters_num
     for i in 1:Const.layers_num-1
         ΔW = α .* real.(oe[i].W .- energy * o[i].W)
@@ -189,7 +152,6 @@ function update!(opt, xs::Params, gs, o)
     gs[x] == nothing && continue
     update!(opt, x, gs[x], o)
   end
->>>>>>> bm_extended
 end
 
 end

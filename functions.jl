@@ -20,14 +20,9 @@ const flip = makeflip()
 function update(x::Vector{Float32})
 
     rng = MersenneTwister(1234)
-<<<<<<< HEAD
-    randamnum = rand(rng, Float32, Const.dimB+Const.dimS)
-    for ix in 1:length(x)
-=======
     l = length(x)
     randamnum = rand(rng, Float32, l)
     for ix in 1:l
->>>>>>> bm_extended
         x₁ = x[ix]
         z = ANN.forward(x)
         xflip = x .* flip[ix]
@@ -48,11 +43,7 @@ function hamiltonianS(x::Vector{Float32},
         out   = 2f0 * exp(zflip - z) - 1f0
     end
 
-<<<<<<< HEAD
-    return -Const.J * out / 4.0f0
-=======
     return -Const.J * out / 4f0 + 1f0 / 4f0
->>>>>>> bm_extended
 end
 
 function energyS(x::Vector{Float32})
@@ -77,11 +68,7 @@ function hamiltonianB(x::Vector{Float32},
         out  += exp(zflip - z)
     end
 
-<<<<<<< HEAD
-    return -Const.t * out
-=======
     return -Const.t * out + 1f0
->>>>>>> bm_extended
 end
 
 function energyB(x::Vector{Float32})
@@ -95,20 +82,12 @@ function energyB(x::Vector{Float32})
     return sum
 end
 
-<<<<<<< HEAD
-function hamiltonianI(x::Vector{Float32}, z::Complex{Float32}, 
-=======
 function hamiltonianI(x::Vector{Float32}, z::Complex{Float32},
->>>>>>> bm_extended
                       ix::Integer, iy::Integer)
 
     out = 0.0f0im
     if x[ix] != x[iy]
-<<<<<<< HEAD
-        xflip = flip2(x, ix, iy)
-=======
         xflip = x .* flip[ix] .* flip[iy]
->>>>>>> bm_extended
         zflip = ANN.forward(xflip)
         out  += exp(zflip - z)
     end
