@@ -66,25 +66,25 @@ function init()
     for i in 1:Const.layers_num-1
         W = CuArray(Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]))
         b = CuArray(zeros(Float32, Const.layer[i+1]))
-        parameters[i] = Parameters(W, b)
+        parameters[i] = CuParams(W, b)
     end
     W = CuArray(Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]) .* 
                 exp.(π*im* rand(Float32, Const.layer[end], Const.layer[end-1])))
     b = CuArray(zeros(Complex{Float32}, Const.layer[end]))
-    parameters[end] = Parameters(W, b)
+    parameters[end] = CuParams(W, b)
     p  = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num]...)
     Flux.loadparams!(network.f, p)
 end
 
-function forward(x::Vector{Float32})
+function forward(x::CuArray{Float32, 1})
 
     out = network.f(x)
     return sum(out)
 end
 
-loss(x::Vector{Float32}) = real(forward(x))
+loss(x::CuArray{Float32, 1}) = real(forward(x))
 
-function backward(x::Vector{Float32}, e::Complex{Float32})
+function backward(x::CuArray{Float32, 1}, e::Complex{Float32})
 
     gs = gradient(() -> loss(x), network.p)
     for i in 1:Const.layers_num-1
