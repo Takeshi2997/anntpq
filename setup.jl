@@ -7,13 +7,13 @@ const dimB = 80
 # System Param
 const t = 1.0f0
 const J = 1.0f0
-const λ = 0.000001f0
-const η = 0.1f0
+const λ = 0.00001f0
+const η = 0.5f0
 
 # Repeat Number
-const burnintime = 100
+const burnintime = 10
 const iters_num = 200
-const it_num = 1000
+const it_num = 500
 const iϵmax = 10
 const num = 10000
 
