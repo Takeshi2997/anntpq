@@ -58,7 +58,6 @@ function main()
         numberB = 0f0
         lr      = Const.lr
         it_num  = Const.it_num
-        MLcore.Func.ANN.init()
 
         # Learning
         filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
