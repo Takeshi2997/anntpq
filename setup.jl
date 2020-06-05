@@ -13,12 +13,12 @@ const η = 0.5f0
 # Repeat Number
 const burnintime = 10
 const iters_num = 200
-const it_num = 500
+const it_num = 1000
 const iϵmax = 10
 const num = 10000
 
 # Network Params
-const layer = [dimB+dimS, 40, 40, 16]
+const layer = [dimB+dimS, 48, 48, 48]
 const layers_num = length(layer) - 1
 
 # Learning Rate
