@@ -1,7 +1,7 @@
 module Func
 include("./setup.jl")
 include("./ann.jl")
-using .Const, .ANN, LinearAlgebra, Random, CuArrays
+using .Const, .ANN, LinearAlgebra, Distributed, Random, CuArrays
 
 
 function makeflip()
@@ -42,7 +42,7 @@ function hamiltonianS(x::CuArray{Float32, 1},
         out   = 2f0 * exp(zflip - z) - 1f0
     end
 
-    return -Const.J * out / 4f0 + 1f0 / 4f0
+    return -Const.J * out / 4f0
 end
 
 function energyS(x::CuArray{Float32, 1})
@@ -67,7 +67,7 @@ function hamiltonianB(x::CuArray{Float32, 1},
         out  += exp(zflip - z)
     end
 
-    return -Const.t * out + 1f0
+    return -Const.t * out
 end
 
 function energyB(x::CuArray{Float32, 1})

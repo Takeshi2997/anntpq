@@ -44,7 +44,7 @@ end
 
 function calculation_energy()
 
-    x = CuArray(rand([1.0f0, -1.0f0], Const.dimB+Const.dimS))
+    x = CuArray(ones(Float32, Const.dimB+Const.dimS))
     energy  = 0.0f0
     energyS = 0.0f0
     energyB = 0.0f0

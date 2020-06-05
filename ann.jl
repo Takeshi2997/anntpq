@@ -4,22 +4,22 @@ using .Const, LinearAlgebra, Flux, Zygote, CuArrays
 using BSON: @save
 using BSON: @load
 
-mutable struct CuParams
+mutable struct Parameters
 
     W::CuArray{Complex{Float32}, 2}
     b::CuArray{Complex{Float32}, 1}
 end
 
-o  = Vector{CuParams}(undef, Const.layers_num)
-oe = Vector{CuParams}(undef, Const.layers_num)
+o  = Vector{Parameters}(undef, Const.layers_num)
+oe = Vector{Parameters}(undef, Const.layers_num)
 
 function initO()
 
     for i in 1:Const.layers_num
         W = CuArray(zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]))
         b = CuArray(zeros(Complex{Float32}, Const.layer[i+1]))
-        global o[i]  = CuParams(W, b)
-        global oe[i] = CuParams(W, b)
+        global o[i]  = Parameters(W, b)
+        global oe[i] = Parameters(W, b)
     end
 end
 
@@ -37,8 +37,8 @@ function Network()
     for i in 1:Const.layers_num-1
         layer[i] = Dense(Const.layer[i], Const.layer[i+1], func) |> gpu
     end
-    W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
-    b = zeros(Complex{Float32}, Const.layer[end])
+    W = CuArray(randn(Complex{Float32}, Const.layer[end], Const.layer[end-1]))
+    b = CuArray(zeros(Complex{Float32}, Const.layer[end]))
     layer[end] = Dense(W, b, output) |> gpu
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = params(f)
@@ -62,17 +62,16 @@ end
 
 function init()
 
-    parameters = Vector{CuParams}(undef, Const.layers_num)
+    parameters = Vector{Parameters}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        W = CuArray(Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]))
+        W = CuArray(randn(Float32, Const.layer[i+1], Const.layer[i]) / sqrt(Const.layer[i]))
         b = CuArray(zeros(Float32, Const.layer[i+1]))
-        parameters[i] = CuParams(W, b)
+        parameters[i] = Parameters(W, b)
     end
-    W = CuArray(Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]) .* 
-                exp.(π*im* rand(Float32, Const.layer[end], Const.layer[end-1])))
+    W = CuArray(randn(Complex{Float32}, Const.layer[end], Const.layer[end-1]) / sqrt(Const.layer[end-1]))
     b = CuArray(zeros(Complex{Float32}, Const.layer[end]))
-    parameters[end] = CuParams(W, b)
-    p  = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num]...)
+    parameters[end] = Parameters(W, b)
+    p = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num]...)
     Flux.loadparams!(network.f, p)
 end
 
