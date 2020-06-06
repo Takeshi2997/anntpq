@@ -7,7 +7,7 @@ const dimB = 80
 # System Param
 const t = 1.0f0
 const J = 1.0f0
-const λ = 0.00001f0
+const λ = 0.001f0
 const η = 0.5f0
 
 # Repeat Number
