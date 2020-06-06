@@ -36,7 +36,7 @@ function Network()
     for i in 1:Const.layers_num-1
         layer[i] = Dense(Const.layer[i], Const.layer[i+1], func)
     end
-    layer[end] = Dense(Const.layer[end], Const.layer[end-1], output)
+    layer[end] = Dense(Const.layer[end], Const.layer[end-1])
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = params(f)
     Network(f, p)
