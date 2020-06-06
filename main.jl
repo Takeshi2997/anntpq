@@ -47,7 +47,7 @@ function main()
     g = open("error.txt", "w")
     for iϵ in 0:Const.iϵmax
 
-        ϵ = (1.0f0 - 0.5f0 * iϵ / Const.iϵmax) * Const.t * Const.dimB
+        ϵ = (0.1f0 - 0.5f0 * iϵ / Const.iϵmax) * Const.t * Const.dimB
         filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
 
         # Initialize
@@ -57,7 +57,7 @@ function main()
         energyB = 0f0
         numberB = 0f0
         lr      = ifelse(iϵ > 0, Const.lr, 0.001f0)
-        it_num  = ifelse(iϵ > 0, Const.it_num, 1000)
+        it_num  = ifelse(iϵ > 0, Const.it_num, 200)
 
         # Learning
         filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"

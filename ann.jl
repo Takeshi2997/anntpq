@@ -94,7 +94,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     oe[end].W += dw * e
 end
 
-opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
+opt(lr::Float32) = QRMSProp(lr, 0.9)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
 
@@ -107,6 +107,34 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     end
     ΔW = α .* real.(oe[end].W .- energy * o[end].W)
     update!(opt(lr), network.f[end].W, ΔW, o[end].W)
+end
+
+const ϵ = 1f-8
+
+mutable struct QRMSProp
+  eta::Float32
+  rho::Float32
+  acc::IdDict
+end
+
+QRMSProp(η = 0.001f0, ρ = 0.9f0) = QRMSProp(η, ρ, IdDict())
+
+function apply!(o::QRMSProp, x, g, O)
+  η, ρ = o.eta, o.rho
+  acc = get!(o.acc, x, zero(x))::typeof(x)
+  @. acc = ρ * acc + (1 - ρ) * abs2(O)
+  @. g *= η / (√acc + ϵ)
+end
+
+function update!(opt, x, x̄, x̂)
+  x .-= apply!(opt, x, x̄, x̂)
+end
+
+function update!(opt, xs::Params, gs, o)
+  for x in xs
+    gs[x] == nothing && continue
+    update!(opt, x, gs[x], o)
+  end
 end
 
 end
