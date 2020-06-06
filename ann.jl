@@ -101,14 +101,11 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     for i in 1:Const.layers_num-1
         ΔW = α .* real.(oe[i].W .- energy * o[i].W)
         Δb = α .* real.(oe[i].b .- energy * o[i].b)
-        OW = o[i].W
-        Ob = o[i].b
-        update!(opt(lr), network.f[i].W, ΔW, OW)
-        update!(opt(lr), network.f[i].b, Δb, Ob)
+        update!(opt(lr), network.f[i].W, ΔW, o[i].W)
+        update!(opt(lr), network.f[i].b, Δb, o[i].b)
     end
     ΔW = α .* (oe[end].W .- energy * o[end].W)
-    OW = o[end].W
-    update!(opt(lr), network.f[end].W, ΔW, OW)
+    update!(opt(lr), network.f[end].W, ΔW, o[end].W)
 end
 
 const ϵ = 1e-8
