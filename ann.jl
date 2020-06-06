@@ -61,7 +61,7 @@ function init()
 
     parameters = Vector{Parameters}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = randn(Float32, Const.layer[i+1], Const.layer[i]) / sqrt(Const.layer[i])
+        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
         b = zeros(Float32, Const.layer[i+1])
         parameters[i] = Parameters(W, b)
     end
@@ -108,15 +108,15 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     update!(opt(lr), network.f[end].W, ΔW, o[end].W)
 end
 
-const ϵ = 1e-8
+const ϵ = 1f-8
 
 mutable struct QRMSProp
-  eta::Float64
-  rho::Float64
+  eta::Float32
+  rho::Float32
   acc::IdDict
 end
 
-QRMSProp(η = 0.001, ρ = 0.9) = QRMSProp(η, ρ, IdDict())
+QRMSProp(η = 0.001f0, ρ = 0.9f0) = QRMSProp(η, ρ, IdDict())
 
 function apply!(o::QRMSProp, x, g, O)
   η, ρ = o.eta, o.rho

@@ -35,15 +35,17 @@ end
 function hamiltonianS(x::Vector{Float32},
                       z::Complex{Float32}, ix::Integer)
 
-    out = 1.0f0 + 0.0f0im
+    out = 0f0im
     ixnext = Const.dimB + (ix - Const.dimB) % Const.dimS + 1
     if x[ix] != x[ixnext]
         xflip = x .* flip[ix] .* flip[ixnext]
         zflip = ANN.forward(xflip)
-        out   = 2f0 * exp(zflip - z) - 1f0
+        out  += 2f0 * exp(zflip - z) - 1f0
+    else
+        out += 1f0
     end
 
-    return -Const.J * out / 4f0 + 1f0 / 4f0
+    return -Const.J * out / 4f0
 end
 
 function energyS(x::Vector{Float32})
@@ -68,7 +70,7 @@ function hamiltonianB(x::Vector{Float32},
         out  += exp(zflip - z)
     end
 
-    return -Const.t * out + 1f0
+    return -Const.t * out
 end
 
 function energyB(x::Vector{Float32})
