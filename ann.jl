@@ -94,7 +94,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     oe[end].W += dw * e
 end
 
-opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
+opt(lr::Float32) = ADAM(lr, (0.9f0, 0.999f0))
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
 
