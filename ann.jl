@@ -110,5 +110,3 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
 end
 
 end
-
-end
