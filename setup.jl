@@ -2,7 +2,7 @@ module Const
 
 # System Size
 const dimS = 8
-const dimB = 80
+const dimB = 120
 
 # System Param
 const t = 1.0f0
