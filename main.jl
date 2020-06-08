@@ -56,8 +56,8 @@ function main()
         energyS = 0f0
         energyB = 0f0
         numberB = 0f0
-        lr      = ifelse(iϵ > 0, Const.lr, 0.001f0)
-        it_num  = ifelse(iϵ > 0, Const.it_num, 200)
+        lr      = Const.lr
+        it_num  = Const.it_num
 
         # Learning
         filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
