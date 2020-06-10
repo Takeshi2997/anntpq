@@ -2,7 +2,7 @@ module Const
 
 # System Size
 const dimS = 8
-const dimB = 104
+const dimB = 120
 
 # System Param
 const t = 1.0f0
@@ -22,6 +22,6 @@ const layer = [dimB+dimS, 56, 56, 56, 2]
 const layers_num = length(layer) - 1
 
 # Learning Rate
-const lr = 0.001f0
+const lr = 0.0001f0
 
 end
