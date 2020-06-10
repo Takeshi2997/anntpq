@@ -56,7 +56,7 @@ function main()
         energyS = 0f0
         energyB = 0f0
         numberB = 0f0
-        lr      = Const.lr
+        lr      = ifelse(iϵ > 0, Const.lr, 0.001)
         it_num  = Const.it_num
 
         # Learning
