@@ -57,7 +57,7 @@ function main()
     energyB = 0f0
     numberB = 0f0
     lr      = 0.001f0
-    it_num  = 200
+    it_num  = Const.it_num
 
     # Learning
     filename = dirnameerror * "/error000.txt"
