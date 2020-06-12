@@ -34,6 +34,9 @@ end
 
 function main()
 
+    dirname = "./data"
+    dirnameerror = "./error"
+ 
     iϵinit = 7
     filenameparams = dirname * "/params_at_" * lpad(iϵinit, 3, "0") * ".bson"
     MLcore.Func.ANN.load(filenameparams)
