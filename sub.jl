@@ -35,7 +35,7 @@ end
 function main()
 
     iϵinit = 7
-    filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
+    filenameparams = dirname * "/params_at_" * lpad(iϵinit, 3, "0") * ".bson"
     MLcore.Func.ANN.load(filenameparams)
 
     g = open("error_sub.txt", "w")
