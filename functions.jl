@@ -27,19 +27,21 @@ function update(x::CuArray{Float32, 1})
         xflip = x .* flip[ix]
         zflip = ANN.forward(xflip)
         prob = exp(2.0f0 * real(zflip - z))
-        @inbounds x = ifelse(randamnum[ix] < prob, xflip, x)
+        x = ifelse(randamnum[ix] < prob, xflip, x)
     end
 end
 
 function hamiltonianS(x::CuArray{Float32, 1},
                       z::Complex{Float32}, ix::Integer)
 
-    out = 1.0f0 + 0.0f0im
+    out = 0f0im
     ixnext = Const.dimB + (ix - Const.dimB) % Const.dimS + 1
     if x[ix] != x[ixnext]
         xflip = x .* flip[ix] .* flip[ixnext]
         zflip = ANN.forward(xflip)
-        out   = 2f0 * exp(zflip - z) - 1f0
+        out  += 2f0 * exp(zflip - z) - 1f0
+    else
+        out += 1f0
     end
 
     return -Const.J * out / 4f0
@@ -76,31 +78,6 @@ function energyB(x::CuArray{Float32, 1})
     sum = 0.0f0im
     @simd for iy in 1:Const.dimB 
         sum += hamiltonianB(x, z, iy)
-    end
-
-    return sum
-end
-
-function hamiltonianI(x::CuArray{Float32, 1}, z::Complex{Float32},
-                      ix::Integer, iy::Integer)
-
-    out = 0.0f0im
-    if x[ix] != x[iy]
-        xflip = x .* flip[ix] .* flip[iy]
-        zflip = ANN.forward(xflip)
-        out  += exp(zflip - z)
-    end
-
-    return Const.λ * out
-end
-
-function energyI(x::CuArray{Float32, 1})
-
-    z = ANN.forward(x)
-    sum = 0.0f0im
-    @simd for ixy in CartesianIndices((Const.dimB+1:Const.dimB+Const.dimS, 1:Const.dimB))
-        ix, iy = Tuple(ixy)
-        sum += hamiltonianI(x, z, ix, iy)
     end
 
     return sum
