@@ -16,10 +16,10 @@ oe = Vector{Parameters}(undef, Const.layers_num)
 function initO()
 
     for i in 1:Const.layers_num
-        global o[i]  = Parameters(zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]), 
-                                  zeros(Complex{Float32}, Const.layer[i+1]))
-        global oe[i] = Parameters(zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]), 
-                                  zeros(Complex{Float32}, Const.layer[i+1]))
+        W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
+        b = zeros(Complex{Float32}, Const.layer[i+1])
+        global o[i]  = Parameters(W, b)
+        global oe[i] = Parameters(W, b)
     end
 end
 
