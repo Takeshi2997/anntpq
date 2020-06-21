@@ -1,6 +1,6 @@
 include("./setup.jl")
 include("./ml_core.jl")
-indlude("./legendreTF.jl")
+include("./legendreTF.jl")
 using .Const, .MLcore, .LegendreTF
 using LinearAlgebra, Flux
 
