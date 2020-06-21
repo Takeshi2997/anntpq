@@ -5,7 +5,7 @@ using QuadGK
 
 function f(t)
     
-    fm = x -> -log(cosh((abs(cos(x))/t))) / πf0 * t
+    fm = x -> -log(cosh((abs(cos(x)) / t))) / πf0 * t
     return quadgk(fm, 0f0, πf0)[1]
 end
 

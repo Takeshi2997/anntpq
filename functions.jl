@@ -3,7 +3,6 @@ include("./setup.jl")
 include("./ann.jl")
 using .Const, .ANN, LinearAlgebra, Distributed, Random
 
-
 function makeflip()
 
     flip = Vector{Vector{Float32}}(undef, Const.layer[1])
