@@ -11,7 +11,7 @@ end
 
 function df(t)
 
-    dfm = x -> -log(cosh((1f0 / t * abs(cos(x))))) / πf0 + 
+    dfm = x -> -log(cosh((abs(cos(x)) / t))) / πf0 + 
     tanh((abs(cos(x)) / t)) * abs(cos(x)) / t / πf0
     return quadgk(dfm, 0f0, πf0)[1]
 end
