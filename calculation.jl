@@ -16,7 +16,7 @@ function calculate()
 
         energyS, energyB, numberB = MLcore.calculation_energy()
 
-        β = LegendreTF.translate(energyB)
+        β = LegendreTF.translate(energyB / Const.dimB)
         # Write energy
         write(f, string(β))
         write(f, "\t")

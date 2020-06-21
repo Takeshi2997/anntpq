@@ -5,14 +5,14 @@ using QuadGK
 
 function f(t)
     
-    fm = x -> -log(cosh((1f0 / t * abs(cos(x))))) / πf0 / t
+    fm = x -> -log(cosh((abs(cos(x))/t))) / πf0 * t
     return quadgk(fm, 0f0, πf0)[1]
 end
 
 function df(t)
 
     dfm = x -> -log(cosh((1f0 / t * abs(cos(x))))) / πf0 + 
-    tanh((1f0 / t * abs(cos(x)))) * abs(cos(x)) / t / πf0
+    tanh((abs(cos(x)) / t)) * abs(cos(x)) / t / πf0
     return quadgk(dfm, 0f0, πf0)[1]
 end
 
