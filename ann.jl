@@ -31,10 +31,9 @@ end
 
 function Network()
 
-    func(x::Float32) = softmax(x)
     layer = Vector{Flux.Dense}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layer[i] = Dense(Const.layer[i], Const.layer[i+1], func)
+        layer[i] = Dense(Const.layer[i], Const.layer[i+1], softmax)
     end
     layer[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
