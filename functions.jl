@@ -3,6 +3,18 @@ include("./setup.jl")
 include("./ann.jl")
 using .Const, .ANN, LinearAlgebra, Distributed, Random, CuArrays
 
+function makebase()
+
+    e = Vector{CuArray{Float32, 1}}(undef, Const.layer[1])
+    for i in 1:Const.layer[1]
+        o = zeros(Float32, Const.layer[1])
+        o[i] += 1f0
+        e[i] = CuArray(o)
+    end
+    return e
+end
+
+const base = makebase()
 
 function makeflip()
 
@@ -36,7 +48,9 @@ function hamiltonianS(x::CuArray{Float32, 1},
 
     out = 0f0im
     ixnext = Const.dimB + (ix - Const.dimB) % Const.dimS + 1
-    if x[ix] != x[ixnext]
+    spin = sum(base[ix] .* x)
+    nextspin = sum(base[ixnext] .* x)
+    if spin != nextspin
         xflip = x .* flip[ix] .* flip[ixnext]
         zflip = ANN.forward(xflip)
         out  += 2f0 * exp(zflip - z) - 1f0
@@ -63,7 +77,9 @@ function hamiltonianB(x::CuArray{Float32, 1},
 
     out = 0f0im
     iynext = iy%Const.dimB + 1
-    if x[iy] != x[iynext]
+    spin = sum(base[iy] .* x)
+    nextspin = sum(base[iynext] .* x)
+    if spin != nextspin
         xflip = x .* flip[iy] .* flip[iynext]
         zflip = ANN.forward(xflip)
         out  += exp(zflip - z)

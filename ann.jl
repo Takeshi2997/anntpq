@@ -1,6 +1,6 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote, CuArrays
+using .Const, LinearAlgebra, Flux, Zygote, CuArrays, CUDAnative
 using BSON: @save
 using BSON: @load
 
@@ -68,14 +68,18 @@ function init()
     Flux.loadparams!(network.f, p)
 end
 
+const d = CuArray([1f0, 1f0im])
+const e = CuArray([1f0, 0f0])
+const f = CuArray([0f0, 1f0])
+
 function forward(x::CuArray{Float32, 1})
 
     out = network.f(x)
-    return out[1] + im * out[2]
+    return sum(d .* out)
 end
 
-realloss(x::CuArray{Float32, 1}) = forward(x)[1]
-imagloss(x::CuArray{Float32, 1}) = forward(x)[2]
+realloss(x::CuArray{Float32, 1}) = sum(e .* network.f(x))
+imagloss(x::CuArray{Float32, 1}) = sum(f .* network.f(x))
 
 function backward(x::CuArray{Float32, 1}, e::Complex{Float32})
 
@@ -98,10 +102,10 @@ opt(lr::Float32) = QRMSProp(lr, 0.9)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
 
-    α = 4.0f0 * (energy - ϵ) * [(energy - ϵ)^2 - Const.η^2 > 0.0f0] / Const.iters_num
+    α = 4.0f0 * (energy - ϵ) / Const.iters_num
     for i in 1:Const.layers_num-1
-        ΔW = α .* real.(oe[i].W .- energy * o[i].W)
-        Δb = α .* real.(oe[i].b .- energy * o[i].b)
+        ΔW = α * CUDAnative.real.(oe[i].W .- energy .* o[i].W)
+        Δb = α * CUDAnative.real.(oe[i].b .- energy .* o[i].b)
         update!(opt(lr), network.f[i].W, ΔW, o[i].W)
         update!(opt(lr), network.f[i].b, Δb, o[i].b)
     end

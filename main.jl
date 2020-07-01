@@ -1,6 +1,6 @@
 include("./setup.jl")
 include("./ml_core.jl")
-using .Const, .MLcore, InteractiveUtils
+using .Const, .MLcore, InteractiveUtils, CuArrays
 using Flux
 
 function learning(filename::String, ϵ::Float32, lr::Float32, it_num::Integer)
@@ -112,5 +112,6 @@ function main()
     close(g)
 end
 
+CuArrays.allowscalar(false)
 main()
 
