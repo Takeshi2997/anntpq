@@ -31,7 +31,7 @@ end
 
 function Network()
 
-    func(x::Float32) = tanh(x) + exp(-x^2)
+    func(x::Float32) = tanh(x)
     layer = Vector{Flux.Dense}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
         layer[i] = Dense(Const.layer[i], Const.layer[i+1], func)
