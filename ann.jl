@@ -68,18 +68,14 @@ function init()
     Flux.loadparams!(network.f, p)
 end
 
-const d = CuArray([1f0, 1f0im])
-const e = CuArray([1f0, 0f0])
-const f = CuArray([0f0, 1f0])
-
 function forward(x::CuArray{Float32, 1})
 
     out = network.f(x)
-    return sum(d .* out)
+    return out[1] + im * out[2]
 end
 
-realloss(x::CuArray{Float32, 1}) = sum(e .* network.f(x))
-imagloss(x::CuArray{Float32, 1}) = sum(f .* network.f(x))
+realloss(x::CuArray{Float32, 1}) = network.f(x)[1]
+imagloss(x::CuArray{Float32, 1}) = network.f(x)[2]
 
 function backward(x::CuArray{Float32, 1}, e::Complex{Float32})
 

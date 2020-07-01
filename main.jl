@@ -112,6 +112,5 @@ function main()
     close(g)
 end
 
-CuArrays.allowscalar(false)
 main()
 
