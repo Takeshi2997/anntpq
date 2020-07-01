@@ -74,20 +74,22 @@ function forward(x::CuArray{Float32, 1})
     return out[1] + im * out[2]
 end
 
-loss(x::CuArray{Float32, 1}) = real(forward(x))
+realloss(x::CuArray{Float32, 1}) = forward(x)[1]
+imagloss(x::CuArray{Float32, 1}) = forward(x)[2]
 
 function backward(x::CuArray{Float32, 1}, e::Complex{Float32})
 
-    gs = gradient(() -> loss(x), network.p)
+    realgs = gradient(() -> loss(x), network.p)
+    imaggs = gradient(() -> loss(x), network.p)
     for i in 1:Const.layers_num-1
-        dw = gs[network.f[i].W]
-        db = gs[network.f[i].b]
+        dw = realgs[network.f[i].W] .- im * imaggs[network.f[i].W]
+        db = realgs[network.f[i].b] .- im * imaggs[network.f[i].b]
         o[i].W  += dw
         oe[i].W += dw * e
         o[i].b  += db
         oe[i].b += db * e
     end
-    dw = gs[network.f[end].W]
+    dw = realgs[network.f[end].W] .- im * imaggs[network.f[end].W]
     o[end].W  += dw
     oe[end].W += dw * e
 end
