@@ -97,7 +97,7 @@ opt(lr::Float32) = QRMSProp(lr, 0.9)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
 
-    α = 4.0f0 * (energy - ϵ) * [(energy - ϵ)^2 - Const.η^2 > 0.0f0] / Const.iters_num
+    α = 4.0f0 * (energy - ϵ) / Const.iters_num
     for i in 1:Const.layers_num-1
         ΔW = α .* real.(oe[i].W .- energy * o[i].W)
         Δb = α .* real.(oe[i].b .- energy * o[i].b)
