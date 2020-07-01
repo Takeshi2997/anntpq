@@ -79,8 +79,8 @@ imagloss(x::CuArray{Float32, 1}) = forward(x)[2]
 
 function backward(x::CuArray{Float32, 1}, e::Complex{Float32})
 
-    realgs = gradient(() -> loss(x), network.p)
-    imaggs = gradient(() -> loss(x), network.p)
+    realgs = gradient(() -> realloss(x), network.p)
+    imaggs = gradient(() -> imagloss(x), network.p)
     for i in 1:Const.layers_num-1
         dw = realgs[network.f[i].W] .- im * imaggs[network.f[i].W]
         db = realgs[network.f[i].b] .- im * imaggs[network.f[i].b]
