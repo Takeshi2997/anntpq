@@ -40,7 +40,7 @@ function hamiltonianS(x::CuArray{Float32, 1},
         zflip = ANN.forward(xflip)
         out  += 2f0 * exp(zflip - z) - 1f0
     else
-        out += 1f0
+        out  += 1f0
     end
 
     return -Const.J * out / 4f0
