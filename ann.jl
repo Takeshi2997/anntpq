@@ -6,8 +6,8 @@ using BSON: @load
 
 mutable struct Parameters
 
-    W::Array{Complex{Float32}, 2}
-    b::Array{Complex{Float32}, 1}
+    W::Array
+    b::Array
 end
 
 o  = Vector{Parameters}(undef, Const.layers_num)
