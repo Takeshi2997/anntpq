@@ -1,6 +1,6 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote
+using .Const, LinearAlgebra, Flux, Zygote, BlockDiagonals
 using BSON: @save
 using BSON: @load
 
@@ -60,8 +60,13 @@ end
 function init()
 
     parameters = Vector{Parameters}(undef, Const.layers_num)
-    for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
+    blocks = [randn[Float32, Const.layer[2]-Const.dimS, Const.dimB], 
+              randn[Float32, Const.dimS, Const.dimS]] ./ sqrt(Const.layer[1])
+    W = BlockDiagonal(blocks)
+    b = zeros(Float32, Const.layer[2])
+    parameters[1] = Parameters(W, b)
+    for i in 2:Const.layers_num
+        W = randn(Float32, Const.layer[i+1], Const.layer[i]) ./ sqrt(Const.layer[i])
         b = zeros(Float32, Const.layer[i+1])
         parameters[i] = Parameters(W, b)
     end
