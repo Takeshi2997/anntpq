@@ -60,8 +60,8 @@ end
 function init()
 
     parameters = Vector{Parameters}(undef, Const.layers_num)
-    blocks = [randn[Float32, Const.layer[2]-Const.dimS, Const.dimB], 
-              randn[Float32, Const.dimS, Const.dimS]] ./ sqrt(Const.layer[1])
+    blocks = [randn(Float32, Const.layer[2]-Const.dimS, Const.dimB), 
+              randn(Float32, Const.dimS, Const.dimS)] ./ sqrt(Const.layer[1])
     W = BlockDiagonal(blocks)
     b = zeros(Float32, Const.layer[2])
     parameters[1] = Parameters(W, b)
