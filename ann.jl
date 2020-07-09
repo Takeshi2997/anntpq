@@ -32,7 +32,7 @@ end
 function Network()
 
     func(x::Float32) = tanh(x)
-    layer = Vector{Flux.Dense}(undef, Const.layers_num)
+    layer = Vector{Any}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
         layer[i] = Dense(Const.layer[i], Const.layer[i+1], func)
     end
@@ -60,8 +60,22 @@ end
 function init()
 
     parameters = Vector{Parameters}(undef, Const.layers_num)
-    for i in 1:Const.layers_num
-        W = Flux.glorot_normal(Float32, Const.layer[i+1], Const.layer[i])
+    function makefilter()
+        o = zeros(Float32, Const.layer[1])
+        o[1:16] .+= 1f0
+        filter = zeros(Float32, Const.layer[2], Const.layer[1])
+        for i in 1:Const.layer[2]
+            filter[i, :] .+= circshift(o, 8*(i-1))
+        end
+        
+        return filter
+    end
+    filter = makefilter()
+    W = Flux.glorot_normal(Const.layer[2], Const.layer[1]) .* filter
+    b = zeros(Float32, Const.layer[2])
+    parameters[1] = Parameters(W, b)
+    for i in 2:Const.layers_num
+        W = Flux.glorot_normal(Const.layer[i+1], Const.layer[i])
         b = zeros(Float32, Const.layer[i+1])
         parameters[i] = Parameters(W, b)
     end
