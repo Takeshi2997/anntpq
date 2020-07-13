@@ -47,7 +47,7 @@ function main()
     g = open("error.txt", "w")
 
     # iϵ = 0
-    ϵ = 0.1f0 * Const.t * Const.dimB
+    ϵ = 0.0f0 * Const.t * Const.dimB
     filenameparams = dirname * "/params_at_000.bson"
 
     # Initialize
@@ -56,8 +56,8 @@ function main()
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
-    lr      = 0.001f0
-    it_num  = Const.it_num
+    lr      = -0.001f0
+    it_num  = 1000
 
     # Learning
     filename = dirnameerror * "/error000.txt"

@@ -1,6 +1,6 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote, BlockDiagonals
+using .Const, LinearAlgebra, Flux, Zygote
 using BSON: @save
 using BSON: @load
 
@@ -36,7 +36,9 @@ function Network()
     for i in 1:Const.layers_num-1
         layer[i] = Dense(Const.layer[i], Const.layer[i+1], func)
     end
-    layer[end] = Dense(Const.layer[end-1], Const.layer[end])
+    W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
+    b = zeros(Complex{Float32}, Const.layer[end])
+    layer[end] = Dense(W, b)
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = params(f)
     Network(f, p)
@@ -60,26 +62,29 @@ end
 function init()
 
     parameters = Vector{Parameters}(undef, Const.layers_num)
-    for i in 1:Const.layers_num
+    for i in 1:Const.layers_num-1
         W = Flux.glorot_normal(Const.layer[i+1], Const.layer[i])
         b = zeros(Float32, Const.layer[i+1])
         parameters[i] = Parameters(W, b)
     end
+    W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1]) ./ sqrt(Const.layer[end-1])
+    b = zeros(Complex{Float32}, Const.layer[end])
+    parameters[end] = Parameters(W, b)
     p = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num]...)
     Flux.loadparams!(network.f, p)
 end
 
-function forward(x::Vector{Float32})
+function forward(n::Vector{Float32})
 
-    out = network.f(x)
-    return out[1] + im * out[2]
+    out = network.f(n)
+    return out
 end
 
-loss(x::Vector{Float32}) = real(forward(x))
+loss(s::Vector{Float32}, n::Vector{Float32}) = real(dot(s, forward(n)))
 
-function backward(x::Vector{Float32}, e::Complex{Float32})
+function backward(s::Vector{Float32}, n::Vector{Float32}, e::Complex{Float32})
 
-    gs = gradient(() -> loss(x), network.p)
+    gs = gradient(() -> loss(s, n), network.p)
     for i in 1:Const.layers_num-1
         dw = gs[network.f[i].W]
         db = gs[network.f[i].b]
@@ -95,16 +100,18 @@ end
 
 opt(lr::Float32) = QRMSProp(lr, 0.9)
 
-function update(energy::Float32, ϵ::Float32, lr::Float32)
+function update(energyS::Float32, energyB::Float32, ϵ::Float32, lr::Float32)
 
-    α = 4.0f0 * (energy - ϵ) / Const.iters_num
+    energy = energyS + energyB
+    α = ifelse(lr > 0f0, 4.0f0 * (energy - ϵ), 1f0 * (energyB < 0f0)) / Const.iters_num
     for i in 1:Const.layers_num-1
         ΔW = α .* real.(oe[i].W .- energy * o[i].W)
         Δb = α .* real.(oe[i].b .- energy * o[i].b)
         update!(opt(lr), network.f[i].W, ΔW, o[i].W)
         update!(opt(lr), network.f[i].b, Δb, o[i].b)
     end
-    ΔW = α .* real.(oe[end].W .- energy * o[end].W)
+    ΔW = α .* (oe[end].W .- energy * o[end].W)
+    Δb = α .* (oe[end].b .- energy * o[end].b)
     update!(opt(lr), network.f[end].W, ΔW, o[end].W)
 end
 

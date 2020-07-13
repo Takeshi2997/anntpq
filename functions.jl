@@ -16,30 +16,33 @@ end
 
 const flip = makeflip()
 
-function update(x::Vector{Float32})
+function update(s::Vector{Float32}, n::Vector{Float32})
 
     rng = MersenneTwister(1234)
-    l = length(x)
-    randamnum = rand(rng, Float32, l)
-    for ix in 1:l
-        x₁ = x[ix]
-        z = ANN.forward(x)
-        xflip = x .* flip[ix]
-        zflip = ANN.forward(xflip)
-        prob = exp(2.0f0 * real(zflip - z))
-        @inbounds x[ix] = ifelse(randamnum[ix] < prob, -x₁, x₁)
+    ls = length(s)
+    ln = length(n)
+    randomnum = rand(rng, Float32, ls + ln)
+
+    #Update System
+    prob = exp.(-4f0 .* s .* real.(ANN.forward(n)))
+    s .*= ifelse.(randomnum[1:ls] .< prob, -1f0, 1f0)
+
+    #Update Bath
+    for iy in 1:ln
+        n₁ = n[iy]
+        z = ANN.forward(n)
+        nflip = n .* flip[iy]
+        zflip = ANN.forward(nflip)
+        prob = exp(2f0 * dot(s, real(zflip - z)))
+        @inbounds n[iy] = ifelse(randomnum[ls + iy] < prob, -n₁, n₁)
     end
 end
 
-function hamiltonianS(x::Vector{Float32},
-                      z::Complex{Float32}, ix::Integer)
+function hamiltonianS(s::Vector{Float32}, z::Vector{Complex{Float32}})
 
     out = 0f0im
-    ixnext = Const.dimB + (ix - Const.dimB) % Const.dimS + 1
-    if x[ix] != x[ixnext]
-        xflip = x .* flip[ix] .* flip[ixnext]
-        zflip = ANN.forward(xflip)
-        out  += 2f0 * exp(zflip - z) - 1f0
+    if s[1] != s[2]
+        out  += 2f0 * exp(-2f0 * dot(s, z)) - 1f0
     else
         out += 1f0
     end
@@ -47,37 +50,39 @@ function hamiltonianS(x::Vector{Float32},
     return -Const.J * out / 4f0
 end
 
-function energyS(x::Vector{Float32})
+function energyS(s::Vector{Float32}, n::Vector{Float32})
 
-    z = ANN.forward(x)
+    z = s .* ANN.forward(n)
     sum = 0f0im
-    @simd for ix in Const.dimB+1:Const.dimB+Const.dimS
-        sum += hamiltonianS(x, z, ix)
+    @simd for ix in 1:Const.dimS-1
+        ixnext = ix % Const.dimS + 1
+        sum += hamiltonianS(s[ix:ixnext], z[ix:ixnext])
     end
+    sum += hamiltonianS(s[end:-end+1:1], z[end:-end+1:1])
 
     return sum
 end
 
-function hamiltonianB(x::Vector{Float32},
+function hamiltonianB(s::Vector{Float32}, n::Vector{Float32},
                       z::Complex{Float32}, iy::Integer)
 
     out = 0f0im
     iynext = iy%Const.dimB + 1
-    if x[iy] != x[iynext]
-        xflip = x .* flip[iy] .* flip[iynext]
-        zflip = ANN.forward(xflip)
+    if n[iy] != n[iynext]
+        nflip = n .* flip[iy] .* flip[iynext]
+        zflip = dot(s, ANN.forward(nflip))
         out  += exp(zflip - z)
     end
 
     return -Const.t * out
 end
 
-function energyB(x::Vector{Float32})
+function energyB(s::Vector{Float32}, n::Vector{Float32})
 
-    z = ANN.forward(x)
+    z = dot(s, ANN.forward(n))
     sum = 0.0f0im
     @simd for iy in 1:Const.dimB 
-        sum += hamiltonianB(x, z, iy)
+        sum += hamiltonianB(s, n, z, iy)
     end
 
     return sum
