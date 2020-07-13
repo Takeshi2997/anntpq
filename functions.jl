@@ -52,7 +52,7 @@ end
 
 function energyS(s::Vector{Float32}, n::Vector{Float32})
 
-    z = s .* ANN.forward(n)
+    z = ANN.forward(n)
     sum = 0f0im
     @simd for ix in 1:Const.dimS-1
         ixnext = ix % Const.dimS + 1
