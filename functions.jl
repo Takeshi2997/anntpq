@@ -3,30 +3,18 @@ include("./setup.jl")
 include("./ann.jl")
 using .Const, .ANN, LinearAlgebra, Distributed, Random
 
-function makeflip1()
+function makeflip()
 
-    flip = Vector{Vector{Float32}}(undef, Const.layer1[1])
-    for i in 1:Const.layer1[1]
-        o = ones(Float32, Const.layer1[1])
+    flip = Vector{Vector{Float32}}(undef, Const.layer[1])
+    for i in 1:Const.layer[1]
+        o = ones(Float32, Const.layer[1])
         o[i] *= -1f0
         flip[i] = o
     end
     return flip
 end
 
-function makeflip2()
-
-    flip = Vector{Vector{Float32}}(undef, Const.layer2[1])
-    for i in 1:Const.layer2[1]
-        o = ones(Float32, Const.layer2[1])
-        o[i] *= -1f0
-        flip[i] = o
-    end
-    return flip
-end
-
-const flip1 = makeflip1()
-const flip2 = makeflip2()
+const flip = makeflip()
 
 function update(s::Vector{Float32}, n::Vector{Float32})
 
@@ -36,38 +24,25 @@ function update(s::Vector{Float32}, n::Vector{Float32})
     randomnum = rand(rng, Float32, ls + ln)
 
     #Update System
-    zB = ANN.forward1(n)
-    for ix in 1:ls
-        s₁ = s[ix]
-        z = ANN.forward2(s)
-        sflip = s .* flip2[ix]
-        zflip = ANN.forward2(sflip)
-        prob = exp(2f0 * real(transpose(zflip - z) * zB))
-        @inbounds s[ix] = ifelse(randomnum[ix] < prob, -s₁, s₁)
-    end
+    prob = exp.(-4f0 .* s .* real.(ANN.forward(n)))
+    s .*= ifelse.(randomnum[1:ls] .< prob, -1f0, 1f0)
 
     #Update Bath
-    zS = ANN.forward2(s)
     for iy in 1:ln
         n₁ = n[iy]
-        z = ANN.forward1(n)
-        nflip = n .* flip1[iy]
-        zflip = ANN.forward1(nflip)
-        prob = exp(2f0 * real(transpose(zS) * (zflip - z)))
+        z = ANN.forward(n)
+        nflip = n .* flip[iy]
+        zflip = ANN.forward(nflip)
+        prob = exp(2f0 * real(transpose(s) * (zflip - z)))
         @inbounds n[iy] = ifelse(randomnum[ls + iy] < prob, -n₁, n₁)
     end
 end
 
-function hamiltonianS(s::Vector{Float32}, zS::Vector{Complex{Float32}},
-                      zB::Vector{Complex{Float32}}, ix::Integer)
+function hamiltonianS(s::Vector{Float32}, z::Vector{Complex{Float32}})
 
     out = 0f0im
-    ixnext = ix%Const.dimS + 1
-    if s[ix] != s[ixnext]
-        sflip = s .* flip2[ix] .* flip2[ixnext]
-        z     = transpose(zS) * zB
-        zflip = transpose(ANN.forward2(sflip)) * zB
-        out  += 2f0 * exp(zflip - z) - 1f0
+    if s[1] != s[2]
+        out  += 2f0 * exp(-2f0 * transpose(s) * z) - 1f0
     else
         out += 1f0
     end
@@ -77,25 +52,24 @@ end
 
 function energyS(s::Vector{Float32}, n::Vector{Float32})
 
-    zB = ANN.forward1(n)
-    zS = ANN.forward2(s)
+    z = ANN.forward(n)
     sum = 0f0im
-    @simd for ix in 1:Const.dimS
-        sum += hamiltonianS(s, zS, zB, ix)
+    @simd for ix in 1:Const.dimS-1
+        sum += hamiltonianS(s[ix:ix+1], z[ix:ix+1])
     end
-
+    sum += hamiltonianS(s[end:1-end:1], z[end:1-end:1])
+ 
     return sum
 end
 
-function hamiltonianB(n::Vector{Float32}, zS::Vector{Complex{Float32}},
-                      zB::Vector{Complex{Float32}}, iy::Integer)
+function hamiltonianB(s::Vector{Float32}, n::Vector{Float32},
+                      z::Complex{Float32}, iy::Integer)
 
     out = 0f0im
     iynext = iy%Const.dimB + 1
     if n[iy] != n[iynext]
-        nflip = n .* flip1[iy] .* flip1[iynext]
-        z     = transpose(zS) * zB
-        zflip = transpose(zS) * ANN.forward1(nflip)
+        nflip = n .* flip[iy] .* flip[iynext]
+        zflip = transpose(s) * ANN.forward(nflip)
         out  += exp(zflip - z)
     end
 
@@ -104,11 +78,10 @@ end
 
 function energyB(s::Vector{Float32}, n::Vector{Float32})
 
-    zB = ANN.forward1(n)
-    zS = ANN.forward2(s)
+    z = transpose(s) * ANN.forward(n)
     sum = 0.0f0im
-    @simd for iy in 1:Const.dimB 
-        sum += hamiltonianB(n, zS, zB, iy)
+    @simd for iy in 1:Const.dimB
+        sum += hamiltonianB(s, n, z, iy)
     end
 
     return sum
