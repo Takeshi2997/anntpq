@@ -83,8 +83,8 @@ function load(filename)
     @load filename f g
     p = params(f)
     q = params(g)
-    flux.loadparams!(network.f, p)
-    flux.loadparams!(network.g, q)
+    Flux.loadparams!(network.f, p)
+    Flux.loadparams!(network.g, q)
 end
 
 function init()
