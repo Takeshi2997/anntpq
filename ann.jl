@@ -178,7 +178,6 @@ function update(energyS::Float32, energyB::Float32, ϵ::Float32, lr::Float32)
         update!(opt(lr), network.f[i].b, Δb, o1[i].b)
     end
     ΔW = α .* (o1e[end].W .- energy * o1[end].W)
-    Δb = α .* (o1e[end].b .- energy * o1[end].b)
     update!(opt(lr), network.f[end].W, ΔW, o1[end].W)
 
     # Newtork2 Update
@@ -189,7 +188,6 @@ function update(energyS::Float32, energyB::Float32, ϵ::Float32, lr::Float32)
         update!(opt(lr), network.g[i].b, Δb, o2[i].b)
     end
     ΔW = α .* (o2e[end].W .- energy * o2[end].W)
-    Δb = α .* (o2e[end].b .- energy * o2[end].b)
     update!(opt(lr), network.g[end].W, ΔW, o2[end].W)
 end
 
