@@ -42,7 +42,7 @@ function update(s::Vector{Float32}, n::Vector{Float32})
         z = ANN.forward2(s)
         sflip = s .* flip2[ix]
         zflip = ANN.forward2(sflip)
-        prob = exp(2f0 * real(dot((zflip - z), zB)))
+        prob = exp(2f0 * real(transpose(zflip - z) * zB))
         @inbounds s[ix] = ifelse(randomnum[ix] < prob, -s₁, s₁)
     end
 
@@ -53,7 +53,7 @@ function update(s::Vector{Float32}, n::Vector{Float32})
         z = ANN.forward1(n)
         nflip = n .* flip1[iy]
         zflip = ANN.forward1(nflip)
-        prob = exp(2f0 * real(dot(zS, (zflip - z))))
+        prob = exp(2f0 * real(transpose(zS) * (zflip - z)))
         @inbounds n[iy] = ifelse(randomnum[ls + iy] < prob, -n₁, n₁)
     end
 end
@@ -65,8 +65,8 @@ function hamiltonianS(s::Vector{Float32}, zS::Vector{Complex{Float32}},
     ixnext = ix%Const.dimS + 1
     if s[ix] != s[ixnext]
         sflip = s .* flip2[ix] .* flip2[ixnext]
-        z     = dot(zS, zB)
-        zflip = dot(ANN.forward2(sflip), zB)
+        z     = transpose(zS) * zB
+        zflip = transpose(ANN.forward2(sflip)) * zB
         out  += 2f0 * exp(zflip - z) - 1f0
     else
         out += 1f0
@@ -94,8 +94,8 @@ function hamiltonianB(n::Vector{Float32}, zS::Vector{Complex{Float32}},
     iynext = iy%Const.dimB + 1
     if n[iy] != n[iynext]
         nflip = n .* flip1[iy] .* flip1[iynext]
-        z     = dot(zS, zB)
-        zflip = dot(zS, ANN.forward1(nflip))
+        z     = transpose(zS) * zB
+        zflip = transpose(zS) * ANN.forward1(nflip)
         out  += exp(zflip - z)
     end
 

@@ -24,10 +24,10 @@ function sampling(ϵ::Float32, lr::Float32)
         eS = Func.energyS(s, n)
         eB = Func.energyB(s, n)
         e  = eS + eB
-        energy    += e
-        energyS   += eS
-        energyB   += eB
-        numberB   += sum(n)
+        energy  += e
+        energyS += eS
+        energyB += eB
+        numberB += sum(n)
 
         Func.ANN.backward(s, n, e)
     end
@@ -61,10 +61,10 @@ function calculation_energy()
         eS = Func.energyS(s, n)
         eB = Func.energyB(s, n)
         e  = eS + eB
-        energy    += e
-        energyS   += eS
-        energyB   += eB
-        numberB   += sum(n)
+        energy  += e
+        energyS += eS
+        energyB += eB
+        numberB += sum(n)
     end
     energy   = real(energy)  / Const.num
     energyS  = real(energyS) / Const.num

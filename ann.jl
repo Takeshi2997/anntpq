@@ -130,7 +130,7 @@ function forward2(s::Vector{Float32})
     return out
 end
 
-loss(s::Vector{Float32}, n::Vector{Float32}) = real(dot(forward2(s), forward1(n)))
+loss(s::Vector{Float32}, n::Vector{Float32}) = real(transpose(forward2(s)) * forward1(n))
 
 function backward(s::Vector{Float32}, n::Vector{Float32}, e::Complex{Float32})
 
