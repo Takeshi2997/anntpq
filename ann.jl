@@ -31,8 +31,7 @@ end
 
 function Network()
 
-    func(x::Float32) = x + tanh(x)
-    funcoutput(x::Complex{Float32}) = x + log(cosh(x))
+    func(x::Float32) = tanh(x)
     # layers Def
     layer = Vector{Any}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
@@ -40,7 +39,7 @@ function Network()
     end
     W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b = zeros(Complex{Float32}, Const.layer[end])
-    layer[end] = Dense(W, b, funcoutput)
+    layer[end] = Dense(W, b)
 
     # Network Def
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
