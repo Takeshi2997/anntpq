@@ -34,11 +34,13 @@ function Network()
     func(x::Complex{Float32}) = x + log(cosh(x))
     layer = Vector{Flux.Dense}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layer[i] = Dense(Const.layer[i], Const.layer[i+1], func)
+        W = randn(Complex{Float32}, Const.layer[i+1], Const.layer[i])
+        b = zeros(Complex{Float32}, Const.layer[i+1])
+        layer[i] = Dense(W, b, func)
     end
     W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
-    b = randn(Complex{Float32}, Const.layer[end])
-    layer[end] = Dense(W, b, func)
+    b = zeros(Complex{Float32}, Const.layer[end])
+    layer[end] = Dense(W, b)
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = params(f)
     Network(f, p)
@@ -63,12 +65,12 @@ function init()
 
     parameters = Vector{Parameters}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        W = Flux.glorot_normal(Const.layer[i+1], Const.layer[i])
-        b = zeros(Float32, Const.layer[i+1])
+        W = randn(Complex{Float32}, Const.layer[i+1], Const.layer[i]) / sqrt(Const.layer[i])
+        b = zeros(Complex{Float32}, Const.layer[i+1])
         parameters[i] = Parameters(W, b)
     end
     W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1]) / sqrt(Const.layer[end-1])
-    b = randn(Complex{Float32}, Const.layer[end])
+    b = zeros(Complex{Float32}, Const.layer[end])
     parameters[end] = Parameters(W, b)
     p = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num]...)
     Flux.loadparams!(network.f, p)
@@ -94,11 +96,8 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
         oe[i].b += db * e
     end
     dw = gs[network.f[end].W]
-    db = gs[network.f[end].b]
     o[end].W  += dw
     oe[end].W += dw * e
-    o[end].b  += db
-    oe[end].b += db * e
 end
 
 opt(lr::Float32) = QRMSProp(lr, 0.9)
@@ -114,9 +113,7 @@ function update(energyS::Float32, energyB::Float32, ϵ::Float32, lr::Float32)
         update!(opt(lr), network.f[i].b, Δb, o[i].b)
     end
     ΔW = α .* oe[end].W .- energy * o[end].W
-    Δb = α .* oe[end].b .- energy * o[end].b
     update!(opt(lr), network.f[end].W, ΔW, o[end].W)
-    update!(opt(lr), network.f[end].b, Δb, o[end].b)
 end
 
 const ϵ = 1f-8
