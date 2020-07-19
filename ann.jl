@@ -33,7 +33,7 @@ function Network()
 
     layer = Vector{Flux.Dense}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layer[i] = Dense(Const.layer[i+1], Const.layer[i], tanh)
+        layer[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
     end
     W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b = zeros(Complex{Float32}, Const.layer[end])
