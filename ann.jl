@@ -62,8 +62,8 @@ function init()
 
     parameters = Vector{Parameters}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        W = randn(Complex{Float32}, Const.layer[i+1], Const.layer[i]) / sqrt(Const.layer[i])
-        b = zeros(Complex{Float32}, Const.layer[i+1])
+        W = Flux.glorot_normal(Const.layer[i+1], Const.layer[i])
+        b = zeros(Float32, Const.layer[i+1])
         parameters[i] = Parameters(W, b)
     end
     W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1]) / sqrt(Const.layer[end-1])
