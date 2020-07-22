@@ -76,7 +76,7 @@ end
 function forward(x::Vector{Float32})
 
     out = network.f(x)
-    return sum(out)
+    return dot(x, out)
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
@@ -93,8 +93,11 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
         oe[i].b += db * e
     end
     dw = gs[network.f[end].W]
+    db = gs[network.f[end].b]
     o[end].W  += dw
     oe[end].W += dw * e
+    o[end].b  += db
+    oe[end].b += db * e
 end
 
 opt(lr::Float32) = QRMSProp(lr, 0.9)
@@ -110,7 +113,9 @@ function update(energyS::Float32, energyB::Float32, ϵ::Float32, lr::Float32)
         update!(opt(lr), network.f[i].b, Δb, o[i].b)
     end
     ΔW = α .* (oe[end].W .- energy * o[end].W)
+    Δb = α .* (oe[end].b .- energy * o[end].b)
     update!(opt(lr), network.f[end].W, ΔW, o[end].W)
+    update!(opt(lr), network.f[end].b, Δb, o[end].b)
 end
 
 const ϵ = 1f-8
