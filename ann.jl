@@ -92,14 +92,15 @@ end
 
 opt(lr::Float32) = QRMSProp(lr, 0.9)
 
-function update(energyS::Float32, energyB::Float32, ϵ::Float32, lr::Float32)
+function update(energy::Float32, ϵ::Float32, lr::Float32)
 
-    energy = energyS + energyB
-    α = ifelse(lr > 0f0, 4.0f0 * (energy - ϵ), 1f0 * (energyB < 0f0)) / Const.iters_num
+    α = 4.0f0 * (energy - ϵ) / Const.iters_num
     ΔW = α .* (oe.W .- energy * o.W)
     Δb = α .* (oe.b .- energy * o.b)
+    Δa = α .* (oe.a .- energy * o.a)
     update!(opt(lr), network.W, ΔW, o.W)
     update!(opt(lr), network.b, Δb, o.b)
+    update!(opt(lr), network.a, Δa, o.a)
 end
 
 const ϵ = 1f-8
