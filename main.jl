@@ -48,7 +48,7 @@ function main()
 
     # iϵ = 0
     ϵ = 0.0f0 * Const.t * Const.dimB
-    filenameparams = dirname * "/params_at_000.bson"
+    filenameparams = dirname * "/params_at_000.dat"
 
     # Initialize
     error   = 0f0
@@ -80,7 +80,7 @@ function main()
     for iϵ in 1:Const.iϵmax
 
         ϵ = -0.5f0 * iϵ / Const.iϵmax * Const.t * Const.dimB
-        filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
+        filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".dat"
 
         # Initialize
         error   = 0f0

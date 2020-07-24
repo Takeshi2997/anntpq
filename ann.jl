@@ -26,7 +26,6 @@ mutable struct Network
     W::Array{Complex{Float32}, 2}
     b::Array{Complex{Float32}, 1}
     a::Array{Complex{Float32}, 1}
-    p::Zygote.Params
 end
 
 function Network()
@@ -34,8 +33,7 @@ function Network()
     W = randn(Complex{Float32}, Const.layer[2], Const.layer[1])
     b = randn(Complex{Float32}, Const.layer[2])
     a = randn(Complex{Float32}, Const.layer[1])
-    p = params(W, b, a)
-    Network(W, b, a, p)
+    Network(W, b, a)
 end
 
 (m::Network)(x::Vector{Float32}) = sum(log.(cosh.(m.W * x .+ m.b))) + transpose(m.a) * x
@@ -53,7 +51,6 @@ function load(filename)
     setfield!(network, :W, m.W)
     setfield!(network, :b, m.b)
     setfield!(network, :a, m.a)
-    setfield!(network, :p, m.p)
 end
 
 function init()
@@ -61,11 +58,9 @@ function init()
     W = randn(Complex{Float32}, Const.layer[2], Const.layer[1]) / sqrt(Float32(Const.layer[1]))
     b = zeros(Complex{Float32}, Const.layer[2])
     a = randn(Complex{Float32}, Const.layer[1])
-    p = params(W, b, a)
     setfield!(network, :W, W)
     setfield!(network, :b, b)
     setfield!(network, :a, a)
-    setfield!(network, :p, p)
 end
 
 function forward(x::Vector{Float32})
@@ -74,16 +69,14 @@ function forward(x::Vector{Float32})
     return out
 end
 
-loss(x::Vector{Float32}) = real(forward(x))
-
 function backward(x::Vector{Float32}, e::Complex{Float32})
 
-    gs = gradient(() -> loss(x), network.p)
-    dw = gs[network.W]
-    db = gs[network.b]
-    da = gs[network.a]
-    o.W  += dw
-    oe.W += dw * e
+    v  = tanh.(network.W * x .+ network.b)
+    dW = transpose(x) .* v
+    db = v
+    da = x
+    o.W  += dW
+    oe.W += dW * e
     o.b  += db
     oe.b += db * e
     o.a  += da
