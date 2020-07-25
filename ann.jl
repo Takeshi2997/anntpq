@@ -55,7 +55,7 @@ end
 
 function init()
 
-    W = randn(Complex{Float32}, Const.layer[2], Const.layer[1]) / sqrt(Float32(Const.layer[1]))
+    W = randn(Complex{Float32}, Const.layer[2], Const.layer[1])
     b = zeros(Complex{Float32}, Const.layer[2])
     a = randn(Complex{Float32}, Const.layer[1])
     setfield!(network, :W, W)
