@@ -36,7 +36,7 @@ function sampling(ϵ::Float32, lr::Float32)
     numberB /= Const.iters_num
     error    = (energy - ϵ)^2
 
-    Func.ANN.update(energy, ϵ, lr)
+    Func.ANN.update(energyS, energyB, ϵ, lr)
 
     return error, energyS, energyB, numberB
 end
