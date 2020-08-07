@@ -31,7 +31,7 @@ function initO()
     end
     W = zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b = zeros(Complex{Float32}, Const.layer[end])
-    a = zeros(Complex{Float32}, Const.layer[end])
+    a = zeros(Complex{Float32}, Const.layer[1])
     global o[end]  = Outputparams(W, b, a)
     global oe[end] = Outputparams(W, b, a)
 end
@@ -66,7 +66,7 @@ function Network()
     end
     W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b = zeros(Complex{Float32}, Const.layer[end])
-    a = randn(Complex{Float32}, Const.layer[end])
+    a = randn(Complex{Float32}, Const.layer[1])
     layer[end] = Output(W, b, a, logcosh)
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = params(f)
@@ -98,7 +98,7 @@ function init()
     end
     W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b = zeros(Complex{Float32}, Const.layer[end])
-    a = randn(Complex{Float32}, Const.layer[end])
+    a = randn(Complex{Float32}, Const.layer[1])
     parameters[end] = Outputparams(W, b, a)
     paramset = [param for param in parameters]
     p = params(paramset...)
