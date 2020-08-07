@@ -92,15 +92,13 @@ function init()
 
     parameters = Vector{Any}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        W = Flux.glorot_normal(Const.layer[i+1], Const.layer[i])
+        W = randn(Complex{Float32}, Const.layer[i+1], Const.layer[i])
         b = zeros(Float32, Const.layer[i+1])
         parameters[i] = Parameters(W, b)
     end
-    W = Flux.glorot_normal(Const.layer[end], Const.layer[end-1]) * 
-    exp.(im * π * rand(Float32, Const.layer[end], Const.layer[end-1]))
+    W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b = zeros(Complex{Float32}, Const.layer[end])
-    a = Flux.glorot_normal(Const.layer[end], Const.layer[end-1]) * 
-    exp.(im * π * rand(Float32, Const.layer[end], Const.layer[end-1]))
+    a = randn(Complex{Float32}, Const.layer[end])
     parameters[end] = Outputparams(W, b, a)
     paramset = [param for param in parameters]
     p = params(paramset...)
