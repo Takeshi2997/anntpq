@@ -146,9 +146,9 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         update!(opt(lr), network.f[i].W, ΔW, o[i].W)
         update!(opt(lr), network.f[i].b, Δb, o[i].b)
     end
-    ΔW = α .* oe[end].W .- energy * o[end].W
-    Δb = α .* oe[end].b .- energy * o[end].b
-    Δa = α .* oe[end].a .- energy * o[end].a
+    ΔW = α .* (oe[end].W .- energy * o[end].W)
+    Δb = α .* (oe[end].b .- energy * o[end].b)
+    Δa = α .* (oe[end].a .- energy * o[end].a)
     update!(opt(lr), network.f[end].W, ΔW, o[end].W)
     update!(opt(lr), network.f[end].b, Δb, o[end].b)
     update!(opt(lr), network.f[end].a, Δa, o[end].a)
