@@ -119,20 +119,20 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     for i in 1:Const.layers_num-1
         dw = gs[network.f[i].W]
         db = gs[network.f[i].b]
-        o[i].W  += dw
-        oe[i].W += dw * e
-        o[i].b  += db
-        oe[i].b += db * e
+        o[i].W  += conj.(dw)
+        oe[i].W += conj.(dw) * e
+        o[i].b  += conj.(db)
+        oe[i].b += conj.(db) * e
     end
     dw = gs[network.f[end].W]
     db = gs[network.f[end].b]
     da = gs[network.f[end].a]
-    o[end].W  += dw
-    oe[end].W += dw * e
-    o[end].b  += db
-    oe[end].b += db * e
-    o[end].a  += da
-    oe[end].a += da * e
+    o[end].W  += conj.(dw)
+    oe[end].W += conj.(dw) * e
+    o[end].b  += conj.(db)
+    oe[end].b += conj.(db) * e
+    o[end].a  += conj.(da)
+    oe[end].a += conj.(da) * e
 end
 
 opt(lr::Float32) = QRMSProp(lr, 0.9)
