@@ -62,7 +62,7 @@ function Network()
 
     layer = Vector{Any}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layer[i] = Dense(Const.layer[i], Const.layer[i+1], logcosh)
+        layer[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
     end
     W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b = zeros(Complex{Float32}, Const.layer[end])
@@ -92,11 +92,11 @@ function init()
 
     parameters = Vector{Any}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        W = randn(Complex{Float32}, Const.layer[i+1], Const.layer[i])
+        W = randn(Complex{Float32}, Const.layer[i+1], Const.layer[i]) / Float32(sqrt(Const.layer[i]))
         b = zeros(Float32, Const.layer[i+1])
         parameters[i] = Parameters(W, b)
     end
-    W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
+    W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1]) / Float32(sqrt(Const.layer[end-1]))
     b = zeros(Complex{Float32}, Const.layer[end])
     a = randn(Complex{Float32}, Const.layer[1])
     parameters[end] = Outputparams(W, b, a)
