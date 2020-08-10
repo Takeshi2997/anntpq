@@ -90,16 +90,15 @@ end
 
 function init()
 
-    parameters = Vector{Any}(undef, Const.layers_num)
+    parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        W = randn(Complex{Float32}, Const.layer[i+1], Const.layer[i]) / Float32(sqrt(Const.layer[i]))
+        W = randn(Float32, Const.layer[i+1], Const.layer[i]) ./ Float32(sqrt(Const.layer[i]))
         b = zeros(Float32, Const.layer[i+1])
-        parameters[i] = Parameters(W, b)
+        parameters[i] = [W, b]
     end
-    W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1]) / Float32(sqrt(Const.layer[end-1]))
+    W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1]) ./ Float32(sqrt(Const.layer[end-1]))
     b = zeros(Complex{Float32}, Const.layer[end])
     a = randn(Complex{Float32}, Const.layer[1])
-    parameters[end] = Outputparams(W, b, a)
     paramset = [param for param in parameters]
     p = params(paramset...)
     Flux.loadparams!(network.f, p)
