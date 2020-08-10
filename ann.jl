@@ -99,6 +99,7 @@ function init()
     W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1]) ./ Float32(sqrt(Const.layer[end-1]))
     b = zeros(Complex{Float32}, Const.layer[end])
     a = randn(Complex{Float32}, Const.layer[1])
+    parameters[end] = [W, b, a]
     paramset = [param for param in parameters]
     p = params(paramset...)
     Flux.loadparams!(network.f, p)
