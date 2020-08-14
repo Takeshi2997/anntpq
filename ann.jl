@@ -2,6 +2,7 @@ module ANN
 include("./setup.jl")
 using .Const, LinearAlgebra, Flux, Zygote, BlockDiagonals
 using Flux: @functor
+using Flux.Optimise: update!
 using BSON: @save
 using BSON: @load
 
@@ -135,7 +136,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     oe[end].a += da * e
 end
 
-opt(lr::Float32) = QRMSProp(lr, 0.9)
+opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
 
@@ -143,43 +144,15 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     for i in 1:Const.layers_num-1
         ΔW = α .* 2f0 .* real.(oe[i].W .- energy * o[i].W)
         Δb = α .* 2f0 .* real.(oe[i].b .- energy * o[i].b)
-        update!(opt(lr), network.f[i].W, ΔW, o[i].W)
-        update!(opt(lr), network.f[i].b, Δb, o[i].b)
+        update!(opt(lr), network.f[i].W, ΔW)
+        update!(opt(lr), network.f[i].b, Δb)
     end
     ΔW = α .* (oe[end].W .- energy * o[end].W)
     Δb = α .* (oe[end].b .- energy * o[end].b)
     Δa = α .* (oe[end].a .- energy * o[end].a)
-    update!(opt(lr), network.f[end].W, ΔW, o[end].W)
-    update!(opt(lr), network.f[end].b, Δb, o[end].b)
-    update!(opt(lr), network.f[end].a, Δa, o[end].a)
-end
-
-const ϵ = 1f-8
-
-mutable struct QRMSProp
-  eta::Float32
-  rho::Float32
-  acc::IdDict
-end
-
-QRMSProp(η = 0.001f0, ρ = 0.9f0) = QRMSProp(η, ρ, IdDict())
-
-function apply!(o::QRMSProp, x, g, O)
-  η, ρ = o.eta, o.rho
-  acc = get!(o.acc, x, zero(x))::typeof(x)
-  @. acc = ρ * acc + (1 - ρ) * abs2(O)
-  @. g *= η / (√acc + ϵ)
-end
-
-function update!(opt, x, x̄, x̂)
-  x .-= apply!(opt, x, x̄, x̂)
-end
-
-function update!(opt, xs::Params, gs, o)
-  for x in xs
-    gs[x] == nothing && continue
-    update!(opt, x, gs[x], o)
-  end
+    update!(opt(lr), network.f[end].W, ΔW)
+    update!(opt(lr), network.f[end].b, Δb)
+    update!(opt(lr), network.f[end].a, Δa)
 end
 
 end
