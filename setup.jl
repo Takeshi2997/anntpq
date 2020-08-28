@@ -7,7 +7,6 @@ const dimB = 120
 # System Param
 const t = 1.0f0
 const J = 1.0f0
-const λ = 0.001f0
 
 # Repeat Number
 const burnintime = 10
@@ -21,6 +20,6 @@ const layer = [dimB+dimS, 32, 32, 32]
 const layers_num = length(layer) - 1
 
 # Learning Rate
-const lr = 0.001f0
+const lr = 0.0001f0
 
 end
