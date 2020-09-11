@@ -1,6 +1,8 @@
 module ANN
 include("./setup.jl")
 using .Const, LinearAlgebra, Flux, Zygote, BlockDiagonals
+using Flux: @functor
+using Flux.Optimise: update!
 using BSON: @save
 using BSON: @load
 
@@ -10,8 +12,8 @@ mutable struct Parameters
     b::Array
 end
 
-o  = Vector{Parameters}(undef, Const.layers_num)
-oe = Vector{Parameters}(undef, Const.layers_num)
+o  = Vector{Any}(undef, Const.layers_num)
+oe = Vector{Any}(undef, Const.layers_num)
 
 function initO()
 
@@ -29,12 +31,31 @@ mutable struct Network
     p::Zygote.Params
 end
 
+struct Res{F,S<:AbstractArray,T<:AbstractArray}
+    W::S
+    b::T
+    σ::F
+end
+
+function Res(in::Integer, out::Integer, σ = identity;
+             initW = Flux.glorot_uniform, initb = zeros)
+  return Res(initW(out, in), initb(Float32, out), σ)
+end
+
+@functor Res
+
+function (m::Res)(x::AbstractArray)
+    W, b, σ = m.W, m.b, m.σ
+    x .+ σ.(W*x.+b)
+end
+
+NNlib.logcosh(x::Complex{Float32}) = log(cosh(x))
+
 function Network()
 
-    func(x::Float32) = tanh(x)
-    layer = Vector{Flux.Dense}(undef, Const.layers_num)
+    layer = Vector{Any}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layer[i] = Dense(Const.layer[i], Const.layer[i+1], func)
+        layer[i] = Res(Const.layer[i], Const.layer[i+1], tanh)
     end
     layer[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
@@ -59,13 +80,14 @@ end
 
 function init()
 
-    parameters = Vector{Parameters}(undef, Const.layers_num)
+    parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.glorot_normal(Const.layer[i+1], Const.layer[i])
+        W = randn(Float32, Const.layer[i+1], Const.layer[i]) ./ Float32(sqrt(Const.layer[i]))
         b = zeros(Float32, Const.layer[i+1])
-        parameters[i] = Parameters(W, b)
+        parameters[i] = [W, b]
     end
-    p = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num]...)
+    paramset = [param for param in parameters]
+    p = params(paramset...)
     Flux.loadparams!(network.f, p)
 end
 
@@ -93,49 +115,20 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     oe[end].W += dw * e
 end
 
-opt(lr::Float32) = QRMSProp(lr, 0.9)
-
-η = 0.05f0
+opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
 
-    α = (1f0 * (energy - ϵ > η) - 1f0 * (energy - ϵ < -η)) / Const.iters_num
+    x = (energy - ϵ)
+    α = 2f0 * x / Const.iters_num
     for i in 1:Const.layers_num-1
-        ΔW = α .* real.(oe[i].W .- energy * o[i].W)
-        Δb = α .* real.(oe[i].b .- energy * o[i].b)
-        update!(opt(lr), network.f[i].W, ΔW, o[i].W)
-        update!(opt(lr), network.f[i].b, Δb, o[i].b)
+        ΔW = α .* 2f0 .* real.(oe[i].W .- energy * o[i].W)
+        Δb = α .* 2f0 .* real.(oe[i].b .- energy * o[i].b)
+        update!(opt(lr), network.f[i].W, ΔW)
+        update!(opt(lr), network.f[i].b, Δb)
     end
-    ΔW = α .* real.(oe[end].W .- energy * o[end].W)
-    update!(opt(lr), network.f[end].W, ΔW, o[end].W)
-end
-
-const ϵ = 1f-8
-
-mutable struct QRMSProp
-  eta::Float32
-  rho::Float32
-  acc::IdDict
-end
-
-QRMSProp(η = 0.001f0, ρ = 0.9f0) = QRMSProp(η, ρ, IdDict())
-
-function apply!(o::QRMSProp, x, g, O)
-  η, ρ = o.eta, o.rho
-  acc = get!(o.acc, x, zero(x))::typeof(x)
-  @. acc = ρ * acc + (1 - ρ) * abs2(O)
-  @. g *= η / (√acc + ϵ)
-end
-
-function update!(opt, x, x̄, x̂)
-  x .-= apply!(opt, x, x̄, x̂)
-end
-
-function update!(opt, xs::Params, gs, o)
-  for x in xs
-    gs[x] == nothing && continue
-    update!(opt, x, gs[x], o)
-  end
+    ΔW = α .* 2f0 * real(oe[end].W .- energy * o[end].W)
+    update!(opt(lr), network.f[end].W, ΔW)
 end
 
 end

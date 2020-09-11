@@ -13,4 +13,4 @@ calc: $(BASE) $(CORE) $(CALC)
 
 clean:
 	-rm -f *.txt *.png *.dat nohup.out
-	-rm -rf data error datainit errorinit
+	-rm -rf data error
