@@ -1,12 +1,15 @@
 include("./setup.jl")
 using .Const, LinearAlgebra, InteractiveUtils, Distributed
 
-
-B = [1  0  0  0
-     0 -1  2  0
-     0  2 -1  0
-     0  0  0  1]
-for ix in Const.dimB+1:Const.dimB+Const.dimS
-    ixnext = Const.dimB + (ix - Const.dimB) % Const.dimS + 1
-    println(ix, "\t", ixnext)
+x = rand([1f0, -1f0], 88)
+l = length(x)
+y = zeros(Float32, l)
+for ix in 1:l
+    for iy in 1:l
+        ix′    = (ix + iy - 1) % l + 1
+        y[ix] += x[ix′] * x[iy]
+        println(ix′)
+    end
+    exit()
 end
+ 

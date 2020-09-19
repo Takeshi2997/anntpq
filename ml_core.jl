@@ -1,7 +1,7 @@
 module MLcore
 include("./setup.jl")
 include("./functions.jl")
-using .Const, .Func, Distributed
+using .Const, .Func
 
 function sampling(ϵ::Float32, lr::Float32)
 
