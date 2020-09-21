@@ -49,36 +49,13 @@ function (m::Res)(x::AbstractArray)
     x .+ σ.(W*x.+b)
 end
 
-struct Output{F,S<:AbstractArray,T<:AbstractArray}
-    W::S
-    b::T
-    σ::F
-end
-
-function Output(in::Integer, out::Integer, σ = identity;
-                initW = Flux.glorot_uniform, initb = zeros)
-  return Output(initW(out, in), initb(Float32, out), σ)
-end
-
-@functor Output
-
-function (m::Output)(x::AbstractArray)
-    W, b, σ = m.W, m.b, m.σ
-    x′ = Diagonal(x)
-    y  = W*x′.+b
-    z  = (@view y[1, :]) .+ im * (@view y[2, :])
-    z .+ σ.(z)
-end
-
-NNlib.logcosh(x::Complex{Float32}) = log(cosh(x))
-
 function Network()
 
     layer = Vector{Any}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
         layer[i] = Res(Const.layer[i], Const.layer[i+1], hardtanh)
     end
-    layer[end] = Output(Const.layer[end-1], Const.layer[end], logcosh)
+    layer[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = params(f)
     Network(f, p)
@@ -115,7 +92,7 @@ end
 function forward(x::Vector{Float32})
 
     out = network.f(x)
-    return sum(out)
+    return out[1] + im * out[2]
 end
 
 loss(x::Vector{Float32}) = real(forward(x))

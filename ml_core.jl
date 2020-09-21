@@ -6,6 +6,8 @@ using .Const, .Func
 function sampling(ϵ::Float32, lr::Float32)
 
     x = rand([1f0, -1f0], Const.dimB+Const.dimS)
+    α = rand([1f0, -1f0], length(x))
+    y = vcat(x, α)
     energy  = 0.0f0
     energyS = 0.0f0
     energyB = 0.0f0
@@ -14,21 +16,22 @@ function sampling(ϵ::Float32, lr::Float32)
     Func.ANN.initO()
 
     for i in 1:Const.burnintime
-        Func.update(x)
+        Func.update(y)
     end
 
     for i in 1:Const.iters_num
-        Func.update(x)
+        Func.update(y)
 
-        eS = Func.energyS(x)
-        eB = Func.energyB(x)
+        x = @view y[1:Const.dimB+Const.dimS]
+        eS = Func.energyS(y)
+        eB = Func.energyB(y)
         e  = eS + eB
         energy    += e
         energyS   += eS
         energyB   += eB
-        numberB   += sum(x[1:Const.dimB])
+        numberB   += sum((@view x[1:Const.dimB]))
 
-        Func.ANN.backward(x, e)
+        Func.ANN.backward(y, e)
     end
     energy   = real(energy)  / Const.iters_num
     energyS  = real(energyS) / Const.iters_num
@@ -44,20 +47,23 @@ end
 function calculation_energy()
 
     x = ones(Float32, Const.dimB+Const.dimS)
+    α = rand([1f0, -1f0], length(x))
+    y = vcat(x, α)
     energy  = 0.0f0
     energyS = 0.0f0
     energyB = 0.0f0
     numberB = 0.0f0
 
     for i in 1:Const.burnintime
-        Func.update(x)
+        Func.update(y)
     end
 
     for i in 1:Const.num
-        Func.update(x)
+        Func.update(y)
 
-        eS = Func.energyS(x)
-        eB = Func.energyB(x)
+        x = @view y[1:Const.dimB+Const.dimS]
+        eS = Func.energyS(y)
+        eB = Func.energyB(y)
         e  = eS + eB
         energy    += e
         energyS   += eS
