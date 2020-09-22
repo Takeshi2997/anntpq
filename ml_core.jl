@@ -24,7 +24,7 @@ function sampling(ϵ::Float32, lr::Float32)
     end
 
     for i in 1:Const.iters_num
-        randvec = @view randarray[Const.burnintime+i, :]
+        randvec = @view randarray[:, Const.burnintime+i]
         Func.update(x, α, randvec)
 
         eS = Func.energyS(x, α)
@@ -67,7 +67,7 @@ function calculation_energy()
     end
 
     for i in 1:Const.num
-        randvec = @view randarrau[Const.burnintime+i, :]
+        randvec = @view randarrau[:, Const.burnintime+i]
         Func.update(x, α, randvec)
 
         eS = Func.energyS(x, α)
