@@ -25,8 +25,8 @@ function initO()
         global o[i]  = Parameters(W, b)
         global oe[i] = Parameters(W, b)
     end
-    W = CuArray(zeros(Complex{Float32}, Const.layer[1], Const.layer[1]))
-    b = CuArray(zeros(Complex{Float32}, Const.layer[1]))
+    W = CuArray(zeros(Complex{Float32}, 2*Const.layer[1], Const.layer[1]))
+    b = CuArray(zeros(Complex{Float32}, 2*Const.layer[1]))
     global oI  = Parameters(W, b)
     global oIe = Parameters(W, b)
 end
@@ -142,8 +142,9 @@ function backward(x::CuArray{Float32, 1}, α::CuArray{Float32, 1}, e::Complex{Fl
         o[i].b  += db
         oe[i].b += db * e
     end
-    dw = x .* transpose(α)
-    db = x
+    gs = gradient(() -> loss(x, α), affineI.p)
+    dw = gs[affineI.f.W]
+    db = gs[affineI.f.b]
     oI.W  += dw
     oIe.W += dw * e
     oI.b  += db
