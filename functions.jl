@@ -29,10 +29,7 @@ function update(x::Vector{Float32}, α::Vector{Float32}, randvec)
     end
 
     prob = exp.(-2f0 .* 2f0 .* real.(x .* ANN.interaction(α)))
-    for ix in 1:l
-        x₁ = x[ix]
-        @inbounds x[ix] = ifelse(randvec[l+ix] < prob[ix], -x₁, x₁)
-    end
+    x  .*= ifelse.((@view randvec[l+1:end]) .< prob, -1f0, 1f0)
 end
 
 function hamiltonianS(x::Vector{Float32}, z::Vector{Complex{Float32}})
