@@ -126,7 +126,7 @@ end
 function loss(x::CuArray{Float32, 1}, α::CuArray{Float32, 1})
 
     out = network.f(α)
-    return real(out[1] + im * out[2] + dot(x, interaction(α)))
+    return real(out[1] + im * out[2] + transpose(x) *  interaction(α))
 end
 
 function backward(x::CuArray{Float32, 1}, α::CuArray{Float32, 1}, e::Complex{Float32})
