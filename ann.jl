@@ -1,6 +1,6 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote
+using .Const, LinearAlgebra, Flux, Zygote, CuArrays, CUDAnative
 using Flux: @functor
 using Flux.Optimise: update!
 using BSON: @save
@@ -8,8 +8,8 @@ using BSON: @load
 
 mutable struct Parameters
 
-    W::Array
-    b::Array
+    W::CuArray
+    b::CuArray
 end
 
 o   = Vector{Any}(undef, Const.layers_num)
@@ -20,13 +20,13 @@ oIe = Parameters
 function initO()
 
     for i in 1:Const.layers_num
-        W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
-        b = zeros(Complex{Float32}, Const.layer[i+1])
+        W = CuArray(zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]))
+        b = CuArray(zeros(Complex{Float32}, Const.layer[i+1]))
         global o[i]  = Parameters(W, b)
         global oe[i] = Parameters(W, b)
     end
-    W = zeros(Complex{Float32}, Const.layer[1], Const.layer[1])
-    b = zeros(Complex{Float32}, Const.layer[1])
+    W = CuArray(zeros(Complex{Float32}, Const.layer[1], Const.layer[1]))
+    b = CuArray(zeros(Complex{Float32}, Const.layer[1]))
     global oI  = Parameters(W, b)
     global oIe = Parameters(W, b)
 end
@@ -59,9 +59,9 @@ function Network()
 
     layer = Vector{Any}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layer[i] = Res(Const.layer[i], Const.layer[i+1], hardtanh)
+        layer[i] = Res(Const.layer[i], Const.layer[i+1], hardtanh) |> gpu
     end
-    layer[end] = Dense(Const.layer[end-1], Const.layer[end])
+    layer[end] = Dense(Const.layer[end-1], Const.layer[end]) |> gpu
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = params(f)
     Network(f, p)
@@ -71,7 +71,7 @@ function Affine()
 
     W = randn(Complex{Float32}, Const.layer[1], Const.layer[1])
     b = zeros(Complex{Float32}, Const.layer[1])
-    f = Dense(W, b)
+    f = Dense(W, b) |> gpu
     p = params(f)
     Network(f, p)
 end
@@ -97,16 +97,16 @@ end
 
 function init()
 
-    parameters = Vector{Array}(undef, Const.layers_num)
+    parameters = Vector{Array{CuArray}}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.glorot_normal(Const.layer[i+1], Const.layer[i])
-        b = zeros(Float32, Const.layer[i+1])
+        W = CuArray(Flux.glorot_normal(Const.layer[i+1], Const.layer[i]))
+        b = CuArray(zeros(Float32, Const.layer[i+1]))
         parameters[i] = [W, b]
     end
     paramset = [param for param in parameters]
     p = params(paramset...)
-    W = randn(Complex{Float32}, Const.layer[1], Const.layer[1]) ./ Float32(Const.layer[1])
-    b = zeros(Complex{Float32}, Const.layer[1])
+    W = CuArray(randn(Complex{Float32}, Const.layer[1], Const.layer[1]) ./ Float32(Const.layer[1]))
+    b = CuArray(zeros(Complex{Float32}, Const.layer[1]))
     q = params([W, b])
     Flux.loadparams!(network.f, p)
     Flux.loadparams!(affineI.f, q)
@@ -155,8 +155,8 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     x = (energy - ϵ)
     α = 2f0 * x / Const.iters_num
     for i in 1:Const.layers_num
-        ΔW = α .* 2f0 .* real.(oe[i].W .- energy * o[i].W)
-        Δb = α .* 2f0 .* real.(oe[i].b .- energy * o[i].b)
+        ΔW = α .* 2f0 .* CUDAnative.real.(oe[i].W .- energy * o[i].W)
+        Δb = α .* 2f0 .* CUDAnative.real.(oe[i].b .- energy * o[i].b)
         update!(opt(lr), network.f[i].W, ΔW)
         update!(opt(lr), network.f[i].b, Δb)
     end

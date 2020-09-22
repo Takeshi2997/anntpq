@@ -1,7 +1,7 @@
 module Func
 include("./setup.jl")
 include("./ann.jl")
-using .Const, .ANN, LinearAlgebra
+using .Const, .ANN, LinearAlgebra, CuArrays, CUDAnative
 
 function makeflip()
 
@@ -16,16 +16,15 @@ end
 
 const flip = makeflip()
 
-function update(x::Vector{Float32}, α::Vector{Float32}, randvec)
+function update(x::CuArray{Float32, 1}, α::CuArray{Float32, 1}, randvec::CuArray{Float32, 1})
 
     l = length(x)
     for iα in 1:l
-        α₁ = α[iα]
         z = ANN.forward(α) + dot(x, ANN.interaction(α))
         αflip = α .* flip[iα]
         zflip = ANN.forward(αflip) + dot(x, ANN.interaction(αflip))
         prob = exp(2f0 * real(zflip - z))
-        @inbounds α[iα] = ifelse(randvec[iα] < prob, -α₁, α₁)
+        @inbounds α[iα] = ifelse(randvec[iα] < prob, αflip, α)
     end
 
     prob = exp.(-2f0 .* 2f0 .* real.(x .* ANN.interaction(α)))
@@ -44,7 +43,7 @@ function hamiltonianS(x::Vector{Float32}, z::Vector{Complex{Float32}})
     return -Const.J * out / 4f0
 end
 
-function energyS(x::Vector{Float32}, α::Vector{Float32})
+function energyS(x::CuArray{Float32, 1}, α::CuArray{Float32, 1})
 
     z = ANN.interaction(α)
     sum = 0f0im
@@ -68,7 +67,7 @@ function hamiltonianB(x::Vector{Float32}, z::Vector{Complex{Float32}})
     return -Const.t * out
 end
 
-function energyB(x::Vector{Float32}, α::Vector{Float32})
+function energyB(x::CuArray{Float32, 1}, α::CuArray{Float32, 1})
 
     z = ANN.interaction(α)
     sum = 0.0f0im
