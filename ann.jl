@@ -129,7 +129,7 @@ function loss(x::CuArray{Float32, 1}, α::CuArray{Float32, 1})
     return real(out[1] + im * out[2] + dot(x, interaction(α)))
 end
 
-function backward(x::Vector{Float32}, α::Vector{Float32}, e::Complex{Float32})
+function backward(x::CuArray{Float32, 1}, α::CuArray{Float32, 1}, e::Complex{Float32})
 
     gs = gradient(() -> loss(x, α), network.p)
     for i in 1:Const.layers_num
