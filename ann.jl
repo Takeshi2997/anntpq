@@ -127,7 +127,7 @@ end
 
 function loss(x::CuArray{Float32, 1}, α::CuArray{Float32, 1})
 
-    return forward(α) + transpose(x) * interaction(α)
+    return real.(forward(α) + transpose(x) * interaction(α))
 end
 
 function backward(x::CuArray{Float32, 1}, α::CuArray{Float32, 1}, e::Complex{Float32})
