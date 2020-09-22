@@ -22,7 +22,7 @@ function update(x::CuArray{Float32, 1}, α::CuArray{Float32, 1}, randvec::CuArra
     for iα in 1:l
         z = ANN.forward(α) + dot(x, ANN.interaction(α))
         αflip = α .* flip[iα]
-        zflip = ANN.forward(αflip) + dot(x, ANN.interaction(αflip))
+        zflip = ANN.forward(αflip) + transpose(x) * ANN.interaction(αflip)
         prob = exp(2f0 * real(zflip - z))
         @inbounds α = ifelse(randvec[iα] < prob, αflip, α)
     end

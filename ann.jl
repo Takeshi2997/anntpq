@@ -69,9 +69,7 @@ end
 
 function Affine()
 
-    W = CuArray(randn(Float32, 2*Const.layer[1], Const.layer[1]))
-    b = CuArray(zeros(Float32, 2*Const.layer[1]))
-    f = Dense(W, b) |> gpu
+    f = Dense(Const.layer[1], 2*Const.layer[1]) |> gpu
     p = params(f)
     Network(f, p)
 end
@@ -127,7 +125,7 @@ end
 
 function loss(x::CuArray{Float32, 1}, α::CuArray{Float32, 1})
 
-    return CUDAnative.real.(forward(α) + transpose(x) * interaction(α))
+    return CUDAnative.real(forward(α) + transpose(x) * interaction(α))
 end
 
 function backward(x::CuArray{Float32, 1}, α::CuArray{Float32, 1}, e::Complex{Float32})
@@ -161,8 +159,8 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         update!(opt(lr), network.f[i].W, ΔW)
         update!(opt(lr), network.f[i].b, Δb)
     end
-    ΔW = α .* (oIe.W .- energy * oI.W)
-    Δb = α .* (oIe.b .- energy * oI.b)
+    ΔW = α .* CUDAnative.real.(oIe.W .- energy * oI.W)
+    Δb = α .* CUDAnative.real.(oIe.b .- energy * oI.b)
     update!(opt(lr), affineI.f.W, ΔW)
     update!(opt(lr), affineI.f.b, Δb)
 end
