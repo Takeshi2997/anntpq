@@ -16,10 +16,10 @@ function sampling(ϵ::Float32, lr::Float32)
     Func.ANN.initO()
 
     rng = MersenneTwister(1234)
-    randarray = CuArray(rand(rng, Float32, (Const.burnintime+Const.iters_num, 2*l)))
+    randarray = CuArray(rand(rng, Float32, (2*l, Const.burnintime+Const.iters_num)))
 
     for i in 1:Const.burnintime
-        randvec = @view randarray[i, :]
+        randvec = @view randarray[:, i]
         Func.update(x, α, randvec)
     end
 
@@ -59,10 +59,10 @@ function calculation_energy()
     numberB = 0.0f0
 
     rng = MersenneTwister(1234)
-    randarray = CuArray(rand(rng, Float32, (Const.burnintime+Const.iters_num, 2*l)))
+    randarray = CuArray(rand(rng, Float32, (2*l, Const.burnintime+Const.iters_num)))
 
     for i in 1:Const.burnintime
-        randvec = @view randarray[i, :]
+        randvec = @view randarray[:, i]
         Func.update(x, α, randvec)
     end
 
