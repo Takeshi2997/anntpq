@@ -105,8 +105,8 @@ function init()
     end
     paramset = [param for param in parameters]
     p = params(paramset...)
-    W = CuArray(randn(Complex{Float32}, 2, Const.layer[1], Const.layer[1]) ./ Float32(Const.layer[1]))
-    b = CuArray(zeros(Complex{Float32}, 2, Const.layer[1]))
+    W = CuArray(randn(Complex{Float32}, 2*Const.layer[1], Const.layer[1]) ./ Float32(Const.layer[1]))
+    b = CuArray(zeros(Complex{Float32}, 2*Const.layer[1]))
     q = params([W, b])
     Flux.loadparams!(network.f, p)
     Flux.loadparams!(affineI.f, q)
