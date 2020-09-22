@@ -59,7 +59,7 @@ function Network()
 
     layer = Vector{Any}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layer[i] = Res(Const.layer[i], Const.layer[i+1], hardtanh) |> gpu
+        layer[i] = Dense(Const.layer[i], Const.layer[i+1], hardtanh) |> gpu
     end
     layer[end] = Dense(Const.layer[end-1], Const.layer[end]) |> gpu
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
@@ -112,18 +112,18 @@ function init()
     Flux.loadparams!(affineI.f, q)
 end
 
-function forward(α::Vector{Float32})
+function forward(α::CuArray{Float32, 1})
 
     out = network.f(α)
     return out[1] + im * out[2]
 end
 
-function interaction(α::Vector{Float32})
+function interaction(α::CuArray{Float32, 1})
 
     return affineI.f(α)
 end
 
-function loss(x::Vector{Float32}, α::Vector{Float32})
+function loss(x::CuArray{Float32, 1}, α::CuArray{Float32, 1})
 
     out = network.f(α)
     return real(out[1] + im * out[2] + dot(x, interaction(α)))
