@@ -38,14 +38,11 @@ function update(x::Vector{Float32}, α::Vector{Float32})
     end
 end
 
-function hamiltonianS(x::Vector{Float32}, 
-                      z::Array{Complex{Float32}}, ix::Integer)
+function hamiltonianS(x::Vector{Float32}, z::Vector{Complex{Float32}})
 
     out = 0f0im
-    ixnext = Const.dimB + (ix - Const.dimB) % Const.dimS + 1
-    if x[ix] != x[ixnext]
-        xflip = x .* flip[ix] .* flip[ixnext]
-        out  += 2f0 * exp(dot(xflip - x, z)) - 1f0
+    if x[1] != x[2]
+        out += 2f0 * exp(-2f0 * transpose(x) * z) - 1f0
     else
         out += 1f0
     end
@@ -58,20 +55,20 @@ function energyS(x::Vector{Float32}, α::Vector{Float32})
     z = ANN.interaction(α)
     sum = 0f0im
     @simd for ix in Const.dimB+1:Const.dimB+Const.dimS
-        sum += hamiltonianS(x, z, ix)
+        ixnext = Const.dimB + (ix - Const.dimB) % Const.dimS + 1
+        xloc = [x[ix], x[ixnext]]
+        zloc = [z[ix], z[ixnext]]
+        sum += hamiltonianS(xloc, zloc)
     end
 
     return sum
 end
 
-function hamiltonianB(x::Vector{Float32}, 
-                      z::Array{Complex{Float32}}, iy::Integer)
+function hamiltonianB(x::Vector{Float32}, z::Vector{Complex{Float32}})
 
     out = 0f0im
-    iynext = iy%Const.dimB + 1
-    if x[iy] != x[iynext]
-        xflip = x .* flip[iy] .* flip[iynext]
-        out  += exp(dot(xflip - x, z))
+    if x[1] != x[2]
+        out  += exp(-2f0 * transpose(x) * z)
     end
 
     return -Const.t * out
@@ -82,7 +79,10 @@ function energyB(x::Vector{Float32}, α::Vector{Float32})
     z = ANN.interaction(α)
     sum = 0.0f0im
     @simd for iy in 1:Const.dimB 
-        sum += hamiltonianB(x, z, iy)
+        iynext = iy%Const.dimB + 1
+        xloc = [x[iy], x[iynext]]
+        zloc = [z[iy], z[iynext]]
+        sum += hamiltonianB(xloc, zloc)
     end
 
     return sum
