@@ -5,11 +5,11 @@ using .Const, .ANN, LinearAlgebra, CuArrays, CUDAnative
 
 function makeflip()
 
-    flip = Vector{Vector{Float32}}(undef, Const.layer[1])
+    flip = Vector{CuArray{Float32, 1}}(undef, Const.layer[1])
     for i in 1:Const.layer[1]
         o = ones(Float32, Const.layer[1])
         o[i] *= -1f0
-        flip[i] = o
+        flip[i] = CuArray(o)
     end
     return flip
 end
