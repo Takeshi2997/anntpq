@@ -1,7 +1,7 @@
 module Func
 include("./setup.jl")
 include("./ann.jl")
-using .Const, .ANN, LinearAlgebra, Distributed, Random
+using .Const, .ANN, LinearAlgebra
 
 function makeflip()
 
@@ -16,25 +16,22 @@ end
 
 const flip = makeflip()
 
-function update(x::Vector{Float32}, α::Vector{Float32})
+function update(x::Vector{Float32}, α::Vector{Float32}, randvec)
 
-    rng = MersenneTwister(1234)
     l = length(x)
-    randamnum = rand(rng, Float32, 2*l)
-
     for iα in 1:l
         α₁ = α[iα]
         z = ANN.forward(α) + dot(x, ANN.interaction(α))
         αflip = α .* flip[iα]
         zflip = ANN.forward(αflip) + dot(x, ANN.interaction(αflip))
         prob = exp(2f0 * real(zflip - z))
-        @inbounds α[iα] = ifelse(randamnum[iα] < prob, -α₁, α₁)
+        @inbounds α[iα] = ifelse(randvec[iα] < prob, -α₁, α₁)
     end
 
     prob = exp.(-2f0 .* 2f0 .* real.(x .* ANN.interaction(α)))
     for ix in 1:l
         x₁ = x[ix]
-        @inbounds x[ix] = ifelse(randamnum[l+ix] < prob[ix], -x₁, x₁)
+        @inbounds x[ix] = ifelse(randvec[l+ix] < prob[ix], -x₁, x₁)
     end
 end
 
