@@ -69,8 +69,8 @@ end
 
 function Affine()
 
-    W = randn(Complex{Float32}, Const.layer[1], Const.layer[1])
-    b = zeros(Complex{Float32}, Const.layer[1])
+    W = randn(Float32, 2*Const.layer[1], Const.layer[1])
+    b = zeros(Float32, 2*Const.layer[1])
     f = Dense(W, b) |> gpu
     p = params(f)
     Network(f, p)
@@ -105,8 +105,8 @@ function init()
     end
     paramset = [param for param in parameters]
     p = params(paramset...)
-    W = CuArray(randn(Complex{Float32}, Const.layer[1], Const.layer[1]) ./ Float32(Const.layer[1]))
-    b = CuArray(zeros(Complex{Float32}, Const.layer[1]))
+    W = CuArray(randn(Complex{Float32}, 2, Const.layer[1], Const.layer[1]) ./ Float32(Const.layer[1]))
+    b = CuArray(zeros(Complex{Float32}, 2, Const.layer[1]))
     q = params([W, b])
     Flux.loadparams!(network.f, p)
     Flux.loadparams!(affineI.f, q)
@@ -120,13 +120,14 @@ end
 
 function interaction(α::CuArray{Float32, 1})
 
-    return affineI.f(α)
+    l = Const.layer[1]
+    int =  affineI.f(α)
+    return (@view int[1:l]) .+ im .* (@view int[l+1:end])
 end
 
 function loss(x::CuArray{Float32, 1}, α::CuArray{Float32, 1})
 
-    out = network.f(α)
-    return real(out[1] + im * out[2] + transpose(x) *  interaction(α))
+    return forward(α) + transpose(x) * interaction(α)
 end
 
 function backward(x::CuArray{Float32, 1}, α::CuArray{Float32, 1}, e::Complex{Float32})
