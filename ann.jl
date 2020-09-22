@@ -69,8 +69,8 @@ end
 
 function Affine()
 
-    W = randn(Float32, 2*Const.layer[1], Const.layer[1])
-    b = zeros(Float32, 2*Const.layer[1])
+    W = CuArray(randn(Float32, 2*Const.layer[1], Const.layer[1]))
+    b = CuArray(zeros(Float32, 2*Const.layer[1]))
     f = Dense(W, b) |> gpu
     p = params(f)
     Network(f, p)
