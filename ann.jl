@@ -125,7 +125,10 @@ end
 
 function loss(x::CuArray{Float32, 1}, α::CuArray{Float32, 1})
 
-    return CUDAnative.real(forward(α) + transpose(x) * interaction(α))
+    out = network.f(α)
+    l = Const.layer[1]
+    int =  affineI.f(α)
+    return out[1] + transpose(x) * (@view int[1:l])
 end
 
 function backward(x::CuArray{Float32, 1}, α::CuArray{Float32, 1}, e::Complex{Float32})
@@ -159,8 +162,8 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         update!(opt(lr), network.f[i].W, ΔW)
         update!(opt(lr), network.f[i].b, Δb)
     end
-    ΔW = α .* CUDAnative.real.(oIe.W .- energy * oI.W)
-    Δb = α .* CUDAnative.real.(oIe.b .- energy * oI.b)
+    ΔW = α .* 2f0 .* CUDAnative.real.(oIe.W .- energy * oI.W)
+    Δb = α .* 2f0 .* CUDAnative.real.(oIe.b .- energy * oI.b)
     update!(opt(lr), affineI.f.W, ΔW)
     update!(opt(lr), affineI.f.b, Δb)
 end
