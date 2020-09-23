@@ -7,7 +7,8 @@ function sampling(ϵ::Float32, lr::Float32)
 
     x = rand([1f0, -1f0], Const.dimB+Const.dimS)
     l = length(x)
-    α = rand([1f0, -1f0], l)
+    α  = rand([1f0, -1f0], l)
+    α′ = rand([1f0, -1f0], l)
     energy  = 0.0f0
     energyS = 0.0f0
     energyB = 0.0f0
@@ -16,19 +17,19 @@ function sampling(ϵ::Float32, lr::Float32)
     Func.ANN.initO()
 
     rng = MersenneTwister(1234)
-    randarray = rand(rng, Float32, (Const.burnintime+Const.iters_num, 2*l))
+    randarray = rand(rng, Float32, (Const.burnintime+Const.iters_num, 3*l))
 
     for i in 1:Const.burnintime
         randvec = @view randarray[i, :]
-        Func.update(x, α, randvec)
+        Func.update(x, α, α′, randvec)
     end
 
     for i in 1:Const.iters_num
         randvec = @view randarray[Const.burnintime+i, :]
-        Func.update(x, α, randvec)
+        Func.update(x, α, α′, randvec)
 
-        eS = Func.energyS(x, α)
-        eB = Func.energyB(x, α)
+        eS = Func.energyS(x, α, α′)
+        eB = Func.energyB(x, α, α′)
         e  = eS + eB
         energy    += e
         energyS   += eS
@@ -52,7 +53,8 @@ function calculation_energy()
 
     x = rand([1f0, -1f0], Const.dimB+Const.dimS)
     l = length(x)
-    α = rand([1f0, -1f0], l)
+    α  = rand([1f0, -1f0], l)
+    α′ = rand([1f0, -1f0], l)
     energy  = 0.0f0
     energyS = 0.0f0
     energyB = 0.0f0
@@ -63,15 +65,15 @@ function calculation_energy()
 
     for i in 1:Const.burnintime
         randvec = @view randarray[i, :]
-        Func.update(x, α, randvec)
+        Func.update(x, α, α′, randvec)
     end
 
     for i in 1:Const.num
         randvec = @view randarrau[Const.burnintime+i, :]
-        Func.update(x, α, randvec)
-
-        eS = Func.energyS(x, α)
-        eB = Func.energyB(x, α)
+        Func.update(x, α, α′, randvec)
+ 
+        eS = Func.energyS(x, α, α′)
+        eB = Func.energyB(x, α, α′)
         e  = eS + eB
         energy    += e
         energyS   += eS
