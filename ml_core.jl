@@ -61,7 +61,7 @@ function calculation_energy()
     numberB = 0.0f0
 
     rng = MersenneTwister(1234)
-    randarray = rand(rng, Float32, (Const.burnintime+Const.iters_num, 2*l))
+    randarray = rand(rng, Float32, (Const.burnintime+Const.num, 2*l))
 
     for i in 1:Const.burnintime
         randvec = @view randarray[i, :]
