@@ -141,8 +141,11 @@ function backward(x::Vector{Float32}, α::Vector{Float32}, e::Complex{Float32})
         oe[i].b += db * e
     end
     dw = x .* transpose(α)
+    db = x
     oI.W  += dw
     oIe.W += dw * e
+    oI.b  += db
+    oIe.b += db * e
 end
 
 opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
@@ -158,7 +161,9 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         update!(opt(lr), network.f[i].b, Δb)
     end
     ΔW = α .* (oIe.W .- energy * oI.W)
+    Δb = α .* (oIe.b .- energy * oI.b)
     update!(opt(lr), affineI.f.W, ΔW)
+    update!(opt(lr), affineI.f.b, Δb)
 end
 
 end
