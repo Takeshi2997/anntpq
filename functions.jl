@@ -25,7 +25,7 @@ function update(x::Vector{Float32}, α::Vector{Float32}, α′::Vector{Float32},
         z = ANN.forward(α) + dot(x, ANN.interaction(α))
         αflip = α .* flip[iα]
         zflip = ANN.forward(αflip) + dot(x, ANN.interaction(αflip))
-        prob = exp(2f0 * real(zflip - z))
+        prob = exp(real(zflip - z))
         @inbounds α[iα] = ifelse(randvec[iα] < prob, -α₁, α₁)
     end
 
@@ -34,11 +34,11 @@ function update(x::Vector{Float32}, α::Vector{Float32}, α′::Vector{Float32},
         z′ = ANN.forward(α′) + dot(x, ANN.interaction(α′))
         α′flip = α′ .* flip[iα]
         z′flip = ANN.forward(α′flip) + dot(x, ANN.interaction(α′flip))
-        prob = exp(2f0 * real(z′flip - z′))
+        prob = exp(real(z′flip - z′))
         @inbounds α′[iα] = ifelse(randvec[l+iα] < prob, -α′₁, α′₁)
     end
 
-    prob = exp.(-2f0 .* 2f0 .* real.(x .* (ANN.interaction(α) .+ ANN.interaction(α′))))
+    prob = exp.(-2f0 .* real.(x .* (ANN.interaction(α) .+ ANN.interaction(α′))))
     x  .*= ifelse.((@view randvec[2*l+1:end]) .< prob, -1f0, 1f0)
 end
 
@@ -67,8 +67,8 @@ function energyS(x::Vector{Float32}, α::Vector{Float32}, α′::Vector{Float32}
         sum += hamiltonianS(xloc, zloc, z′loc)
     end
 
-    factor = exp(2f0 * im * imag(ANN.forward(α)  + dot(x, z) - 
-                                 ANN.forward(α′) - dot(x, z′)))
+    factor = exp(im * imag(ANN.forward(α)  + dot(x, z) - 
+                          (ANN.forward(α′) + dot(x, z′))))
     return sum * factor
 end
 
@@ -95,8 +95,8 @@ function energyB(x::Vector{Float32}, α::Vector{Float32}, α′::Vector{Float32}
         sum += hamiltonianB(xloc, zloc, z′loc)
     end
 
-    factor = exp(2f0 * im * imag(ANN.forward(α)  + dot(x, z) - 
-                                 ANN.forward(α′) - dot(x, z′)))
+    factor = exp(im * imag(ANN.forward(α)  + dot(x, z) - 
+                          (ANN.forward(α′) + dot(x, z′))))
     return sum * factor
 end
 
