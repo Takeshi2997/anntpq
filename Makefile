@@ -11,7 +11,7 @@ main: $(BASE) $(CORE) $(OBJS) $(CALC)
 calc: $(BASE) $(CORE) $(CALC)
 	$(JL) $(CALC)
 
-main: $(BASE) $(CORE) $(OBJS)
+test: $(BASE) $(CORE) $(OBJS)
 	$(JL) $(OBJS)
 
 clean:
