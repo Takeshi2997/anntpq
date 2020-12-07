@@ -1,6 +1,7 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote, BlockDiagonals
+include("./legendreTF.jl")
+using .Const, .LegendreTF, LinearAlgebra, Flux, Zygote
 using Flux: @functor
 using Flux.Optimise: update!
 using BSON: @save
@@ -12,8 +13,8 @@ mutable struct Parameters
     b::Array
 end
 
-o  = Vector{Any}(undef, Const.layers_num)
-oe = Vector{Any}(undef, Const.layers_num)
+o  = Vector{Parameters}(undef, Const.layers_num)
+oe = Vector{Parameters}(undef, Const.layers_num)
 
 function initO()
 
@@ -25,31 +26,26 @@ function initO()
     end
 end
 
+∂S  = Vector{Parameters}(undef, Const.layers_num)
+S∂T = Vector{Parameters}(undef, Const.layers_num)
+∂T  = Vector{Parameters}(undef, Const.layers_num)
+
+function initS()
+
+    for i in 1:Const.layers_num
+        W = zeros(Float32, Const.layer[i+1], Const.layer[i])
+        b = zeros(Float32, Const.layer[i+1])
+        global ∂S[i]  = Parameters(W, b)
+        global S∂T[i] = Parameters(W, b)
+        global ∂T[i]  = Parameters(W, b)
+    end
+end
+
 mutable struct Network
 
     f::Flux.Chain
     p::Zygote.Params
 end
-
-struct Res{F,S<:AbstractArray,T<:AbstractArray}
-    W::S
-    b::T
-    σ::F
-end
-
-function Res(in::Integer, out::Integer, σ = identity;
-             initW = Flux.glorot_uniform, initb = zeros)
-  return Res(initW(out, in), initb(Float32, out), σ)
-end
-
-@functor Res
-
-function (m::Res)(x::AbstractArray)
-    W, b, σ = m.W, m.b, m.σ
-    x .+ σ.(W*x.+b)
-end
-
-NNlib.logcosh(x::Complex{Float32}) = log(cosh(x))
 
 function Network()
 
@@ -98,6 +94,48 @@ function forward(x::Vector{Float32})
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
+init_loss(x::Vector{Float32}) = network.f(x)[1]
+
+function init_backward(x::Vector{Float32}, y::Vector{Float32}, s::Float32)
+
+    x′ = vcat((@views x[1:Const.dimB]), (@views y[Const.dimB+1:end]))
+    y′ = vcat((@views y[1:Const.dimB]), (@views x[Const.dimB+1:end]))
+
+    gsx  = gradient(() -> init_loss(x),  network.p)
+    gsy  = gradient(() -> init_loss(y),  network.p)
+    gsx′ = gradient(() -> init_loss(x′), network.p)
+    gsy′ = gradient(() -> init_loss(y′), network.p)
+    for i in 1:Const.layers_num-1
+        dw1 = gsx[network.f[i].W]  .+ gsy[network.f[i].W]
+        dw2 = gsx′[network.f[i].W] .+ gsy′[network.f[i].W]
+        db1 = gsx[network.f[i].b]  .+ gsy[network.f[i].b]
+        db2 = gsx′[network.f[i].b] .+ gsy′[network.f[i].b]
+        ∂S[i].W  += dw1 .- dw2
+        S∂T[i].W += s .* dw1
+        ∂T[i].W  += dw1
+        ∂S[i].b  += db1 .- db2
+        S∂T[i].b += s .* db1
+        ∂T[i].b  += db1
+    end
+    dw1 = gsx[network.f[end].W]  .+ gsy[network.f[end].W]
+    dw2 = gsx′[network.f[end].W] .+ gsy′[network.f[end].W]
+    ∂S[end].W  += dw1 .- dw2
+    S∂T[end].W += s .* dw1
+    ∂T[end].W  += dw1
+end
+
+function init_update(S::Float32, lr::Float32)
+
+    α = -1f0 / Const.iters_num
+    for i in 1:Const.layers_num-1
+        ΔW = α .* (∂S[i].W .+ S∂T[i].W - S .* ∂T[i].W)
+        Δb = α .* (∂S[i].b .+ S∂T[i].b - S .* ∂T[i].b)
+        update!(opt(lr), network.f[i].W, ΔW)
+        update!(opt(lr), network.f[i].b, Δb)
+    end
+    ΔW = α .* (∂S[end].W .+ S∂T[end].W - S .* ∂T[end].W)
+    update!(opt(lr), network.f[end].W, ΔW)
+end
 
 function backward(x::Vector{Float32}, e::Complex{Float32})
 
@@ -115,7 +153,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     oe[end].W += dw * e
 end
 
-opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
+opt(lr::Float32) = Nesterov(lr, 0.9)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
 

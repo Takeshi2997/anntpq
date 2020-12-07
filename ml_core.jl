@@ -1,15 +1,56 @@
 module MLcore
 include("./setup.jl")
 include("./functions.jl")
-using .Const, .Func, Distributed
+include("./legendreTF.jl")
+using .Const, .Func, .LegendreTF
+
+function entropy_enhancement(lr::Float32)
+
+    x = rand([1f0, -1f0], Const.dimB+Const.dimS)
+    y = rand([1f0, -1f0], Const.dimB+Const.dimS)
+    entropy = 0f0
+    energyS = 0f0
+    energyB = 0f0
+    numberB = 0f0
+
+    Func.ANN.initS()
+    for i in 1:Const.burnintime
+        Func.update(x)
+        Func.update(y)
+    end
+
+    for i in 1:Const.iters_num
+        Func.update(x)
+        Func.update(y)
+
+        eS = Func.energyS(x)
+        eB = Func.energyB(x)
+        s  = Func.entropy(x, y)
+        energyS += eS
+        energyB += eB
+        numberB += sum(x[1:Const.dimB])
+        entropy += s
+
+        Func.ANN.init_backward(x, y, s)
+    end
+    entropy /= Const.iters_num
+    energyS  = real(energyS) / Const.iters_num
+    energyB  = real(energyB) / Const.iters_num
+    numberB /= Const.iters_num
+
+    Func.ANN.init_update(entropy, lr)
+
+    return entropy, energyS, energyB, numberB
+end
+
 
 function sampling(ϵ::Float32, lr::Float32)
 
     x = rand([1f0, -1f0], Const.dimB+Const.dimS)
-    energy  = 0.0f0
-    energyS = 0.0f0
-    energyB = 0.0f0
-    numberB = 0.0f0
+    energy  = 0f0
+    energyS = 0f0
+    energyB = 0f0
+    numberB = 0f0
 
     Func.ANN.initO()
 
@@ -23,10 +64,10 @@ function sampling(ϵ::Float32, lr::Float32)
         eS = Func.energyS(x)
         eB = Func.energyB(x)
         e  = eS + eB
-        energy    += e
-        energyS   += eS
-        energyB   += eB
-        numberB   += sum(x[1:Const.dimB])
+        energyS += eS
+        energyB += eB
+        energy  += e
+        numberB += sum(x[1:Const.dimB])
 
         Func.ANN.backward(x, e)
     end
@@ -34,7 +75,6 @@ function sampling(ϵ::Float32, lr::Float32)
     energyS  = real(energyS) / Const.iters_num
     energyB  = real(energyB) / Const.iters_num
     numberB /= Const.iters_num
-    error    = (energy - ϵ)^2
 
     Func.ANN.update(energy, ϵ, lr)
 

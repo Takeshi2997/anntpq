@@ -3,12 +3,39 @@ include("./ml_core.jl")
 using .Const, .MLcore, InteractiveUtils
 using Flux
 
+function init_learning(filename::String, lr::Float32, it_num::Integer)
+
+    entropy = 0f0
+    energyS = 0f0
+    energyB = 0f0
+    numberB = 0f0
+
+    io = open(filename, "w")
+    for it in 1:it_num
+
+        # Calculate expected value
+        entropy, energyS, energyB, numberB = MLcore.entropy_enhancement(lr)
+
+        write(io, string(it))
+        write(io, "\t")
+        write(io, string(entropy))
+        write(io, "\t")
+        write(io, string(energyS / Const.dimS))
+        write(io, "\t")
+        write(io, string(energyB / Const.dimB))
+        write(io, "\t")
+        write(io, string(numberB / Const.dimB))
+        write(io, "\n")
+    end
+    close(io)
+end
+
 function learning(filename::String, ϵ::Float32, lr::Float32, it_num::Integer)
 
-    error   = 0.0f0
-    energyS = 0.0f0
-    energyB = 0.0f0
-    numberB = 0.0f0
+    error   = 0f0
+    energyS = 0f0
+    energyB = 0f0
+    numberB = 0f0
 
     io = open(filename, "w")
     for it in 1:it_num
@@ -44,10 +71,24 @@ function main()
 
     MLcore.Func.ANN.init()
 
-    g = open("error.txt", "w")
-    for iϵ in 0:0  # Const.iϵmax
+    # Get Maximum Entropy State
+    filenameparams = dirname * "/params_at_000.bson"
 
-        ϵ = -0.5f0 * iϵ / Const.iϵmax * Const.t * Const.dimB
+    # Initialize
+    lr      = Const.lr
+    it_num  = 1000
+
+    # Learning
+    filename = dirnameerror * "/error000.txt"
+    @time init_learning(filename, lr, it_num) 
+
+    MLcore.Func.ANN.save(filenameparams)
+
+    exit()
+    g = open("error.txt", "w")
+    for iϵ in 1:Const.iϵmax
+
+        ϵ = (-0.01f0 - 0.5f0 * iϵ / Const.iϵmax) * Const.t * Const.dimB
         filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
 
         # Initialize

@@ -83,30 +83,14 @@ function energyB(x::Vector{Float32})
     return sum
 end
 
-function hamiltonianI(x::Vector{Float32},
-                      z::Complex{Float32}, ix::Integer, iy::Integer)
+function entropy(x::Vector{Float32}, y::Vector{Float32})
 
-    out = 0f0im
-    if x[ix] != x[iy]
-        xflip = x .* flip[ix] .* flip[iy]
-        zflip = ANN.forward(xflip)
-        out  += exp(zflip - z)
-    end
+    x′ = vcat((@views x[1:Const.dimB]), (@views y[Const.dimB+1:end]))
+    y′ = vcat((@views y[1:Const.dimB]), (@views x[Const.dimB+1:end]))
 
-    return Const.λ * out
-end
-
-function energyI(x::Vector{Float32})
-
-    z = ANN.forward(x)
-    sum = 0.0f0im
+    s = real(ANN.forward(x) + ANN.forward(y) - ANN.forward(x′) - ANN.forward(y′))
     
-    @simd for ixy in CartesianIndices((Const.dimB+1:Const.dimB+Const.dimS, 1:Const.dimB))
-        ix, iy = Tuple(ixy)
-        sum += hamiltonianI(x, z, ix, iy)
-    end
-
-    return sum
+    return s
 end
 
 end
