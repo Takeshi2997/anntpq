@@ -11,6 +11,9 @@ main: $(BASE) $(CORE) $(OBJS) $(CALC)
 calc: $(BASE) $(CORE) $(CALC)
 	$(JL) $(CALC)
 
+main: $(BASE) $(CORE) $(OBJS)
+	$(JL) $(OBJS)
+
 clean:
 	-rm -f *.txt *.png *.dat nohup.out
 	-rm -rf data error

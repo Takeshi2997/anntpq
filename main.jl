@@ -76,7 +76,7 @@ function main()
 
     # Initialize
     lr      = Const.lr
-    it_num  = 1000
+    it_num  = 10000
 
     # Learning
     filename = dirnameerror * "/error000.txt"
