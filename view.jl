@@ -1,7 +1,7 @@
 include("./setup.jl")
 include("./ann.jl")
 using .Const, .ANN
-using LinearAlgebra, Plots, Flux, BSON, Serialization
+using LinearAlgebra, Plots, Flux, BSON, StatsBase
 
 N = 24
 
@@ -33,7 +33,7 @@ filenameparams = dirname * "/params_at_000.bson"
 ANN.load(filenameparams)
 
 out = repeatperm(N)
-ψall = []
+ψall = Complex{Float32}[]
 z = 0f0
 for x in out
     ψ = exp(ANN.forward(x))
@@ -42,6 +42,10 @@ for x in out
 end
 ψall ./= sqrt(z)
 
-open(io -> serialize(io, ψall), "psidata.dat", "w")
-
+reψ = fit(Histogram, real.(ψall), nbins=100)
+imψ = fit(Histogram, imag.(ψall), nbins=100)
+plot(reψ)
+savefig("repsihist.png")
+plot(imψ)
+savefig("impsihist.png")
 

@@ -75,8 +75,8 @@ function main()
     filenameparams = dirname * "/params_at_000.bson"
 
     # Initialize
-    lr      = Const.lr
-    it_num  = 10000
+    lr      = 0.0001f0
+    it_num  = 100000
 
     # Learning
     filename = dirnameerror * "/error000.txt"
