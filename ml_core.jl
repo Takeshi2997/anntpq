@@ -14,7 +14,7 @@ function entropy_enhancement(lr::Float32)
         Func.update(x)
         Func.update(y)
     end
-    for i in 1:Const.burnintime
+    for i in 1:Const.iters_num
         Func.update(x)
         Func.update(y)
         xdata[i] = x
