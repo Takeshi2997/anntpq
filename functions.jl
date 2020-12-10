@@ -88,7 +88,7 @@ function entropy(x::Vector{Float32}, y::Vector{Float32})
     x′ = vcat((@views x[1:Const.dimB]), (@views y[Const.dimB+1:end]))
     y′ = vcat((@views y[1:Const.dimB]), (@views x[Const.dimB+1:end]))
 
-    s = real(ANN.forward(x) + ANN.forward(y) - ANN.forward(x′) - ANN.forward(y′))
+    s = exp(ANN.forward(x′) + ANN.forward(y′) - ANN.forward(x) - ANN.forward(y))
     
     return s
 end

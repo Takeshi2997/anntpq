@@ -94,46 +94,45 @@ function forward(x::Vector{Float32})
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
-init_loss(x::Vector{Float32}) = network.f(x)[1]
 
-function init_backward(x::Vector{Float32}, y::Vector{Float32}, s::Float32)
+function init_backward(x::Vector{Float32}, y::Vector{Float32}, s::Complex{Float32})
 
     x′ = vcat((@views x[1:Const.dimB]), (@views y[Const.dimB+1:end]))
     y′ = vcat((@views y[1:Const.dimB]), (@views x[Const.dimB+1:end]))
 
-    gsx  = gradient(() -> init_loss(x),  network.p)
-    gsy  = gradient(() -> init_loss(y),  network.p)
-    gsx′ = gradient(() -> init_loss(x′), network.p)
-    gsy′ = gradient(() -> init_loss(y′), network.p)
+    gsx  = gradient(() -> loss(x),  network.p)
+    gsy  = gradient(() -> loss(y),  network.p)
+    gsx′ = gradient(() -> loss(x′), network.p)
+    gsy′ = gradient(() -> loss(y′), network.p)
     for i in 1:Const.layers_num-1
         dw1 = gsx[network.f[i].W]  .+ gsy[network.f[i].W]
         dw2 = gsx′[network.f[i].W] .+ gsy′[network.f[i].W]
         db1 = gsx[network.f[i].b]  .+ gsy[network.f[i].b]
         db2 = gsx′[network.f[i].b] .+ gsy′[network.f[i].b]
-        ∂S[i].W  += dw1 .- dw2
-        S∂T[i].W += s .* dw1
-        ∂T[i].W  += dw1
-        ∂S[i].b  += db1 .- db2
-        S∂T[i].b += s .* db1
-        ∂T[i].b  += db1
+        ∂S[i].W  += real.(s .* (dw2 .- dw1))
+        S∂T[i].W += real.(s) .* real.(dw1)
+        ∂T[i].W  += real.(dw1)
+        ∂S[i].b  += real.(s .* (db2 .- db1))
+        S∂T[i].b += real.(s) .* real.(db1)
+        ∂T[i].b  += real.(db1)
     end
     dw1 = gsx[network.f[end].W]  .+ gsy[network.f[end].W]
     dw2 = gsx′[network.f[end].W] .+ gsy′[network.f[end].W]
-    ∂S[end].W  += dw1 .- dw2
-    S∂T[end].W += s .* dw1
-    ∂T[end].W  += dw1
+    ∂S[end].W  += real.(s .* (dw2 .- dw1))
+    S∂T[end].W += real.(s) .* real.(dw1)
+    ∂T[end].W  += real.(dw1)
 end
 
 function init_update(S::Float32, lr::Float32)
 
-    α = -1f0 / Const.iters_num
+    α = 1f0 / Const.iters_num
     for i in 1:Const.layers_num-1
-        ΔW = α .* (∂S[i].W .+ S∂T[i].W - S .* ∂T[i].W)
-        Δb = α .* (∂S[i].b .+ S∂T[i].b - S .* ∂T[i].b)
+        ΔW = α .* (∂S[i].W .+ S∂T[i].W - S .* ∂T[i].W) / S
+        Δb = α .* (∂S[i].b .+ S∂T[i].b - S .* ∂T[i].b) / S
         update!(opt(lr), network.f[i].W, ΔW)
         update!(opt(lr), network.f[i].b, Δb)
     end
-    ΔW = α .* (∂S[end].W .+ S∂T[end].W - S .* ∂T[end].W)
+    ΔW = α .* (∂S[end].W .+ S∂T[end].W - S .* ∂T[end].W) / S
     update!(opt(lr), network.f[end].W, ΔW)
 end
 
