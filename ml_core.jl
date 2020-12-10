@@ -26,20 +26,19 @@ function entropy_enhancement(lr::Float32)
     energyB = 0f0
     numberB = 0f0
     Func.ANN.initS()
-    for i in 1:Const.iters_num
+    @simd for ij in CartesianIndices((1:Const.iters_num, 1:Const.iters_num))
 
+        i, j = Tuple(ij)
         x = xdata[i]
+        y = ydata[j]
         eS = Func.energyS(x)
         eB = Func.energyB(x)
+        s  = Func.entropy(x, y)
         energyS += eS
         energyB += eB
         numberB += sum(x[1:Const.dimB])
-        for j in 1:Const.iters_num
-            y = ydata[j]
-            s  = Func.entropy(x, y)
-            entropy += s
-            Func.ANN.init_backward(x, y, s)
-        end
+        entropy += s
+        Func.ANN.init_backward(x, y, s)
     end
     entropy  = real(entropy) / Const.iters_num^2
     energyS  = real(energyS) / Const.iters_num
