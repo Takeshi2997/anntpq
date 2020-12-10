@@ -19,6 +19,12 @@ function entropy_enhancement(lr::Float32)
         Func.update(y)
         xdata[i] = x
         ydata[i] = y
+
+        eS = Func.energyS(x)
+        eB = Func.energyB(x)
+        energyS += eS
+        energyB += eB
+        numberB += sum(x[1:Const.dimB])
     end
 
     entropy = 0f0
@@ -31,12 +37,7 @@ function entropy_enhancement(lr::Float32)
         i, j = Tuple(ij)
         x = xdata[i]
         y = ydata[j]
-        eS = Func.energyS(x)
-        eB = Func.energyB(x)
         s  = Func.entropy(x, y)
-        energyS += eS
-        energyB += eB
-        numberB += sum(x[1:Const.dimB])
         entropy += s
         Func.ANN.init_backward(x, y, s)
     end
