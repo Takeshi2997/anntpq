@@ -71,7 +71,7 @@ function init()
     W = rand(Float32, Const.layer[end], Const.layer[end-1])
     W[1, :] = log.(sqrt.(rand(e, Const.layer[end-1])))
     b = zeros(Float32, Const.layer[end])
-    parameters[i] = [W, b]
+    parameters[end] = [W, b]
  
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
