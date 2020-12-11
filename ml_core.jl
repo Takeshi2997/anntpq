@@ -10,6 +10,12 @@ function entropy_enhancement(lr::Float32)
     y = rand([1f0, -1f0], Const.dimB+Const.dimS)
     xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
     ydata = Vector{Vector{Float32}}(undef, Const.iters_num)
+    entropy = 0f0
+    energyS = 0f0
+    energyB = 0f0
+    numberB = 0f0
+    Func.ANN.initS()
+
     for i in 1:Const.burnintime
         Func.update(x)
         Func.update(y)
@@ -27,11 +33,6 @@ function entropy_enhancement(lr::Float32)
         numberB += sum(x[1:Const.dimB])
     end
 
-    entropy = 0f0
-    energyS = 0f0
-    energyB = 0f0
-    numberB = 0f0
-    Func.ANN.initS()
     @simd for ij in CartesianIndices((1:Const.iters_num, 1:Const.iters_num))
 
         i, j = Tuple(ij)

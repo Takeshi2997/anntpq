@@ -110,16 +110,16 @@ function init_backward(x::Vector{Float32}, y::Vector{Float32}, s::Complex{Float3
         db1 = gsx[network.f[i].b]  .+ gsy[network.f[i].b]
         db2 = gsx′[network.f[i].b] .+ gsy′[network.f[i].b]
         ∂S[i].W  += real.(s .* (dw2 .- dw1))
-        S∂T[i].W += real.(s) .* 2f0 .* real.(dw1)
+        S∂T[i].W += real.(s) .* real.(dw1)
         ∂T[i].W  += real.(dw1)
         ∂S[i].b  += real.(s .* (db2 .- db1))
-        S∂T[i].b += real.(s) .* 2f0 .* real.(db1)
+        S∂T[i].b += real.(s) .* real.(db1)
         ∂T[i].b  += real.(db1)
     end
     dw1 = gsx[network.f[end].W]  .+ gsy[network.f[end].W]
     dw2 = gsx′[network.f[end].W] .+ gsy′[network.f[end].W]
     ∂S[end].W  += real.(s .* (dw2 .- dw1))
-    S∂T[end].W += real.(s) .* 2f0 .* real.(dw1)
+    S∂T[end].W += real.(s) .* real.(dw1)
     ∂T[end].W  += real.(dw1)
 end
 
@@ -127,12 +127,12 @@ function init_update(S::Float32, lr::Float32)
 
     α = 1f0 / Const.iters_num
     for i in 1:Const.layers_num-1
-        ΔW = α .* (∂S[i].W .+ S∂T[i].W - S .* ∂T[i].W) / S
-        Δb = α .* (∂S[i].b .+ S∂T[i].b - S .* ∂T[i].b) / S
+        ΔW = α .* (∂S[i].W .+ 2f0 .* S∂T[i].W - 2f0 .* S .* ∂T[i].W) / S
+        Δb = α .* (∂S[i].b .+ 2f0 .* S∂T[i].b - 2f0 .* S .* ∂T[i].b) / S
         update!(opt(lr), network.f[i].W, ΔW)
         update!(opt(lr), network.f[i].b, Δb)
     end
-    ΔW = α .* (∂S[end].W .+ S∂T[end].W - S .* ∂T[end].W) / S
+    ΔW = α .* (∂S[end].W .+ 2f0 .* S∂T[end].W - 2f0 .* S .* ∂T[end].W) / S
     update!(opt(lr), network.f[end].W, ΔW)
 end
 
