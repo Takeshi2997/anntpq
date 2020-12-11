@@ -1,6 +1,7 @@
 include("./setup.jl")
+include("./ml_core.jl")
 include("./ann.jl")
-using .Const, .ANN
+using .Const, .ANN, .MLcore
 using LinearAlgebra, Plots, Flux, BSON, StatsPlots
 
 N = 24
