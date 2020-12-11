@@ -1,7 +1,7 @@
 include("./setup.jl")
 include("./ann.jl")
 using .Const, .ANN
-using LinearAlgebra, Plots, Flux, BSON, StatsBase
+using LinearAlgebra, Plots, Flux, BSON, StatsPlots
 
 N = 24
 
@@ -26,11 +26,7 @@ function repeatperm(n)
     return out
 end
 
-dirname = "./data"
-f = open("energy_data.txt", "w")
-filenameparams = dirname * "/params_at_000.bson"
-
-ANN.load(filenameparams)
+MLcore.Func.ANN.init()
 
 out = repeatperm(N)
 ψall = Complex{Float32}[]
@@ -42,10 +38,10 @@ for x in out
 end
 ψall ./= sqrt(z)
 
-reψ = fit(Histogram, real.(ψall), nbins=100)
-imψ = fit(Histogram, imag.(ψall), nbins=100)
-plot(reψ)
+reψ = real.(ψall)
+imψ = imag.(ψall)
+histogram(reψ, bins=100)
 savefig("repsihist.png")
-plot(imψ)
+histogram(imψ, bins=100)
 savefig("impsihist.png")
 

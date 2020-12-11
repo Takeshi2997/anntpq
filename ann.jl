@@ -1,7 +1,7 @@
 module ANN
 include("./setup.jl")
 include("./legendreTF.jl")
-using .Const, .LegendreTF, LinearAlgebra, Flux, Zygote
+using .Const, .LegendreTF, LinearAlgebra, Flux, Zygote, Distributions
 using Flux: @functor
 using Flux.Optimise: update!
 using BSON: @save
@@ -26,21 +26,6 @@ function initO()
     end
 end
 
-∂S  = Vector{Parameters}(undef, Const.layers_num)
-S∂T = Vector{Parameters}(undef, Const.layers_num)
-∂T  = Vector{Parameters}(undef, Const.layers_num)
-
-function initS()
-
-    for i in 1:Const.layers_num
-        W = zeros(Float32, Const.layer[i+1], Const.layer[i])
-        b = zeros(Float32, Const.layer[i+1])
-        global ∂S[i]  = Parameters(W, b)
-        global S∂T[i] = Parameters(W, b)
-        global ∂T[i]  = Parameters(W, b)
-    end
-end
-
 mutable struct Network
 
     f::Flux.Chain
@@ -55,7 +40,7 @@ function Network()
     end
     layer[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
-    p = params(f)
+    p = Flux.params(f)
     Network(f, p)
 end
 
@@ -77,13 +62,19 @@ end
 function init()
 
     parameters = Vector{Array}(undef, Const.layers_num)
-    for i in 1:Const.layers_num
-        W = randn(Float32, Const.layer[i+1], Const.layer[i]) ./ Float32(sqrt(Const.layer[i]))
+    for i in 1:Const.layers_num-1
+        W = Flux.glorot_normal(Const.layer[i+1], Const.layer[i])
         b = zeros(Float32, Const.layer[i+1])
         parameters[i] = [W, b]
     end
+    e = Exponential(2f0)
+    W = rand(Float32, Const.layer[end], Const.layer[end-1])
+    W[1, :] = log.(sqrt.(rand(e, Const.layer[end-1])))
+    b = zeros(Float32, Const.layer[end])
+    parameters[i] = [W, b]
+ 
     paramset = [param for param in parameters]
-    p = params(paramset...)
+    p = Flux.params(paramset...)
     Flux.loadparams!(network.f, p)
 end
 
@@ -94,47 +85,6 @@ function forward(x::Vector{Float32})
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
-
-function init_backward(x::Vector{Float32}, y::Vector{Float32}, s::Complex{Float32})
-
-    x′ = vcat((@views x[1:Const.dimB]), (@views y[Const.dimB+1:end]))
-    y′ = vcat((@views y[1:Const.dimB]), (@views x[Const.dimB+1:end]))
-
-    gsx  = gradient(() -> loss(x),  network.p)
-    gsy  = gradient(() -> loss(y),  network.p)
-    gsx′ = gradient(() -> loss(x′), network.p)
-    gsy′ = gradient(() -> loss(y′), network.p)
-    for i in 1:Const.layers_num-1
-        dw1 = gsx[network.f[i].W]  .+ gsy[network.f[i].W]
-        dw2 = gsx′[network.f[i].W] .+ gsy′[network.f[i].W]
-        db1 = gsx[network.f[i].b]  .+ gsy[network.f[i].b]
-        db2 = gsx′[network.f[i].b] .+ gsy′[network.f[i].b]
-        ∂S[i].W  += real.(s .* (dw2 .- dw1))
-        S∂T[i].W += real.(s) .* real.(dw1)
-        ∂T[i].W  += real.(dw1)
-        ∂S[i].b  += real.(s .* (db2 .- db1))
-        S∂T[i].b += real.(s) .* real.(db1)
-        ∂T[i].b  += real.(db1)
-    end
-    dw1 = gsx[network.f[end].W]  .+ gsy[network.f[end].W]
-    dw2 = gsx′[network.f[end].W] .+ gsy′[network.f[end].W]
-    ∂S[end].W  += real.(s .* (dw2 .- dw1))
-    S∂T[end].W += real.(s) .* real.(dw1)
-    ∂T[end].W  += real.(dw1)
-end
-
-function init_update(S::Float32, lr::Float32)
-
-    α = 1f0 / Const.iters_num
-    for i in 1:Const.layers_num-1
-        ΔW = α .* (∂S[i].W .+ 2f0 .* S∂T[i].W - 2f0 .* S .* ∂T[i].W) / S
-        Δb = α .* (∂S[i].b .+ 2f0 .* S∂T[i].b - 2f0 .* S .* ∂T[i].b) / S
-        update!(opt(lr), network.f[i].W, ΔW)
-        update!(opt(lr), network.f[i].b, Δb)
-    end
-    ΔW = α .* (∂S[end].W .+ 2f0 .* S∂T[end].W - 2f0 .* S .* ∂T[end].W) / S
-    update!(opt(lr), network.f[end].W, ΔW)
-end
 
 function backward(x::Vector{Float32}, e::Complex{Float32})
 

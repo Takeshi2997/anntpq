@@ -4,59 +4,10 @@ include("./functions.jl")
 include("./legendreTF.jl")
 using .Const, .Func, .LegendreTF
 
-function entropy_enhancement(lr::Float32)
-
-    x = rand([1f0, -1f0], Const.dimB+Const.dimS)
-    y = rand([1f0, -1f0], Const.dimB+Const.dimS)
-    xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
-    ydata = Vector{Vector{Float32}}(undef, Const.iters_num)
-    entropy = 0f0
-    energyS = 0f0
-    energyB = 0f0
-    numberB = 0f0
-    Func.ANN.initS()
-
-    for i in 1:Const.burnintime
-        Func.update(x)
-        Func.update(y)
-    end
-    for i in 1:Const.iters_num
-        Func.update(x)
-        Func.update(y)
-        xdata[i] = x
-        ydata[i] = y
-
-        eS = Func.energyS(x)
-        eB = Func.energyB(x)
-        energyS += eS
-        energyB += eB
-        numberB += sum(x[1:Const.dimB])
-    end
-
-    @simd for ij in CartesianIndices((1:Const.iters_num, 1:Const.iters_num))
-
-        i, j = Tuple(ij)
-        x = xdata[i]
-        y = ydata[j]
-        s  = Func.entropy(x, y)
-        entropy += s
-        Func.ANN.init_backward(x, y, s)
-    end
-    entropy  = real(entropy) / Const.iters_num^2
-    energyS  = real(energyS) / Const.iters_num
-    energyB  = real(energyB) / Const.iters_num
-    numberB /= Const.iters_num
-
-    Func.ANN.init_update(entropy, lr)
-
-    entropy = -log(entropy)
-    return entropy, energyS, energyB, numberB
-end
-
-
 function sampling(ϵ::Float32, lr::Float32)
 
     x = rand([1f0, -1f0], Const.dimB+Const.dimS)
+    xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
     energy  = 0f0
     energyS = 0f0
     energyB = 0f0
@@ -70,7 +21,10 @@ function sampling(ϵ::Float32, lr::Float32)
 
     for i in 1:Const.iters_num
         Func.update(x)
+        xdata[i] = x
+    end
 
+    @simd for x in xdata
         eS = Func.energyS(x)
         eB = Func.energyB(x)
         e  = eS + eB
