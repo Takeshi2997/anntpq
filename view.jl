@@ -30,11 +30,13 @@ end
 MLcore.Func.ANN.init()
 
 out = repeatperm(N)
-ψall = Complex{Float32}[]
+l = length(out)
+ψall = Vector{Complex{Float32}}(undef, l)
 z = 0f0
-for x in out
+@simd for i in 1:l
+    x = out[i]
     ψ = exp(ANN.forward(x))
-    push!(ψall, ψ)
+    @inbounds ψall[i] = ψ
     global z += abs2(ψ)
 end
 ψall ./= sqrt(z)
