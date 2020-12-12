@@ -28,6 +28,8 @@ function repeatperm(n)
 end
 
 MLcore.Func.ANN.init()
+# filenameparams = "./data/params_at_000.bson"
+# MLcore.Func.ANN.load(filenameparams)
 
 out = repeatperm(N)
 l = length(out)
