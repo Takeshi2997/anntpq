@@ -21,7 +21,7 @@ function sampling(ϵ::Float32, lr::Float32)
 
     for i in 1:Const.iters_num
         Func.update(x)
-        xdata[i] = x
+        @inbounds xdata[i] = x
     end
 
     @simd for x in xdata

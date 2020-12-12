@@ -68,8 +68,9 @@ function init()
         parameters[i] = [W, b]
     end
     e = Exponential(2f0)
-    W = rand(Float32, Const.layer[end], Const.layer[end-1]) .* 2f0 .* π
+    W = Array{Float32, 2}(undef, Const.layer[end], Const.layer[end-1])
     W[1, :] = log.(sqrt.(rand(e, Const.layer[end-1])))
+    W[2, :] = rand(Float32, Const.layer[end-1]) .* 2f0 .* π .- π
     b = zeros(Float32, Const.layer[end])
     parameters[end] = [W, b]
  
