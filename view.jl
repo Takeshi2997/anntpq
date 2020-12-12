@@ -47,6 +47,5 @@ reψ = real.(ψall)
 imψ = imag.(ψall)
 histogram(reψ, title="Histogram of wave function", label="real part", bins=100)
 histogram!(imψ, label="imag part", bins=100)
-savefig("repsihist.png")
-savefig("impsihist.png")
+savefig("psihist.png")
 
