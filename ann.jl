@@ -26,6 +26,24 @@ function initO()
     end
 end
 
+struct Res{F,S<:AbstractArray,T<:AbstractArray}
+    W::S
+    b::T
+    σ::F
+end
+
+function Res(in::Integer, out::Integer, σ = identity;
+             initW = Flux.glorot_uniform, initb = zeros)
+  return Res(initW(out, in), initb(Float32, out), σ)
+end
+
+@functor Res
+
+function (m::Res)(x::AbstractArray)
+    W, b, σ = m.W, m.b, m.σ
+    x .+ σ.(W*x.+b)
+end
+
 mutable struct Network
 
     f::Flux.Chain
@@ -36,7 +54,7 @@ function Network()
 
     layer = Vector{Any}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layer[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
+        layer[i] = Res(Const.layer[i], Const.layer[i+1], hardtanh)
     end
     layer[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
