@@ -3,7 +3,6 @@ include("./setup.jl")
 include("./legendreTF.jl")
 using .Const, .LegendreTF, LinearAlgebra, Flux, Zygote, Distributions
 using Flux: @functor
-using Flux.Optimise: update!
 using BSON: @save
 using BSON: @load
 
