@@ -51,7 +51,7 @@ function energyS(x::Vector{Float32})
 
     z = ANN.forward(x)
     sum = 0f0im
-    @simd for ix in Const.dimB+1:Const.dimB+Const.dimS
+    for ix in Const.dimB+1:Const.dimB+Const.dimS
         sum += hamiltonianS(x, z, ix)
     end
 
@@ -76,7 +76,7 @@ function energyB(x::Vector{Float32})
 
     z = ANN.forward(x)
     sum = 0.0f0im
-    @simd for iy in 1:Const.dimB 
+    for iy in 1:Const.dimB 
         sum += hamiltonianB(x, z, iy)
     end
 

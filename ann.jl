@@ -3,6 +3,7 @@ include("./setup.jl")
 include("./legendreTF.jl")
 using .Const, .LegendreTF, LinearAlgebra, Flux, Zygote, Distributions
 using Flux: @functor
+using Flux.Optimise: update!
 using BSON: @save
 using BSON: @load
 
@@ -55,7 +56,7 @@ function Network()
     for i in 1:Const.layers_num-1
         layer[i] = Res(Const.layer[i], Const.layer[i+1], tanh)
     end
-    layer[end] = Res(Const.layer[end-1], Const.layer[end])
+    layer[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
     Network(f, p)
@@ -129,11 +130,11 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     for i in 1:Const.layers_num-1
         ΔW = α .* 2f0 .* real.(oe[i].W .- energy * o[i].W)
         Δb = α .* 2f0 .* real.(oe[i].b .- energy * o[i].b)
-        update!(opt(lr), network.f[i].W, ΔW, o[i].W)
-        update!(opt(lr), network.f[i].b, Δb, o[i].b)
+        update!(opt(lr), network.f[i].W, ΔW)
+        update!(opt(lr), network.f[i].b, Δb)
     end
     ΔW = α .* 2f0 * real(oe[end].W .- energy * o[end].W)
-    update!(opt(lr), network.f[end].W, ΔW, o[end].W)
+    update!(opt(lr), network.f[end].W, ΔW)
 end
 
 end

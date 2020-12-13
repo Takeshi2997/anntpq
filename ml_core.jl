@@ -24,7 +24,7 @@ function sampling(ϵ::Float32, lr::Float32)
         @inbounds xdata[i] = x
     end
 
-    @simd for x in xdata
+    Threads.@threads for x in xdata
         eS = Func.energyS(x)
         eB = Func.energyB(x)
         e  = eS + eB
