@@ -52,9 +52,10 @@ end
 function Network()
 
     layer = Vector{Any}(undef, Const.layers_num)
-    for i in 1:Const.layers_num
+    for i in 1:Const.layers_num-1
         layer[i] = Res(Const.layer[i], Const.layer[i+1], tanh)
     end
+    layer[end] = Res(Const.layer[end-1], Const.layer[end])
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
     Network(f, p)
