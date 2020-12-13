@@ -3,7 +3,6 @@ include("./setup.jl")
 include("./functions.jl")
 include("./legendreTF.jl")
 using .Const, .Func, .LegendreTF
-using BenchmarkTools
 
 function sampling(ϵ::Float32, lr::Float32)
 
