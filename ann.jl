@@ -80,17 +80,11 @@ end
 function init()
 
     parameters = Vector{Array}(undef, Const.layers_num)
-    for i in 1:Const.layers_num-1
+    for i in 1:Const.layers_num
         W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
         b = zeros(Float32, Const.layer[i+1])
         parameters[i] = [W, b]
     end
-    e = Exponential(2f0)
-    W = Array{Float32, 2}(undef, Const.layer[end], Const.layer[end-1])
-    W[1, :] = log.(sqrt.(rand(e, Const.layer[end-1])))
-    W[2, :] = rand(Float32, Const.layer[end-1]) .* π
-    b = zeros(Float32, Const.layer[end])
-    parameters[end] = [W, b]
  
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
