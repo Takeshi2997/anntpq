@@ -1,10 +1,12 @@
-include("./setup.jl")
-include("./ml_core.jl")
 using Distributed
+@everywhere include("./setup.jl")
+@everywhere include("./ml_core.jl")
 @everywhere using .Const, .MLcore
 @everywhere using Flux
 
-@everywhere function learning(iϵ::Integer, direname::String, lr::Float32, it_num::Integer)
+@everywhere function learning(iϵ::Integer, 
+                              dirname::String, , dirnameerror::String, 
+                              lr::Float32, it_num::Integer)
 
     # Initialize
     error   = 0f0
@@ -45,15 +47,11 @@ function main()
     dirname = "./data"
     rm(dirname, force=true, recursive=true)
     mkdir(dirname)
-
     dirnameerror = "./error"
     rm(dirnameerror, force=true, recursive=true)
     mkdir(dirnameerror)
 
-    lr      = Const.lr
-    it_num  = Const.it_num
-
-    @time pmap(iϵ -> learning(iϵ, dirname, lr, it_num), 1:Const.iϵmax)
+    @time pmap(iϵ -> learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num), 1:Const.iϵmax)
 end
 
 main()
