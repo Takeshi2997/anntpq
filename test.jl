@@ -1,31 +1,34 @@
-using Gen, GenViz
-import Random
+include("./setup.jl")
+using .Const
 
-function make_data_set(n)
-    Random.seed!(1)
-    prob_outlier = 0.5
-    true_inlier_noise = 0.5
-    true_outlier_noise = 5.0
-    true_slope = -1
-    true_intercept = 2
-    xs = collect(range(-5, stop=5, length=n))
-    ys = Float64[]
-    for (i, x) in enumerate(xs)
-        if rand() < prob_outlier
-            y = randn() * true_outlier_noise
-        else
-            y = true_slope * x + true_intercept + randn() * true_inlier_noise
-        end
-        push!(ys, y)
-    end
-    (xs, ys)
+abstract type Parameters end
+
+mutable struct Middle <: Parameters
+    W::Array{Complex{Float32}, 2}
+    b::Array{Complex{Float32}, 1}
 end
 
-(xs, ys) = make_data_set(200)
+mutable struct Output <: Parameters
+    W::Array{Complex{Float32}, 2}
+    b::Array{Complex{Float32}, 1}
+    a::Array{Complex{Float32}, 1}
+end
 
-server = VizServer(8000)
-v = Viz(server, joinpath(@__DIR__, "vue/dist"), [xs, ys])
-sleep(0.5)
-openInBrowser(v)
-sleep(3)
+o  = Vector{Parameters}(undef, Const.layers_num)
+oe = Vector{Parameters}(undef, Const.layers_num)
+
+function initO()
+
+    for i in 1:Const.layers_num-1
+        W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
+        b = zeros(Complex{Float32}, Const.layer[i+1])
+        global o[i]  = Middle(W, b)
+        global oe[i] = Middle(W, b)
+    end
+    W = zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1])
+    b = zeros(Complex{Float32}, Const.layer[end])
+    a = zeros(Complex{Float32}, Const.layer[1])
+    global o[end]  = Output(W, b, a)
+    global oe[end] = Output(W, b, a)
+end
 
