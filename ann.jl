@@ -1,7 +1,6 @@
 module ANN
 include("./setup.jl")
-include("./legendreTF.jl")
-using .Const, .LegendreTF, LinearAlgebra, Flux, Zygote, Distributions
+using .Const, LinearAlgebra, Flux, Zygote, Distributions
 using Flux: @functor
 using Flux.Optimise: update!
 using BSON: @save
@@ -103,7 +102,7 @@ end
 function forward(x::Vector{Float32})
 
     out, b = network.f(x)
-    return out[1] + im * out[2] + transpose(b) * x
+    return log(out[1] + im * out[2]) + transpose(b) * x
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
