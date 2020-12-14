@@ -10,12 +10,12 @@ using BSON: @load
 
 abstract type Parameters end
 
-mutable struct Middle <: Parameters
+mutable struct MiddleLayer <: Parameters
     W::Array{Complex{Float32}, 2}
     b::Array{Complex{Float32}, 1}
 end
 
-mutable struct Output <: Parameters
+mutable struct OutputLayer <: Parameters
     W::Array{Complex{Float32}, 2}
     b::Array{Complex{Float32}, 1}
     a::Array{Complex{Float32}, 1}
@@ -29,14 +29,14 @@ function initO()
     for i in 1:Const.layers_num-1
         W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
         b = zeros(Complex{Float32}, Const.layer[i+1])
-        global o[i]  = Middle(W, b)
-        global oe[i] = Middle(W, b)
+        global o[i]  = MiddleLayer(W, b)
+        global oe[i] = MiddleLayer(W, b)
     end
     W = zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b = zeros(Complex{Float32}, Const.layer[end])
     a = zeros(Complex{Float32}, Const.layer[1])
-    global o[end]  = Output(W, b, a)
-    global oe[end] = Output(W, b, a)
+    global o[end]  = OutputLayer(W, b, a)
+    global oe[end] = OutputLayer(W, b, a)
 end
 
 # Define Network
