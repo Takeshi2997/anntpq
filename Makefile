@@ -1,5 +1,5 @@
 JL          = ~/.julia/julia
-OPTS        = "--machine-file=$$PBS_NODEFILE"
+OPTS        = "-p 4"
 BASE        = functions.jl setup.jl ann.jl
 CORE        = ml_core.jl
 OBJS        = main.jl
