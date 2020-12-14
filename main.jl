@@ -5,7 +5,7 @@ using Distributed
 @everywhere using Flux
 
 @everywhere function learning(iϵ::Integer, 
-                              dirname::String, , dirnameerror::String, 
+                              dirname::String, dirnameerror::String, 
                               lr::Float32, it_num::Integer)
 
     # Initialize
