@@ -14,7 +14,7 @@ calc: $(BASE) $(CORE) $(CALC)
 	$(JL) $(CALC)
 
 test: $(BASE) $(CORE) $(OBJS) $(VIEW)
-	$(JL) $(OPTS) $(OBJS)
+	$(JL) $(OBJS)
 	$(JL) $(VIEW)
 
 clean:
