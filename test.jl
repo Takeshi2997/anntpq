@@ -5,7 +5,7 @@ include("./legendreTF.jl")
 using .Const, .ANN, .MLcore, .LegendreTF
 using LinearAlgebra, Flux, BSON
 
-function test(N::Integer)
+function test()
     MLcore.Func.ANN.init()
     
     f = open("energy_data.txt", "w")
