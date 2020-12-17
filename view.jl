@@ -1,7 +1,7 @@
 include("./setup.jl")
 include("./ml_core.jl")
 include("./ann.jl")
-include("./legendleTF.jl")
+include("./legendreTF.jl")
 using .Const, .ANN, .MLcore, .LegendreTF
 using LinearAlgebra, Plots, Flux, BSON, StatsPlots
 

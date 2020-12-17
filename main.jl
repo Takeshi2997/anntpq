@@ -7,25 +7,22 @@ using Distributed
 @everywhere function learning(iϵ::Integer, 
                               dirname::String, dirnameerror::String, 
                               lr::Float32, it_num::Integer)
-
     # Initialize
     error   = 0f0
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
-    MLcore.Func.ANN.init()
-
+    MLcore.Func.ANN.load(dirname * "/params_at_000.bson")
     ϵ = - 0.5f0 * iϵ / Const.iϵmax * Const.t * Const.dimB
     filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
     filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
- 
+
     # Learning
     io = open(filename, "w")
     for it in 1:it_num
 
         # Calculate expected value
         error, energyS, energyB, numberB = MLcore.sampling(ϵ, lr)
-
         write(io, string(it))
         write(io, "\t")
         write(io, string(error))
@@ -50,6 +47,8 @@ function main()
     dirnameerror = "./error"
     rm(dirnameerror, force=true, recursive=true)
     mkdir(dirnameerror)
+    MLcore.Func.ANN.init()
+    MLcore.Func.ANN.save(dirname * "/params_at_000.bson")
 
     @time pmap(iϵ -> learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num), 1:Const.iϵmax)
 end

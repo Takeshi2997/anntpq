@@ -5,24 +5,25 @@ using .Const, .Func
 
 function sampling(ϵ::Float32, lr::Float32)
 
+    # Initialize
     x = rand([1f0, -1f0], Const.dimB+Const.dimS)
     xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
     energy  = 0f0
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
-
     Func.ANN.initO()
 
+    # MCMC Start!
     for i in 1:Const.burnintime
         Func.update(x)
     end
-
     for i in 1:Const.iters_num
         Func.update(x)
         @inbounds xdata[i] = x
     end
 
+    # Calcurate Physical Value
     @simd for x in xdata
         eS = Func.energyS(x)
         eB = Func.energyB(x)
@@ -31,7 +32,6 @@ function sampling(ϵ::Float32, lr::Float32)
         energyB += eB
         energy  += e
         numberB += sum(x[1:Const.dimB])
-
         Func.ANN.backward(x, e)
     end
     energy   = real(energy)  / Const.iters_num
@@ -40,8 +40,10 @@ function sampling(ϵ::Float32, lr::Float32)
     numberB /= Const.iters_num
     error    = (energy - ϵ)^2 / 2f0
 
+    # Update Parameters
     Func.ANN.update(energy, ϵ, lr)
 
+    # Output
     return error, energyS, energyB, numberB
 end
 
@@ -57,7 +59,6 @@ function calculation_energy()
     for i in 1:Const.burnintime
         Func.update(x)
     end
-
     for i in 1:Const.iters_num
         Func.update(x)
         @inbounds xdata[i] = x

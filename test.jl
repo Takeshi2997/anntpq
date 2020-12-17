@@ -1,34 +1,30 @@
 include("./setup.jl")
-using .Const
+include("./ml_core.jl")
+include("./ann.jl")
+include("./legendreTF.jl")
+using .Const, .ANN, .MLcore, .LegendreTF
+using LinearAlgebra, Flux, BSON
 
-abstract type Parameters end
-
-mutable struct Middle <: Parameters
-    W::Array{Complex{Float32}, 2}
-    b::Array{Complex{Float32}, 1}
+function test(N::Integer)
+    MLcore.Func.ANN.init()
+    
+    f = open("energy_data.txt", "w")
+    energyS, energyB, numberB = MLcore.calculation_energy()
+    β = LegendreTF.calc_temperature(energyB / Const.dimB)
+    # Write energy
+    write(f, string(β))
+    write(f, "\t")
+    write(f, string(energyS / Const.dimS))
+    write(f, "\t")
+    write(f, string(energyB / Const.dimB))
+    write(f, "\t")
+    write(f, string(numberB / Const.dimB))
+    write(f, "\n")
+    close(f)
 end
 
-mutable struct Output <: Parameters
-    W::Array{Complex{Float32}, 2}
-    b::Array{Complex{Float32}, 1}
-    a::Array{Complex{Float32}, 1}
-end
+@time test()
 
-o  = Vector{Parameters}(undef, Const.layers_num)
-oe = Vector{Parameters}(undef, Const.layers_num)
 
-function initO()
 
-    for i in 1:Const.layers_num-1
-        W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
-        b = zeros(Complex{Float32}, Const.layer[i+1])
-        global o[i]  = Middle(W, b)
-        global oe[i] = Middle(W, b)
-    end
-    W = zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1])
-    b = zeros(Complex{Float32}, Const.layer[end])
-    a = zeros(Complex{Float32}, Const.layer[1])
-    global o[end]  = Output(W, b, a)
-    global oe[end] = Output(W, b, a)
-end
 
