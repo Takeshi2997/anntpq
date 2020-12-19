@@ -93,7 +93,7 @@ end
 # Learning Method
 
 function forward(x::Vector{Float32})
-    out, b = network.f(x)
+    out = network.f(x)
     return out[1] + im * out[2]
 end
 
