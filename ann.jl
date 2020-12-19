@@ -19,16 +19,12 @@ o  = Vector{Parameters}(undef, Const.layers_num)
 oe = Vector{Parameters}(undef, Const.layers_num)
 
 function initO()
-    for i in 1:Const.layers_num-1
+    for i in 1:Const.layers_num
         W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
         b = zeros(Complex{Float32}, Const.layer[i+1])
         global o[i]  = Layer(W, b)
         global oe[i] = Layer(W, b)
     end
-    W = zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1])
-    b = zeros(Complex{Float32}, Const.layer[1])
-    global o[end]  = Layer(W, b)
-    global oe[end] = Layer(W, b)
 end
 
 # Define Network
@@ -38,27 +34,28 @@ mutable struct Network
     p::Zygote.Params
 end
 
-struct Output{S<:AbstractArray,T<:AbstractArray}
+struct Res{F,S<:AbstractArray,T<:AbstractArray}
     W::S
     b::T
+    σ::F
 end
 
-function Output(in::Integer, out::Integer, out2::Integer;
-               initW = Flux.glorot_uniform, initb = zeros)
-  return Output(initW(out, in), initb(Float32, out2))
+function Res(in::Integer, out::Integer, σ = identity;
+             initW = Flux.glorot_uniform, initb = zeros)
+  return Res(initW(out, in), initb(Float32, out), σ)
 end
 
-@functor Output
+@functor Res
 
-function (m::Output)(x::AbstractArray)
-  W, b = m.W, m.b
-  W*x, b
+function (m::Res)(x::AbstractArray)
+    W, b, σ = m.W, m.b, m.σ
+    x .+ σ.(W*x.+b)
 end
 
 function Network()
     layer = Vector{Any}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layer[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
+        layer[i] = Res(Const.layer[i], Const.layer[i+1], tanh)
     end
     layer[end] = Output(Const.layer[end-1], Const.layer[end], Const.layer[1])
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
@@ -83,14 +80,11 @@ end
 
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
-    for i in 1:Const.layers_num-1
+    for i in 1:Const.layers_num
         W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
         b = zeros(Float32, Const.layer[i+1])
         parameters[i] = [W, b]
     end
-    W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1])
-    b = zeros(Float32, Const.layer[1])
-    parameters[end] = [W, b]
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
     Flux.loadparams!(network.f, p)
