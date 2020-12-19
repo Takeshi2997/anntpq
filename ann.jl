@@ -57,7 +57,7 @@ function Network()
     for i in 1:Const.layers_num-1
         layer[i] = Res(Const.layer[i], Const.layer[i+1], tanh)
     end
-    layer[end] = Output(Const.layer[end-1], Const.layer[end], Const.layer[1])
+    layer[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
     Network(f, p)
@@ -94,14 +94,14 @@ end
 
 function forward(x::Vector{Float32})
     out, b = network.f(x)
-    return out[1] + im * out[2] + transpose(b) * x
+    return out[1] + im * out[2]
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
 
 function backward(x::Vector{Float32}, e::Complex{Float32})
     gs = gradient(() -> loss(x), network.p)
-    for i in 1:Const.layers_num
+    for i in 1:Const.layers_num-1
         dw = gs[network.f[i].W]
         db = gs[network.f[i].b]
         o[i].W  += dw
@@ -109,6 +109,9 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
         o[i].b  += db
         oe[i].b += db * e
     end
+    dw = gs[network.f[i].W]
+    o[end].W  += dw
+    oe[end].W += dw * e
 end
 
 opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
@@ -122,6 +125,8 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         update!(opt(lr), network.f[i].W, ΔW)
         update!(opt(lr), network.f[i].b, Δb)
     end
+    ΔW = α .* 2f0 .* real.(oe[end].W .- energy * o[end].W)
+    update!(opt(lr), network.f[end].W, ΔW)
 end
 
 end
