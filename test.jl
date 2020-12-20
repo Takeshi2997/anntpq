@@ -23,7 +23,7 @@ function test()
     close(f)
 end
 
-allowscalar(false)
+CuArrays.allowscalar(false)
 @time test()
 
 

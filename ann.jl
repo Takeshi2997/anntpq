@@ -94,9 +94,11 @@ end
 
 # Learning Method
 
+const t = CuArray((1f0, im * 1f0))
+
 function forward(x::CuArray{Float32, 1})
     out, b = network.f(x)
-    return log(out[1] + im * out[2]) + transpose(b) * x
+    return log(transpose(t) * out) + transpose(b) * x
 end
 
 realloss(x::CuArray{Float32, 1}) = network.f(x)[1]
