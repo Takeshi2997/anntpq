@@ -88,7 +88,8 @@ function init()
     W = CuArray(Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]))
     b = CuArray(Flux.zeros(Float32, Const.layer[1]))
     parameters[end] = [W, b]
-    p = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num]...)
+    paramset = [param for param in parameters]
+    p = Flux.params(paramset...)
     Flux.loadparams!(network.f, p)
 end
 
