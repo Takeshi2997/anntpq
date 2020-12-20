@@ -47,7 +47,7 @@ end
 Output(W, b) = Output(W, b, identity)
 
 function Output(in::Integer, out::Integer, σ = identity;
-                initW = glorot_uniform, initb = zeros)
+                initW = Flux.glorot_uniform, initb = zeros)
   return Output(initW(out, in), initb(out), σ)
 end
 
