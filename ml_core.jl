@@ -51,8 +51,7 @@ function calculation_energy()
 
     # Initialize
     x = CuArray(rand([1.0f0, -1.0f0], Const.dimB+Const.dimS))
-    xdata = CuArray{CuArray{Float32}}(undef, Const.iters_num)
-    energy  = 0f0
+    xdata = Vector{CuArray{Float32}}(undef, Const.iters_num)
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
@@ -73,17 +72,14 @@ function calculation_energy()
         e  = eS + eB
         energyS += eS
         energyB += eB
-        energy  += e
         numberB += sum(x[1:Const.dimB])
     end
-    energy   = real(energy)  / Const.iters_num
     energyS  = real(energyS) / Const.iters_num
     energyB  = real(energyB) / Const.iters_num
     numberB /= Const.iters_num
-    error    = (energy - ϵ)^2 / 2f0
 
     # Output
-    return error, energyS, energyB, numberB
+    return energyS, energyB, numberB
 end
 
 end

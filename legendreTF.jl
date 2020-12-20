@@ -22,7 +22,7 @@ function ds(u, t)
     return -(u - f(t)) / t^2 - df(t) / t
 end
 
-function translate(u)
+function calc_temperature(u)
     outputs = 0.0f0
     t = 5.0f0
     tm = 0.0f0

@@ -38,27 +38,26 @@ end
 
 # Define Network
 
-struct Output <: Dense
+struct Output{S<:AbstractArray,T<:AbstractArray}
+  W::S
+  b::T
 end
 
-Output(W, b) = Output(W, b, identity)
-
-function Output(in::Integer, out::Integer, first::Integer, σ = identity;
-                initW = Flux.glorot_uniform, initb = zeros)
-    return Output(initW(out, in), initb(first), σ)
-end
+@functor Output
 
 function (a::Output)(x::AbstractArray)
-  W, b = a.W, a.b
+  W, b= a.W, a.b
   W*x, b
 end
 
 function Network()
-    layer = Vector{Flux.Dense}(undef, Const.layers_num)
+    layer = Vector(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
         layer[i] = Dense(Const.layer[i], Const.layer[i+1], CUDAnative.tanh) |> gpu
     end
-    layer[end] = Output(Const.layer[end-1], Const.layer[end], Const.layer[1]) |> gpu
+    W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1])
+    b = Flux.zeros(Const.layer[1])
+    layer[end] = Output(W, b)
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = params(f)
     Network(f, p)
@@ -84,11 +83,11 @@ function init()
     for i in 1:Const.layers_num-1
         W = CuArray(Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]))
         b = CuArray(zeros(Float32, Const.layer[i+1]))
-        parameters[i] = Parameters(W, b)
+        parameters[i] = Layer(W, b)
     end
     W = CuArray(Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]))
-    b = CuArray(zeros(Float32, Const.layer[1]))
-    parameters[end] = Parameters(W, b)
+    b = CuArray(Flux.zeros(Float32, Const.layer[1]))
+    parameters[end] = Layer(W, b)
     p = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num]...)
     Flux.loadparams!(network.f, p)
 end
