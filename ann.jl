@@ -43,9 +43,17 @@ struct Output{S<:AbstractArray,T<:AbstractArray}
   b::T
 end
 
-function Output(in::Integer, out::Integer, first::Integer;
-               initW = Flux.glorot_uniform, initb = zeros)
-    return Output(initW(out, in), initb(first))
+struct Output{F,S<:AbstractArray,T<:AbstractArray}
+  W::S
+  b::T
+  σ::F
+end
+
+Output(W, b) = Output(W, b, identity)
+
+function Output(in::Integer, out::Integer, σ = identity;
+                initW = glorot_uniform, initb = zeros)
+  return Output(initW(out, in), initb(out), σ)
 end
 
 @functor Output
