@@ -38,31 +38,20 @@ end
 
 # Define Network
 
-struct Output{F,S<:AbstractArray,T<:AbstractArray}
-  W::S
-  b::T
-  σ::F
+struct Output <: Dense
 end
 
 Output(W, b) = Output(W, b, identity)
 
 function Output(in::Integer, out::Integer, first::Integer, σ = identity;
                 initW = Flux.glorot_uniform, initb = zeros)
-  return Output(initW(out, in), initb(first), σ)
+    return Output(initW(out, in), initb(first), σ)
 end
-
-@functor Output
 
 function (a::Output)(x::AbstractArray)
   W, b = a.W, a.b
   W*x, b
 end
-
-(a::Output{<:Any,W})(x::AbstractArray{T}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
-  invoke(a, Tuple{AbstractArray}, x)
-
-(a::Output{<:Any,W})(x::AbstractArray{<:AbstractFloat}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
-  a(T.(x))
 
 function Network()
     layer = Vector{Flux.Dense}(undef, Const.layers_num)
