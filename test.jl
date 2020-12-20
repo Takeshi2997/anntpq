@@ -3,13 +3,13 @@ include("./ml_core.jl")
 include("./ann.jl")
 include("./legendreTF.jl")
 using .Const, .ANN, .MLcore, .LegendreTF
-using LinearAlgebra, Flux, BSON
+using LinearAlgebra, Flux, BSON, CuArrays
 
 function test()
     MLcore.Func.ANN.init()
     
     f = open("energy_data.txt", "w")
-    energyS, energyB, numberB = @time MLcore.calculation_energy()
+    energyS, energyB, numberB = MLcore.calculation_energy()
     β = LegendreTF.calc_temperature(energyB / Const.dimB)
     # Write energy
     write(f, string(β))
@@ -23,6 +23,7 @@ function test()
     close(f)
 end
 
+allowscalar(false)
 @time test()
 
 
