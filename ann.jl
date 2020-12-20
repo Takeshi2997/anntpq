@@ -79,26 +79,24 @@ function load(filename)
 end
 
 function init()
-    parameters = Vector{Parameters}(undef, Const.layers_num)
+    parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
         W = CuArray(Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]))
         b = CuArray(zeros(Float32, Const.layer[i+1]))
-        parameters[i] = Layer(W, b)
+        parameters[i] = [W, b]
     end
     W = CuArray(Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]))
     b = CuArray(Flux.zeros(Float32, Const.layer[1]))
-    parameters[end] = Layer(W, b)
+    parameters[end] = [W, b]
     p = params([[parameters[i].W, parameters[i].b] for i in 1:Const.layers_num]...)
     Flux.loadparams!(network.f, p)
 end
 
 # Learning Method
 
-const t = CuArray([1f0 0f0; 0f0 im * 1f0])
-
 function forward(x::CuArray{Float32, 1})
     out, b = network.f(x)
-    return log(CUDAnative.sum(t * out)) + transpose(b) * x
+    return log(out[1] + im * out[2]) + transpose(b) * x
 end
 
 realloss(x::CuArray{Float32, 1}) = network.f(x)[1]
