@@ -38,11 +38,6 @@ end
 
 # Define Network
 
-struct Output{S<:AbstractArray,T<:AbstractArray}
-  W::S
-  b::T
-end
-
 struct Output{F,S<:AbstractArray,T<:AbstractArray}
   W::S
   b::T
