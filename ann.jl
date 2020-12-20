@@ -84,11 +84,11 @@ end
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        W = Flux.glorot_normal(Const.layer[i+1], Const.layer[i])
+        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
         b = zeros(Float32, Const.layer[i+1])
         parameters[i] = [W, b]
     end
-    W = Flux.kaiming_normal(Const.layer[end], Const.layer[end-1])
+    W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1])
     b = zeros(Float32, Const.layer[1])
     parameters[end] = [W, b]
     paramset = [param for param in parameters]
@@ -100,7 +100,7 @@ end
 
 function forward(x::Vector{Float32})
     out, b = network.f(x)
-    return out[1] + im * out[2] + transpose(b) * x
+    return log(out[1] + im * out[2]) + transpose(b) * x
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
