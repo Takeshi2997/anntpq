@@ -1,6 +1,6 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote
+using .Const, LinearAlgebra, Flux, Zygote, CuArrays, CUDAnative
 using Flux: @functor
 using Flux.Optimise: update!
 using BSON: @save

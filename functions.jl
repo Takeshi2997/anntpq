@@ -1,7 +1,7 @@
 module Func
 include("./setup.jl")
 include("./ann.jl")
-using .Const, .ANN, LinearAlgebra, Distributed, Random, CuArrays, CUDAnative
+using .Const, .ANN, LinearAlgebra, Random, CuArrays, CUDAnative
 
 function makeflip()
     flip = Vector{CuArray{Float32, 1}}(undef, Const.layer[1])
