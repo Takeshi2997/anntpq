@@ -55,8 +55,8 @@ function Network()
     for i in 1:Const.layers_num-1
         layer[i] = Dense(Const.layer[i], Const.layer[i+1], CUDAnative.tanh) |> gpu
     end
-    W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1])
-    b = Flux.zeros(Const.layer[1])
+    W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]) |> gpu
+    b = Flux.zeros(Const.layer[1]) |> gpu
     layer[end] = Output(W, b)
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = params(f)
