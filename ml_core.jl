@@ -7,7 +7,7 @@ function sampling(ϵ::Float32, lr::Float32)
 
     # Initialize
     x = CuArray(rand([1.0f0, -1.0f0], Const.dimB+Const.dimS))
-    xdata = CuArray{CuArray{Float32}}(undef, Const.iters_num)
+    xdata = Vector{CuArray{Float32}}(undef, Const.iters_num)
     energy  = 0f0
     energyS = 0f0
     energyB = 0f0
@@ -24,7 +24,7 @@ function sampling(ϵ::Float32, lr::Float32)
     end
 
     # Calcurate Physical Value
-    for x in xdata
+    @simd for x in xdata
         eS = Func.energyS(x)
         eB = Func.energyB(x)
         e  = eS + eB
@@ -66,7 +66,7 @@ function calculation_energy()
     end
 
     # Calcurate Physical Value
-    for x in xdata
+    @simd for x in xdata
         eS = Func.energyS(x)
         eB = Func.energyB(x)
         e  = eS + eB

@@ -1,6 +1,6 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote, CuArrays, CUDAnative
+using .Const, LinearAlgebra, Flux, Zygote, CuArrays, CUDA
 using Flux: @functor
 using Flux.Optimise: update!
 using BSON: @save
@@ -97,7 +97,7 @@ end
 
 function forward(x::CuArray{Float32, 1})
     out, b = network.f(x)
-    return log(out[1] + im * out[2]) + transpose(b) * x
+    return out[1] + im * out[2] + transpose(b) * x
 end
 
 realloss(x::CuArray{Float32, 1}) = network.f(x)[1]
