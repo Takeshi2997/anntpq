@@ -59,7 +59,7 @@ function Network()
     b = Flux.zeros(Const.layer[1]) |> gpu
     layer[end] = Output(W, b)
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
-    p = params(f)
+    p = Flux.params(f)
     Network(f, p)
 end
 
