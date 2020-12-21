@@ -45,8 +45,8 @@ function view(N::Integer)
     
     reψ = real.(ψall)
     imψ = imag.(ψall)
-    histogram(reψ, title="Histogram of wave function", label="real part", bins=100)
-    histogram!(imψ, label="imag part", bins=100)
+    histogram(reψ, title="Histogram of wave function", label="real part", bins=500)
+    histogram!(imψ, label="imag part", bins=500)
     savefig("psihist.png")
 
     f = open("energy_data.txt", "w")

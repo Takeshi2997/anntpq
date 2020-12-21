@@ -1,6 +1,6 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote
+using .Const, LinearAlgebra, Flux, Zygote, Distributions
 using Flux: @functor
 using Flux.Optimise: update!
 using BSON: @save
@@ -39,8 +39,8 @@ struct Output{S<:AbstractArray,T<:AbstractArray}
 end
 
 function Output(in::Integer, out::Integer, first::Integer;
-               initW = Flux.glorot_uniform, initb = zeros)
-    return Output(initW(out, in), initb(Float32, first))
+               initW = Flux.glorot_uniform, initb = Flux.zeros)
+    return Output(initW(out, in), initb(first))
 end
 
 @functor Output
@@ -84,12 +84,15 @@ end
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]) * 8.5f0
-        b = zeros(Float32, Const.layer[i+1])
+        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]) 
+        b = Flux.zeros(Float32, Const.layer[i+1])
         parameters[i] = [W, b]
     end
-    W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]) * 8.5f0
-    b = zeros(Float32, Const.layer[1])
+    e = Exponential(5f0)
+    W = Array{Float32, 2}(undef, Const.layer[end], Const.layer[end-1])
+    W[1, :] = rand(e, Const.layer[end-1])
+    W[2, :] = Flux.glorot_uniform(Const.layer[end-1])
+    b = Flux.zeros(Float32, Const.layer[1])
     parameters[end] = [W, b]
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
@@ -100,7 +103,7 @@ end
 
 function forward(x::Vector{Float32})
     out, b = network.f(x)
-    return log(out[1] + im * out[2]) + transpose(b) * x
+    return out[1] + im * out[2] + transpose(b) * x
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
