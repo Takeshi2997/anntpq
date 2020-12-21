@@ -1,6 +1,6 @@
 include("./setup.jl")
 include("./ml_core.jl")
-using .Const, .MLcore, InteractiveUtils, CuArrays
+using .Const, .MLcore, InteractiveUtils, CUDA
 using Flux
 
 everywhere using Flux

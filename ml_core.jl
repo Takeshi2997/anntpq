@@ -1,7 +1,7 @@
 module MLcore
 include("./setup.jl")
 include("./functions.jl")
-using .Const, .Func, CuArrays
+using .Const, .Func, CUDA
 
 function sampling(ϵ::Float32, lr::Float32)
 

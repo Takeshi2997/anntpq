@@ -1,6 +1,6 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote, CuArrays, CUDA
+using .Const, LinearAlgebra, Flux, Zygote, CUDA, Distributions
 using Flux: @functor
 using Flux.Optimise: update!
 using BSON: @save
@@ -53,7 +53,7 @@ end
 function Network()
     layer = Vector(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layer[i] = Dense(Const.layer[i], Const.layer[i+1], CUDAnative.tanh) |> gpu
+        layer[i] = Dense(Const.layer[i], Const.layer[i+1], tanh) |> gpu
     end
     W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]) |> gpu
     b = Flux.zeros(Const.layer[1]) |> gpu
@@ -85,7 +85,11 @@ function init()
         b = CuArray(zeros(Float32, Const.layer[i+1]))
         parameters[i] = [W, b]
     end
-    W = CuArray(Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]))
+    e = Exponential(5f0)
+    w = Array{Float32, 2}(undef, Const.layer[end], Const.layer[end-1])
+    w[1, :] = rand(e, Const.layer[end-1])
+    w[2, :] = Flux.glorot_uniform(Const.layer[end-1])
+    W = CuArray(w)
     b = CuArray(Flux.zeros(Float32, Const.layer[1]))
     parameters[end] = [W, b]
     paramset = [param for param in parameters]
