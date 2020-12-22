@@ -88,9 +88,9 @@ function init()
         b = Flux.zeros(Float32, Const.layer[i+1])
         parameters[i] = [W, b]
     end
-    e = Exponential(5f0)
+    e = Exponential(2f0)
     W = Array{Float32, 2}(undef, Const.layer[end], Const.layer[end-1])
-    W[1, :] = rand(e, Const.layer[end-1]) .* sqrt(2f0 / (Const.layer[end-1] + Const.layer[end]))
+    W[1, :] = rand(e, Const.layer[end-1])
     W[2, :] = Flux.glorot_uniform(Const.layer[end-1])
     b = Flux.zeros(Float32, Const.layer[1])
     parameters[end] = [W, b]
