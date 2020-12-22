@@ -115,7 +115,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
         o[i].b  += db
         oe[i].b += db * e
     end
-    dw = gs[network.f[i].W]
+    dw = gs[network.f[end].W]
     o[end].W  += dw
     oe[end].W += dw * e
 end
