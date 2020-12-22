@@ -1,4 +1,4 @@
-JL          = ~/.julia/julia
+JL          = ~/julia/julia
 OPTS        = "-p 4"
 BASE        = functions.jl setup.jl ann.jl
 CORE        = ml_core.jl
