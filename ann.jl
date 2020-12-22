@@ -58,7 +58,7 @@ end
 function Network()
     layer = Vector{Any}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layer[i] = Dense(Const.layer[i], Const.layer[i+1], swish)
+        layer[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
     end
     layer[end] = Output(Const.layer[end-1], Const.layer[end], Const.layer[1])
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
@@ -84,14 +84,14 @@ end
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        W = Flux.kaiming_uniform(Const.layer[i+1], Const.layer[i]) 
+        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]) 
         b = Flux.zeros(Float32, Const.layer[i+1])
         parameters[i] = [W, b]
     end
     e = Exponential(5f0)
     W = Array{Float32, 2}(undef, Const.layer[end], Const.layer[end-1])
-    W[1, :] = rand(e, Const.layer[end-1]) .* sqrt(2f0 / Const.layer[end-1])
-    W[2, :] = Flux.kaiming_uniform(Const.layer[end-1])
+    W[1, :] = rand(e, Const.layer[end-1]) .* sqrt(2f0 / (Const.layer[end-1] + Const.layer[end]))
+    W[2, :] = Flux.glorot_uniform(Const.layer[end-1])
     b = Flux.zeros(Float32, Const.layer[1])
     parameters[end] = [W, b]
     paramset = [param for param in parameters]
