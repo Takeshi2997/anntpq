@@ -1,6 +1,6 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote
+using .Const, LinearAlgebra, Flux, Zygote, Distributions
 using Flux: @functor
 using Flux.Optimise: update!
 using BSON: @save
@@ -85,11 +85,11 @@ function init()
         b = Flux.zeros(Float32, Const.layer[i+1])
         parameters[i] = [W, b]
     end
-    e = Exponential(sqrt(2f0 / (Const.layer[end-1] + Const.layer[end])))
+    e = Exponential(2f0)
     W = Array{Float32, 2}(undef, Const.layer[end], Const.layer[end-1])
     W[1, :] = rand(e, Const.layer[end-1])
     W[2, :] = Flux.glorot_uniform(Const.layer[end-1])
-    b = Flux.zeros(Float32, Const.layer[1])
+    b = Flux.zeros(Float32, Const.layer[end])
     parameters[end] = [W, b]
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
