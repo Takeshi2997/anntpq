@@ -1,7 +1,7 @@
 module Func
 include("./setup.jl")
 include("./ann.jl")
-using .Const, .ANN, LinearAlgebra, Distributed, Random
+using .Const, .ANN, LinearAlgebra, Random
 
 function makeflip()
     flip = Vector{Vector{Float32}}(undef, Const.layer[1])
