@@ -2,7 +2,6 @@ module ANN
 include("./setup.jl")
 using .Const, LinearAlgebra, Flux, Zygote, Distributions
 using Flux: @functor
-using Flux.Optimise: update!
 using BSON: @save
 using BSON: @load
 
