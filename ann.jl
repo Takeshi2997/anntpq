@@ -11,8 +11,8 @@ using BSON: @load
 abstract type Parameters end
 
 mutable struct Layer <: Parameters
-    W::Array{Complex{Float32}, 2}
-    b::Array{Complex{Float32}, 1}
+    W::Array{Complex{Float32}}
+    b::Array{Complex{Float32}}
 end
 
 o  = Vector{Parameters}(undef, Const.layers_num)
@@ -26,7 +26,7 @@ function initO()
         global oe[i] = Layer(W, b)
     end
     W = zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1])
-    b = zeros(Complex{Float32}, Const.layer[1])
+    b = zeros(Complex{Float32}, Const.layer[end], Const.layer[1])
     global o[end]  = Layer(W, b)
     global oe[end] = Layer(W, b)
 end
@@ -40,7 +40,7 @@ end
 
 function Output(in::Integer, out::Integer, first::Integer;
                initW = Flux.glorot_uniform, initb = Flux.zeros)
-    return Output(initW(out, in), initb(first))
+    return Output(initW(out, in), initb(out, first))
 end
 
 @functor Output
@@ -88,11 +88,8 @@ function init()
         b = Flux.zeros(Float32, Const.layer[i+1])
         parameters[i] = [W, b]
     end
-    e = Exponential(2f0)
-    W = Array{Float32, 2}(undef, Const.layer[end], Const.layer[end-1])
-    W[1, :] = rand(e, Const.layer[end-1])
-    W[2, :] = Flux.glorot_uniform(Const.layer[end-1])
-    b = Flux.glorot_uniform(Const.layer[1])
+    W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]) 
+    b = Flux.glorot_uniform(Const.layer[end], Const.layer[1])
     parameters[end] = [W, b]
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
@@ -102,8 +99,9 @@ end
 # Learning Method
 
 function forward(x::Vector{Float32})
-    out, b = network.f(x)
-    return out[1] + im * out[2] + transpose(b) * x
+    Z, b = network.f(x)
+    B = b * x
+    return Z[1] + im * Z[2] + B[1] + im * B[2]
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
