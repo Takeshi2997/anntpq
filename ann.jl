@@ -92,7 +92,7 @@ function init()
     W = Array{Float32, 2}(undef, Const.layer[end], Const.layer[end-1])
     W[1, :] = rand(e, Const.layer[end-1])
     W[2, :] = Flux.glorot_uniform(Const.layer[end-1])
-    b = Flux.zeros(Float32, Const.layer[1])
+    b = Flux.glorot_uniform(Const.layer[1])
     parameters[end] = [W, b]
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
