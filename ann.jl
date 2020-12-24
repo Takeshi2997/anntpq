@@ -87,7 +87,10 @@ function init()
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
-    W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]) 
+    e = Exponential(5f0)
+    W = Array{Float32, 2}(undef, Const.layer[end], Const.layer[end-1]) 
+    W[1, :] = rand(e, Const.layer[end-1])
+    W[2, :] = Flux.glorot_uniform(Const.layer[end-1])
     b = Flux.glorot_uniform(Const.layer[end], Const.layer[1])
     parameters[end] = [W, b]
     paramset = [param for param in parameters]
@@ -98,9 +101,9 @@ end
 # Learning Method
 
 function forward(x::Vector{Float32})
-    Z, b = network.f(x)
+    out, b = network.f(x)
     B = b * x
-    return Z[1] + im * Z[2] + B[1] + im * B[2]
+    return out[1] + im * out[2] + B[1] + im * B[2]
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
@@ -117,7 +120,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     end
 end
 
-opt(lr::Float32) = QRMSProp(lr, 0.9)
+opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     x = 2f0 * (energy - ϵ)
@@ -125,37 +128,9 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     for i in 1:Const.layers_num
         ΔW = α .* 2f0 .* real.(oe[i].W .- energy * o[i].W)
         Δb = α .* 2f0 .* real.(oe[i].b .- energy * o[i].b)
-        update!(opt(lr), network.f[i].W, ΔW, o[i].W)
-        update!(opt(lr), network.f[i].b, Δb, o[i].b)
+        update!(opt(lr), network.f[i].W, ΔW)
+        update!(opt(lr), network.f[i].b, Δb)
     end
-end
-
-const ϵ = 1f-8
-
-mutable struct QRMSProp
-  eta::Float32
-  rho::Float32
-  acc::IdDict
-end
-
-QRMSProp(η = 0.001f0, ρ = 0.9f0) = QRMSProp(η, ρ, IdDict())
-
-function apply!(o::QRMSProp, x, g, O)
-  η, ρ = o.eta, o.rho
-  acc = get!(o.acc, x, zero(x))::typeof(x)
-  @. acc = ρ * acc + (1 - ρ) * abs2(O)
-  @. g *= η / (√acc + ϵ)
-end
-
-function update!(opt, x, x̄, x̂)
-  x .-= apply!(opt, x, x̄, x̂)
-end
-
-function update!(opt, xs::Params, gs, o)
-  for x in xs
-    gs[x] == nothing && continue
-    update!(opt, x, gs[x], o)
-  end
 end
 
 end
