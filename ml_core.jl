@@ -50,7 +50,7 @@ end
 function calculation_energy()
 
     x = rand([1f0, -1f0], Const.dimB+Const.dimS)
-    xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
+    xdata = Vector{Vector{Float32}}(undef, Const.num)
     energy  = 0f0
     energyS = 0f0
     energyB = 0f0
@@ -59,7 +59,7 @@ function calculation_energy()
     for i in 1:Const.burnintime
         Func.update(x)
     end
-    for i in 1:Const.iters_num
+    for i in 1:Const.num
         Func.update(x)
         @inbounds xdata[i] = x
     end
@@ -73,10 +73,10 @@ function calculation_energy()
         energy  += e
         numberB += sum(x[1:Const.dimB])
     end
-    energy   = real(energy)  / Const.iters_num
-    energyS  = real(energyS) / Const.iters_num
-    energyB  = real(energyB) / Const.iters_num
-    numberB /= Const.iters_num
+    energy   = real(energy)  / Const.num
+    energyS  = real(energyS) / Const.num
+    energyB  = real(energyB) / Const.num
+    numberB /= Const.num
 
     return energyS, energyB, numberB
 end
