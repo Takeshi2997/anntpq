@@ -84,12 +84,12 @@ end
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        W = Flux.glorot_normal(Const.layer[i+1], Const.layer[i]) 
+        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]) 
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
-    W = Flux.glorot_normal(Const.layer[end], Const.layer[end-1])
-    b = Flux.glorot_normal(Const.layer[end], Const.layer[1])
+    W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1])
+    b = Flux.glorot_uniform(Const.layer[end], Const.layer[1])
     parameters[end] = [W, b]
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
