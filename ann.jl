@@ -12,7 +12,7 @@ abstract type Parameters end
 
 mutable struct Layer <: Parameters
     W::CuArray{Complex{Float32}, 2}
-    b::CuArray{Complex{Float32}, 1}
+    b::CuArray{Complex{Float32}, 2}
 end
 
 o  = Vector{Parameters}(undef, Const.layers_num)
@@ -26,7 +26,7 @@ function initO()
         global oe[i] = Layer(W, b)
     end
     W = CuArray(zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1]))
-    b = CuArray(zeros(Complex{Float32}, Const.layer[1]))
+    b = CuArray(zeros(Complex{Float32}, Const.layer[end], Const.layer[1]))
     global o[end]  = Layer(W, b)
     global oe[end] = Layer(W, b)
 end
@@ -56,7 +56,7 @@ function Network()
         layer[i] = Dense(Const.layer[i], Const.layer[i+1], tanh) |> gpu
     end
     W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]) |> gpu
-    b = Flux.zeros(Const.layer[1]) |> gpu
+    b = Flux.zeros(Const.layer[end], Const.layer[1]) |> gpu
     layer[end] = Output(W, b)
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
@@ -82,15 +82,11 @@ function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
         W = CuArray(Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]))
-        b = CuArray(zeros(Float32, Const.layer[i+1]))
+        b = CuArray(Flux.zeros(Const.layer[i+1]))
         parameters[i] = [W, b]
     end
-    e = Exponential(5f0)
-    w = Array{Float32, 2}(undef, Const.layer[end], Const.layer[end-1])
-    w[1, :] = rand(e, Const.layer[end-1])
-    w[2, :] = Flux.glorot_uniform(Const.layer[end-1])
-    W = CuArray(w)
-    b = CuArray(Flux.zeros(Float32, Const.layer[1]))
+    W = CuArray(Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]))
+    b = CuArray(Flux.glorot_uniform(Const.layer[end], Const.layer[1]))
     parameters[end] = [W, b]
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
@@ -101,7 +97,8 @@ end
 
 function forward(x::CuArray{Float32, 1})
     out, b = network.f(x)
-    return out[1] + im * out[2] + transpose(b) * x
+    B = b * x
+    return out[1] + im * out[2] + B[1] + im * B[2]
 end
 
 realloss(x::CuArray{Float32, 1}) = network.f(x)[1]
