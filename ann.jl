@@ -58,7 +58,7 @@ end
 function Network()
     layer = Vector{Any}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layer[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
+        layer[i] = Dense(Const.layer[i], Const.layer[i+1], hardtanh)
     end
     layer[end] = Output(Const.layer[end-1], Const.layer[end], Const.layer[1])
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
