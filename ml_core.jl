@@ -9,6 +9,7 @@ function sampling(ϵ::Float32, lr::Float32)
     x = rand([1f0, -1f0], Const.dimB+Const.dimS)
     xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
     energy  = 0f0
+    senergy = 0f0
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
@@ -31,17 +32,19 @@ function sampling(ϵ::Float32, lr::Float32)
         energyS += eS
         energyB += eB
         energy  += e
+        senergy += e^2
         numberB += sum(x[1:Const.dimB])
         Func.ANN.backward(x, e)
     end
     energy   = real(energy)  / Const.iters_num
+    senergy  = real(senergy)  / Const.iters_num
     energyS  = real(energyS) / Const.iters_num
     energyB  = real(energyB) / Const.iters_num
     numberB /= Const.iters_num
-    error    = (energy - ϵ)^2 / 2f0
+    error    = (energy - ϵ)^2 - Const.η * (senergy - energy^2)
 
     # Update Parameters
-    Func.ANN.update(energy, ϵ, lr)
+    Func.ANN.update(energy, senergy, ϵ, lr)
 
     # Output
     return error, energyS, energyB, numberB
