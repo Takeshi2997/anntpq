@@ -129,10 +129,10 @@ function update(energy::Float32, senergy::Float32, ϵ::Float32, lr::Float32)
     α = 1f0 / Const.iters_num
     for i in 1:Const.layers_num
         ΔW = α .* 4f0 * (energy - ϵ) .* real.(oe[i].W .- energy * o[i].W) - 
-        Const.η .* α .* real.(oe2[i].W - senergy .* o[i].W - 
+        Const.η .* α .* real.((oe2[i].W - senergy .* o[i].W) - 
                               2f0 .* energy .* (oe[i].W .- energy * o[i].W))
-        Δb = α .* 4f0 * (energy - ϵ) .* real.(oe[i].b .- energy * o[i].b)
-        Const.η .* α .* real.(oe2[i].b - senergy .* o[i].b - 
+        Δb = α .* 4f0 * (energy - ϵ) .* real.(oe[i].b .- energy * o[i].b) - 
+        Const.η .* α .* real.((oe2[i].b - senergy .* o[i].b) - 
                               2f0 .* energy .* (oe[i].b .- energy * o[i].b))
         update!(opt(lr), network.f[i].W, ΔW)
         update!(opt(lr), network.f[i].b, Δb)
