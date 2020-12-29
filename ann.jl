@@ -104,8 +104,7 @@ function forward(x::Vector{Float32})
     return out[1] + im * out[2] + B[1] + im * B[2]
 end
 
-sqnorm(θ::Array{Float32}) = sum(abs2, θ)
-loss(x::Vector{Float32}) = real(forward(x)) + sum(sqnorm, network.p)
+loss(x::Vector{Float32}) = real(forward(x))
 
 function backward(x::Vector{Float32}, e::Complex{Float32})
     gs = gradient(() -> loss(x), network.p)
