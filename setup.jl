@@ -8,14 +8,11 @@ const dimB = 80
 const t = 1.0f0
 const J = 1.0f0
 
-# Error Function
-const η = 0.1f0
-
 # Repeat Number
 const burnintime = 100
 const iters_num = 500
-const it_num = 15000
-const iϵmax = 12
+const it_num = 10000
+const iϵmax = 4
 const num = 10000
 
 # Network Params

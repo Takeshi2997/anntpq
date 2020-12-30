@@ -17,7 +17,6 @@ end
 
 o   = Vector{Parameters}(undef, Const.layers_num)
 oe  = Vector{Parameters}(undef, Const.layers_num)
-oe2 = Vector{Parameters}(undef, Const.layers_num)
 
 function initO()
     for i in 1:Const.layers_num-1
@@ -25,13 +24,11 @@ function initO()
         b = zeros(Complex{Float32}, Const.layer[i+1])
         global o[i]   = Layer(W, b)
         global oe[i]  = Layer(W, b)
-        global oe2[i] = Layer(W, b)
     end
     W = zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b = zeros(Complex{Float32}, Const.layer[end], Const.layer[1])
     global o[end]   = Layer(W, b)
     global oe[end]  = Layer(W, b)
-    global oe2[end] = Layer(W, b)
 end
 
 # Define Network
@@ -116,24 +113,18 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
         db = gs[network.f[i].b]
         o[i].W  += dw
         oe[i].W += dw * e
-        oe[i].W += dw * e^2
         o[i].b  += db
         oe[i].b += db * e
-        oe[i].b += db * e^2
     end
 end
 
 opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 
-function update(energy::Float32, senergy::Float32, ϵ::Float32, lr::Float32)
+function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 1f0 / Const.iters_num
     for i in 1:Const.layers_num
-        ΔW = α .* 4f0 * (energy - ϵ) .* real.(oe[i].W .- energy * o[i].W) - 
-        Const.η .* α .* real.((oe2[i].W - senergy .* o[i].W) - 
-                              2f0 .* energy .* (oe[i].W .- energy * o[i].W))
-        Δb = α .* 4f0 * (energy - ϵ) .* real.(oe[i].b .- energy * o[i].b) - 
-        Const.η .* α .* real.((oe2[i].b - senergy .* o[i].b) - 
-                              2f0 .* energy .* (oe[i].b .- energy * o[i].b))
+        ΔW = α .* sign(energy - ϵ) .* real.(oe[i].W .- energy * o[i].W)
+        Δb = α .* sign(energy - ϵ) .* real.(oe[i].b .- energy * o[i].b)
         update!(opt(lr), network.f[i].W, ΔW)
         update!(opt(lr), network.f[i].b, Δb)
     end
