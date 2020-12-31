@@ -26,7 +26,7 @@ function initO()
         global oe[i]  = Layer(W, b)
     end
     W = zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1])
-    b = zeros(Complex{Float32}, Const.layer[end], Const.layer[1])
+    b = zeros(Complex{Float32}, Const.layer[1])
     global o[end]   = Layer(W, b)
     global oe[end]  = Layer(W, b)
 end
@@ -40,7 +40,7 @@ end
 
 function Output(in::Integer, out::Integer, first::Integer;
                 initW = Flux.glorot_uniform, initb = Flux.zeros)
-    return Output(initW(out, in), initb(out, first))
+    return Output(initW(out, in), initb(first))
 end
 
 @functor Output
@@ -89,7 +89,7 @@ function init()
         parameters[i] = [W, b]
     end
     W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1])
-    b = Flux.glorot_uniform(Const.layer[end], Const.layer[1])
+    b = Flux.glorot_uniform(Const.layer[1])
     parameters[end] = [W, b]
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
@@ -100,8 +100,8 @@ end
 
 function forward(x::Vector{Float32})
     out, b = network.f(x)
-    B = b * x
-    return out[1] + im * out[2] + B[1] + im * B[2]
+    B = transpose(b) * x
+    return out[1] + im * out[2] + im * B
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
@@ -123,8 +123,8 @@ opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 1f0 / Const.iters_num
     for i in 1:Const.layers_num
-        ΔW = α .* sign(energy - ϵ) .* real.(oe[i].W .- energy * o[i].W)
-        Δb = α .* sign(energy - ϵ) .* real.(oe[i].b .- energy * o[i].b)
+        ΔW = α .* 2f0 * (energy - ϵ) .* real.(oe[i].W .- energy * o[i].W)
+        Δb = α .* 2f0 * (energy - ϵ) .* real.(oe[i].b .- energy * o[i].b)
         update!(opt(lr), network.f[i].W, ΔW)
         update!(opt(lr), network.f[i].b, Δb)
     end

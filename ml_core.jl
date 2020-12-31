@@ -38,7 +38,7 @@ function sampling(ϵ::Float32, lr::Float32)
     energyS  = real(energyS) / Const.iters_num
     energyB  = real(energyB) / Const.iters_num
     numberB /= Const.iters_num
-    error    = abs(energy - ϵ)
+    error    = (energy - ϵ)^2 / 2f0
 
     # Update Parameters
     Func.ANN.update(energy, ϵ, lr)
