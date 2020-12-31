@@ -11,8 +11,8 @@ using BSON: @load
 abstract type Parameters end
 
 mutable struct Layer <: Parameters
-    W::Array{Complex{Float32}}
-    b::Array{Complex{Float32}}
+    W::Array{Complex{Float32}, 2}
+    b::Array{Complex{Float32}, 1}
 end
 
 o   = Vector{Parameters}(undef, Const.layers_num)
@@ -34,8 +34,8 @@ end
 # Define Network
 
 struct Output{S<:AbstractArray,T<:AbstractArray}
-  W::S
-  b::T
+    W::S
+    b::T
 end
 
 function Output(in::Integer, out::Integer, first::Integer;
@@ -56,7 +56,7 @@ mutable struct Network
 end
 
 function Network()
-    layer = Vector{Any}(undef, Const.layers_num)
+    layer = Vector(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
         layer[i] = Dense(Const.layer[i], Const.layer[i+1], hardtanh)
     end
@@ -100,7 +100,7 @@ end
 
 function forward(x::Vector{Float32})
     out, b = network.f(x)
-    B = transpose(b) * x
+    B = transpose(x) * b
     return out[1] + im * out[2] + im * B
 end
 
@@ -112,9 +112,9 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
         dw = gs[network.f[i].W]
         db = gs[network.f[i].b]
         o[i].W  += dw
-        oe[i].W += dw * e
+        oe[i].W += dw .* e
         o[i].b  += db
-        oe[i].b += db * e
+        oe[i].b += db .* e
     end
 end
 
@@ -123,8 +123,8 @@ opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 1f0 / Const.iters_num
     for i in 1:Const.layers_num
-        ΔW = α .* 2f0 * (energy - ϵ) .* real.(oe[i].W .- energy * o[i].W)
-        Δb = α .* 2f0 * (energy - ϵ) .* real.(oe[i].b .- energy * o[i].b)
+        ΔW = α .* 2f0 .* (energy - ϵ) .* real.(oe[i].W .- energy * o[i].W)
+        Δb = α .* 2f0 .* (energy - ϵ) .* real.(oe[i].b .- energy * o[i].b)
         update!(opt(lr), network.f[i].W, ΔW)
         update!(opt(lr), network.f[i].b, Δb)
     end
