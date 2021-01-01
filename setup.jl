@@ -12,7 +12,7 @@ const J = 1.0f0
 const burnintime = 100
 const iters_num = 500
 const it_num = 10000
-const iϵmax = 4
+const iϵmax = 12
 const num = 10000
 
 # Network Params
