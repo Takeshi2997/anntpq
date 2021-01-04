@@ -65,9 +65,13 @@ end
 function Network()
     layer = Vector{Any}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layer[i] = Dense(Const.layer[i], Const.layer[i+1], tanh) |> Float64
+        W = zeros(Float64, Const.layer[i+1], Const.layer[i])
+        b = zeros(Float64, Const.layer[i+1])
+        layer[i] = Dense(W, b, tanh)
     end
-    layer[end] = Output(Const.layer[end-1], Const.layer[end], Const.layer[1]) |> Float64
+    W = zeros(Float64, Const.layer[end], Const.layer[end-1])
+    b = zeros(Float64, Const.layer[end], Const.layer[1])
+    layer[end] = Output(W, b)
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
     Network(f, p)
