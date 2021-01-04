@@ -3,11 +3,18 @@ include("./setup.jl")
 include("./functions.jl")
 using .Const, .Func
 
+mutable struct state{T <: AbstractArray}
+    x::T
+    xdata::Vector{T}
+end
+
+const x = rand([1f0, -1f0], Const.dimB+Const.dimS)
+const xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
+
 function sampling(ϵ::Float32, lr::Float32)
 
     # Initialize
-    x = rand([1f0, -1f0], Const.dimB+Const.dimS)
-    xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
+    s = state(x, xdata)
     energy  = 0f0
     energyS = 0f0
     energyB = 0f0
@@ -16,15 +23,15 @@ function sampling(ϵ::Float32, lr::Float32)
 
     # MCMC Start!
     for i in 1:Const.burnintime
-        Func.update(x)
+        Func.update(s.x)
     end
     for i in 1:Const.iters_num
-        Func.update(x)
-        @inbounds xdata[i] = x
+        Func.update(s.x)
+        @inbounds s.xdata[i] = s.x
     end
 
     # Calcurate Physical Value
-    @simd for x in xdata
+    @simd for x in s.xdata
         eS = Func.energyS(x)
         eB = Func.energyB(x)
         e  = eS + eB

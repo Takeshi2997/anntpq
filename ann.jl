@@ -97,11 +97,11 @@ function init()
 end
 
 # Learning Method
-
+const C = [1f0, 1f0im]
 function forward(x::Vector{Float32})
-    out, b = network.f(x)
+    (A, b) = network.f(x)
     B = b * x
-    return out[1] + im * out[2] + B[1] + im * B[2]
+    return dot(C, A + B)
 end
 
 loss(x::Vector{Float32}) = real(forward(x))

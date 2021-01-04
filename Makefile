@@ -18,5 +18,5 @@ test: $(BASE) $(CORE) $(OBJS) $(VIEW)
 	$(JL) $(VIEW)
 
 clean:
-	-rm -f *.txt *.png *.dat nohup.out
+	-rm -f *.txt *.png *.dat nohup.out *.mem
 	-rm -rf data error
