@@ -6,7 +6,7 @@ using .Const, .ANN, .MLcore, .LegendreTF
 using LinearAlgebra, Plots, Flux, BSON, StatsPlots
 
 function repeatperm(n)
-    xs = [1f0, -1f0]
+    xs = [1.0, -1.0]
     ys::typeof(xs) = []
     out = []
 
@@ -33,8 +33,8 @@ function view(N::Integer)
     
     out = repeatperm(N)
     l = length(out)
-    ψall = Vector{Complex{Float32}}(undef, l)
-    z = 0f0
+    ψall = Vector{Complex{Float64}}(undef, l)
+    z = 0.0
     @simd for i in 1:l
         x = out[i]
         ψ = exp(ANN.forward(x))
