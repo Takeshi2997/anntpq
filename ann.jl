@@ -9,8 +9,8 @@ using Flux.Optimise: update!
 abstract type Parameters end
 
 mutable struct Layer <: Parameters
-    W::Array{Complex{Float64}}
-    b::Array{Complex{Float64}}
+    W::Array{Float64}
+    b::Array{Float64}
 end
 
 o = Vector{Parameters}(undef, Const.layers_num)
@@ -18,12 +18,12 @@ o = Vector{Parameters}(undef, Const.layers_num)
 
 function initO()
     for i in 1:Const.layers_num-1
-        W = zeros(Complex{Float64}, Const.layer[i+1], Const.layer[i])
-        b = zeros(Complex{Float64}, Const.layer[i+1])
+        W = zeros(Float64, Const.layer[i+1], Const.layer[i])
+        b = zeros(Float64, Const.layer[i+1])
         global o[i]   = Layer(W, b)
     end
-    W = zeros(Complex{Float64}, Const.layer[end], Const.layer[end-1])
-    b = zeros(Complex{Float64}, Const.layer[end], Const.layer[1])
+    W = zeros(Float64, Const.layer[end], Const.layer[end-1])
+    b = zeros(Float64, Const.layer[end], Const.layer[1])
     global o[end]   = Layer(W, b)
 end
 
