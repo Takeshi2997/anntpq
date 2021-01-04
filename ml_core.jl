@@ -68,8 +68,8 @@ function quantum_sampling(trace::Vector{Array})
         energyB += eB
         numberB += sum(x[1:Const.dimB])
     end
-    energyS  = real(energyS_lc) / Const.iters_num
-    energyB  = real(energyB_lc) / Const.iters_num
+    energyS  = real(energyS) / Const.iters_num
+    energyB  = real(energyB) / Const.iters_num
     numberB /= Const.iters_num
     return energyS, energyB, numberB
 end
