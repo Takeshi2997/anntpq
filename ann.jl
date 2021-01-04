@@ -115,8 +115,8 @@ end
 
 function backward(e::Float64)
     for i in 1:Const.layers_num
-        o[i].W += (network.f[i].W .- μ) * e
-        o[i].b += (network.f[i].b .- μ) * e
+        o[i].W += (network.f[i].W .- μ[i].W) * e
+        o[i].b += (network.f[i].b .- μ[i].b) * e
     end
 end
 
