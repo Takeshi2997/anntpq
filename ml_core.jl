@@ -61,7 +61,7 @@ function quantum_sampling(trace::Vector{Array})
     end
 
     # Calcurate Physical Value
-    @simd for x in xdata
+    for x in xdata
         eS = Func.energyS(x)
         eB = Func.energyB(x)
         energyS += eS
