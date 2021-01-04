@@ -36,7 +36,7 @@ using Distributed
     end
     close(io)
 
-    MLcore.Func.ANN.save(filenameparams)
+    MLcore.Func.ANN.savedata(filenameparams)
 end
 
 function main()
@@ -48,7 +48,7 @@ function main()
     rm(dirnameerror, force=true, recursive=true)
     mkdir(dirnameerror)
     MLcore.Func.ANN.initμ()
-    MLcore.Func.ANN.save(dirname * "/params_at_000.dat")
+    MLcore.Func.ANN.savedata(dirname * "/params_at_000.dat")
     learning(0, dirname, dirnameerror, Const.lr, Const.it_num)
     exit()
 
