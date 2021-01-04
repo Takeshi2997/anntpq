@@ -18,13 +18,13 @@ const flip = makeflip()
 function update(x::Vector{Float32})
     rng = MersenneTwister(1234)
     l = length(x)
-    randamnum = rand(rng, Float32, l)
+    randomnum = rand(rng, Float32, l)
     for ix in 1:l
         x₁ = x[ix]
         z = ANN.forward(x)
         zflip = ANN.forward(flip[ix] * x)
         prob = exp(2.0f0 * real(zflip - z))
-        @inbounds x[ix] = ifelse(randamnum[ix] < prob, -x₁, x₁)
+        @inbounds x[ix] = ifelse(randomnum[ix] < prob, -x₁, x₁)
     end
 end
 

@@ -15,20 +15,25 @@ mutable struct Layer <: Parameters
     b::Array{Complex{Float32}}
 end
 
-o   = Vector{Parameters}(undef, Const.layers_num)
-oe  = Vector{Parameters}(undef, Const.layers_num)
-
-function initO()
+function makeinitO()
+    oi  = Vector{Parameters}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
         W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
         b = zeros(Complex{Float32}, Const.layer[i+1])
-        global o[i]   = Layer(W, b)
-        global oe[i]  = Layer(W, b)
+        oi[i]   = Layer(W, b)
     end
     W = zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b = zeros(Complex{Float32}, Const.layer[end], Const.layer[1])
-    global o[end]   = Layer(W, b)
-    global oe[end]  = Layer(W, b)
+    oi[end]   = Layer(W, b)
+    return oi
+end
+const oi = makeinitO()
+
+o  = Vector{Parameters}(undef, Const.layers_num)
+oe = Vector{Parameters}(undef, Const.layers_num)
+function initO()
+    global o  = oi
+    global oe = oi
 end
 
 # Define Network
@@ -101,7 +106,7 @@ const C = [1f0, 1f0im]
 function forward(x::Vector{Float32})
     (A, b) = network.f(x)
     B = b * x
-    return dot(C, A + B)
+    return dot(A + B, C)
 end
 
 loss(x::Vector{Float32}) = real(forward(x))

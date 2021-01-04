@@ -7,13 +7,11 @@ mutable struct state{T <: AbstractArray}
     x::T
     xdata::Vector{T}
 end
-
-const x = rand([1f0, -1f0], Const.dimB+Const.dimS)
 const xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
 
 function sampling(ϵ::Float32, lr::Float32)
-
     # Initialize
+    x = rand([1f0, -1f0], Const.dimB+Const.dimS)
     s = state(x, xdata)
     energy  = 0f0
     energyS = 0f0
