@@ -3,7 +3,7 @@ include("./setup.jl")
 include("./functions.jl")
 using .Const, .Func
 
-const xdatainit = Vector{Vector{Float32}}(undef, Const.iters_num)
+const xdatainit = [zeros(Float32, Const.dimB+Const.dimS) for n in 1:Const.iters_num]
 
 function sampling(ϵ::Float32, lr::Float32)
     # Initialize
