@@ -1,7 +1,7 @@
 module MLcore
 include("./setup.jl")
 include("./functions.jl")
-using .Const, .Func
+using .Const, .Func, Random
 
 const xdatainit = [zeros(Float32, Const.dimB+Const.dimS) for n in 1:Const.iters_num]
 

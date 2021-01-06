@@ -1,7 +1,7 @@
 module Func
 include("./setup.jl")
 include("./ann.jl")
-using .Const, .ANN, LinearAlgebra, Random
+using .Const, .ANN, LinearAlgebra
 
 struct Flip
     flip::Vector{Vector{Float32}}
@@ -21,7 +21,7 @@ function update(x::Vector{Float32}, randomnum::Vector{Float32})
     for ix in 1:length(x)
         x₁ = x[ix]
         z = ANN.forward(x)
-        zflip = ANN.forward(flip[ix] .* x)
+        zflip = ANN.forward(a.flip[ix] .* x)
         prob = exp(2.0f0 * real(zflip - z))
         @inbounds x[ix] = ifelse(randomnum[ix] < prob, -x₁, x₁)
     end
@@ -32,7 +32,7 @@ function hamiltonianS(x::Vector{Float32},
     out = 0f0im
     ixnext = Const.dimB + (ix - Const.dimB) % Const.dimS + 1
     if x[ix] != x[ixnext]
-        zflip = ANN.forward(flip[ixnext] .* flip[ix] .* x)
+        zflip = ANN.forward(a.flip[ixnext] .* a.flip[ix] .* x)
         out  += 2f0 * exp(zflip - z) - 1f0
     else
         out += 1f0
@@ -54,7 +54,7 @@ function hamiltonianB(x::Vector{Float32},
     out = 0f0im
     iynext = iy%Const.dimB + 1
     if x[iy] != x[iynext]
-        zflip = ANN.forward(flip[iynext] .* flip[iy] .* x)
+        zflip = ANN.forward(a.flip[iynext] .* a.flip[iy] .* x)
         out  += exp(zflip - z)
     end
     return -Const.t * out
