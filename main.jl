@@ -6,15 +6,15 @@ using Distributed
 
 @everywhere function learning(iϵ::Integer, 
                               dirname::String, dirnameerror::String, 
-                              lr::Float64, it_num::Integer)
+                              lr::Float32, it_num::Integer)
     # Initialize
-    error   = 0.0
-    energyS = 0.0
-    energyB = 0.0
-    numberB = 0.0
-    MLcore.Func.ANN.loaddata(dirname * "/params_at_000.dat")
-    ϵ = - 0.5 * iϵ / Const.iϵmax * Const.t * Const.dimB
-    filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".dat"
+    error   = 0f0
+    energyS = 0f0
+    energyB = 0f0
+    numberB = 0f0
+    MLcore.Func.ANN.load(dirname * "/params_at_000.bson")
+    ϵ = - 0.5f0 * iϵ / Const.iϵmax * Const.t * Const.dimB
+    filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
     filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
 
     # Learning
@@ -36,7 +36,7 @@ using Distributed
     end
     close(io)
 
-    MLcore.Func.ANN.savedata(filenameparams)
+    MLcore.Func.ANN.save(filenameparams)
 end
 
 function main()
@@ -47,12 +47,11 @@ function main()
     dirnameerror = "./error"
     rm(dirnameerror, force=true, recursive=true)
     mkdir(dirnameerror)
-    MLcore.Func.ANN.initμ()
-    MLcore.Func.ANN.savedata(dirname * "/params_at_000.dat")
-    learning(0, dirname, dirnameerror, Const.lr, Const.it_num)
-    exit()
+    MLcore.Func.ANN.init()
+    MLcore.Func.ANN.save("./data/params_at_000.bson")
+    learning(0, dirname, dirnameerror, 0.00001f0, 15000)
 
-    @time pmap(iϵ -> learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num), 1:Const.iϵmax)
+    pmap(iϵ -> learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num), 1:Const.iϵmax)
 end
 
 main()

@@ -6,7 +6,7 @@ using .Const, .ANN, .MLcore, .LegendreTF
 using LinearAlgebra, Plots, Flux, BSON, StatsPlots
 
 function repeatperm(n)
-    xs = [1.0, -1.0]
+    xs = [1f0, -1f0]
     ys::typeof(xs) = []
     out = []
 
@@ -27,14 +27,14 @@ function repeatperm(n)
 end
 
 function view(N::Integer)
-    MLcore.Func.ANN.init()
-    # filenameparams = "./data/params_at_000.bson"
-    # MLcore.Func.ANN.load(filenameparams)
+#    MLcore.Func.ANN.init()
+    filenameparams = "./data/params_at_000.bson"
+    MLcore.Func.ANN.load(filenameparams)
     
     out = repeatperm(N)
     l = length(out)
-    ψall = Vector{Complex{Float64}}(undef, l)
-    z = 0.0
+    ψall = Vector{Complex{Float32}}(undef, l)
+    z = 0f0
     @simd for i in 1:l
         x = out[i]
         ψ = exp(ANN.forward(x))
@@ -50,7 +50,7 @@ function view(N::Integer)
     savefig("psihist.png")
 
     f = open("energy_data.txt", "w")
-    energyS, energyB, numberB = MLcore.calculation_energy()
+    energyS, energyB, numberB, variance = MLcore.calculation_energy()
     β = LegendreTF.calc_temperature(energyB / Const.dimB)
     # Write energy
     write(f, string(β))
@@ -60,11 +60,13 @@ function view(N::Integer)
     write(f, string(energyB / Const.dimB))
     write(f, "\t")
     write(f, string(numberB / Const.dimB))
+    write(f, "\t")
+    write(f, string(variance))
     write(f, "\n")
     close(f)
 end
 
-N = 24
+N = 16
 @time view(N)
 
 
