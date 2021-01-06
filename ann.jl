@@ -104,9 +104,9 @@ end
 # Learning Method
 const C = transpose([1f0, 1f0im])
 function forward(x::Vector{Float32})
-    (A, b) = network.f(x)
+    (Out, b) = network.f(x)
     B = b * x
-    return C * (A + B)
+    return C * (Out + B)
 end
 
 loss(x::Vector{Float32}) = real(forward(x))

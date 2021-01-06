@@ -14,13 +14,15 @@ function sampling(ϵ::Float32, lr::Float32)
     energyB = 0f0
     numberB = 0f0
     Func.ANN.initO()
-
+    rng = MersenneTwister(1234)
+    randomset = [rand(rng, Float32, length) for i in 1:Const.burnintime+Const.iters_num]
+ 
     # MCMC Start!
-    for i in 1:Const.burnintime
-        Func.update(x)
+    for randomnum in (@views randomset[1:Const.burnintime])
+        Func.update(x, randomnum)
     end
-    for i in 1:Const.iters_num
-        Func.update(x)
+    for randomnum in (@views randomset[Const.burnintime+1:end])
+        Func.update(x, randomnum)
         @inbounds xdata[i] = x
     end
 

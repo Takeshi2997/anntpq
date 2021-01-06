@@ -49,7 +49,7 @@ function main()
     mkdir(dirnameerror)
     MLcore.Func.ANN.init()
     MLcore.Func.ANN.save("./data/params_at_000.bson")
-    learning(0, dirname, dirnameerror, Const.lr, Const.it_num)
+    learning(0, dirname, dirnameerror, 0.00001f0, Const.it_num)
 
     pmap(iϵ -> learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num), 1:Const.iϵmax)
 end
