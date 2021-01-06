@@ -19,10 +19,10 @@ function sampling(ϵ::Float32, lr::Float32)
  
     # MCMC Start!
     for i in 1:Const.burnintime
-        Func.update(x, randomnum[i])
+        Func.update(x, randomset[i])
     end
     for i in 1:Const.iters_num
-        Func.update(x, randomnum[Const.burnintime+i])
+        Func.update(x, randomset[Const.burnintime+i])
         @inbounds xdata[i] = x
     end
 
