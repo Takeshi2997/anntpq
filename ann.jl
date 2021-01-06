@@ -15,21 +15,16 @@ mutable struct Layer <: Parameters
     b::Array{Complex{Float32}}
 end
 
-function makeinitO()
-    oi  = Vector{Parameters}(undef, Const.layers_num)
-    for i in 1:Const.layers_num
-        W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
-        b = zeros(Complex{Float32}, Const.layer[i+1])
-        oi[i]   = Layer(W, b)
-    end
-end
-const oi = makeinitO()
+const oi = [[zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]),
+             zeros(Complex{Float32}, Const.layer[i+1])] for i in 1:Const.layers_num]
 
 o  = Vector{Parameters}(undef, Const.layers_num)
 oe = Vector{Parameters}(undef, Const.layers_num)
 function initO()
-    global o  = oi
-    global oe = oi
+    for i in 1:Const.layers_num
+        global o[i]  = Layer(oi[i]...)
+        global oe[i] = Layer(oi[i]...)
+    end
 end
 
 # Define Network
@@ -70,7 +65,7 @@ end
 function Network()
     layer = Vector(undef, Const.layers_num)
     layer[1] = Dense(Const.layer[1], Const.layer[2], tanh)
-    for i in 1:Const.layers_num-1
+    for i in 2:Const.layers_num-1
         layer[i] = Res(Const.layer[i], Const.layer[i+1], tanh)
     end
     layer[end] = Output(Const.layer[end-1], Const.layer[end])
