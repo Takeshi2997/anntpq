@@ -96,7 +96,7 @@ end
 # Learning Method
 function forward(x::Vector{Float32})
     out, b = network.f(x)
-    B = transpose(x) * b
+    B = b * x
     return out[1] + im * out[2] + B[1] + im * B[2]
 end
 
