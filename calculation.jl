@@ -24,7 +24,7 @@ function calculate()
         write(f, "\t")
         write(f, string(numberB / Const.dimB))
         write(f, "\t")
-        write(f, string(variance))
+        write(f, string(variance / Const.dimS))
         write(f, "\n")
     end
     close(f)

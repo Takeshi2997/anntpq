@@ -61,8 +61,8 @@ function calculation_energy()
     energyB = 0f0
     numberB = 0f0
     rng = MersenneTwister(1234)
-    random = rand(rng, Float32, length(x), Const.burnintime+Const.iters_num)
-    randomset = [random[:, i] for i in 1:Const.burnintime+Const.iters_num]
+    random = rand(rng, Float32, length(x), Const.burnintime+Const.num)
+    randomset = [random[:, i] for i in 1:Const.burnintime+Const.num]
  
     for i in 1:Const.burnintime
         Func.update(x, randomset[i])
@@ -79,15 +79,15 @@ function calculation_energy()
         energyS += eS
         energyB += eB
         energy  += e
-        senergy += abs2(e)
+        senergy += abs2(eS)
         numberB += sum(x[1:Const.dimB])
     end
     energy   = real(energy)  / Const.num
-    senergy /= Cons.num
+    senergy /= Const.num
     energyS  = real(energyS) / Const.num
     energyB  = real(energyB) / Const.num
     numberB /= Const.num
-    variance = senergy - energy^2
+    variance = senergy - energyS^2
 
     return energyS, energyB, numberB, variance
 end

@@ -15,41 +15,33 @@ mutable struct Layer <: Parameters
     b::Array{Complex{Float32}}
 end
 
-function makeinitO()
-    oi  = Vector{Parameters}(undef, Const.layers_num)
-    for i in 1:Const.layers_num-1
-        W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
-        b = zeros(Complex{Float32}, Const.layer[i+1])
-        oi[i]   = Layer(W, b)
-    end
-    W = zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1])
-    b = zeros(Complex{Float32}, Const.layer[end], Const.layer[1])
-    oi[end]   = Layer(W, b)
-    return oi
-end
-const oi = makeinitO()
+const oimid = [[zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]),
+                zeros(Complex{Float32}, Const.layer[i+1])] for i in 1:Const.layers_num-1]
+const oiend =  [zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1]),
+                zeros(Complex{Float32}, Const.layer[end], Const.layer[1])]
 
 o  = Vector{Parameters}(undef, Const.layers_num)
 oe = Vector{Parameters}(undef, Const.layers_num)
 function initO()
-    global o  = oi
-    global oe = oi
+    for i in 1:Const.layers_num-1
+        global o[i]  = Layer(oimid[i]...)
+        global oe[i] = Layer(oimid[i]...)
+    end
+    global o[end]  = Layer(oiend...)
+    global oe[end] = Layer(oiend...)
 end
 
 # Define Network
 
-struct Output{S<:AbstractArray,T<:AbstractArray}
+struct Output{S<:AbstractArray, T<:AbstractArray}
   W::S
   b::T
 end
-
 function Output(in::Integer, out::Integer, first::Integer;
                 initW = Flux.glorot_uniform, initb = Flux.zeros)
     return Output(initW(out, in), initb(out, first))
 end
-
 @functor Output
-
 function (a::Output)(x::AbstractArray)
   W, b = a.W, a.b
   W*x, b
@@ -63,9 +55,9 @@ end
 function Network()
     layer = Vector(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layer[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
+        layer[i] = Output(Const.layer[i], Const.layer[i+1], tanh)
     end
-    layer[end] = Output(Const.layer[end-1], Const.layer[end], Const.layer[1])
+    layer[end] = Output(Const.layer[end-1], Const.layer[end])
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
     Network(f, p)
@@ -103,8 +95,8 @@ end
 
 # Learning Method
 function forward(x::Vector{Float32})
-    (out, b) = network.f(x)
-    B = b * x
+    out, b = network.f(x)
+    B = transpose(x) * b
     return out[1] + im * out[2] + B[1] + im * B[2]
 end
 
