@@ -61,8 +61,8 @@ function calculation_energy()
     energyB = 0f0
     numberB = 0f0
     rng = MersenneTwister(1234)
-    random = rand(rng, Float32, length(x), Const.burnintime+Const.iters_num)
-    randomset = [random[:, i] for i in 1:Const.burnintime+Const.iters_num]
+    random = rand(rng, Float32, length(x), Const.burnintime+Const.num)
+    randomset = [random[:, i] for i in 1:Const.burnintime+Const.num]
  
     for i in 1:Const.burnintime
         Func.update(x, randomset[i])
