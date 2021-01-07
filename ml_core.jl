@@ -79,15 +79,15 @@ function calculation_energy()
         energyS += eS
         energyB += eB
         energy  += e
-        senergy += abs2(e)
+        senergy += abs2(eS)
         numberB += sum(x[1:Const.dimB])
     end
     energy   = real(energy)  / Const.num
-    senergy /= Cons.num
+    senergy /= Const.num
     energyS  = real(energyS) / Const.num
     energyB  = real(energyB) / Const.num
     numberB /= Const.num
-    variance = senergy - energy^2
+    variance = senergy - energyS^2
 
     return energyS, energyB, numberB, variance
 end
