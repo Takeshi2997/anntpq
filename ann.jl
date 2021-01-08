@@ -9,26 +9,42 @@ using BSON: @load
 # Initialize Variables
 
 abstract type Parameters end
-
 mutable struct Layer <: Parameters
     W::Array{Complex{Float32}}
     b::Array{Complex{Float32}}
 end
 
-o   = Vector{Parameters}(undef, Const.layers_num)
-oe  = Vector{Parameters}(undef, Const.layers_num)
-
-function initO()
+function initparamlist()
+    paramlist = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
         W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
         b = zeros(Complex{Float32}, Const.layer[i+1])
-        global o[i]   = Layer(W, b)
-        global oe[i]  = Layer(W, b)
+        paramlist[i] = [W, b]
     end
     W = zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b = zeros(Complex{Float32}, Const.layer[end], Const.layer[1])
-    global o[end]   = Layer(W, b)
-    global oe[end]  = Layer(W, b)
+    paramlist[end] = [W, b]
+    return paramlist
+end
+const paramlist = initparamlist()
+
+mutable struct Diff{S <: Parameters}
+    o::Vector{S}
+    e::Vector{S}
+end
+function Diff()
+    oinit = Vector{Parameters}(undef, Const.layers_num)
+    for i in 1:Const.layers_num
+        oinit[i] = Layer(paramlist[i]...)
+    end
+    Diff(oinit, oinit)
+end
+o = Diff()
+function initO()
+    for i in 1:Const.layers_num
+        o.o[i] = Layer(paramlist[i]...)
+        o.e[i] = Layer(paramlist[i]...)
+    end
 end
 
 # Define Network
@@ -111,10 +127,10 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     for i in 1:Const.layers_num
         dw = gs[network.f[i].W]
         db = gs[network.f[i].b]
-        o[i].W  += dw
-        oe[i].W += dw .* e
-        o[i].b  += db
-        oe[i].b += db .* e
+        o.o[i].W  += dw
+        o.e[i].W += dw .* e
+        o.o[i].b  += db
+        o.e[i].b += db .* e
     end
 end
 
@@ -123,8 +139,8 @@ opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 1f0 / Const.iters_num
     for i in 1:Const.layers_num
-        ΔW = α .* 2f0 .* (energy - ϵ) .* real.(oe[i].W .- energy * o[i].W)
-        Δb = α .* 2f0 .* (energy - ϵ) .* real.(oe[i].b .- energy * o[i].b)
+        ΔW = α .* 2f0 .* (energy - ϵ) .* real.(o.e[i].W .- energy * o.o[i].W)
+        Δb = α .* 2f0 .* (energy - ϵ) .* real.(o.e[i].b .- energy * o.o[i].b)
         update!(opt(lr), network.f[i].W, ΔW)
         update!(opt(lr), network.f[i].b, Δb)
     end

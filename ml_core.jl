@@ -1,7 +1,7 @@
 module MLcore
 include("./setup.jl")
 include("./functions.jl")
-using .Const, .Func, Random
+using .Const, .Func
 
 function sampling(ϵ::Float32, lr::Float32)
 
@@ -13,16 +13,13 @@ function sampling(ϵ::Float32, lr::Float32)
     energyB = 0f0
     numberB = 0f0
     Func.ANN.initO()
-    rng = MersenneTwister(1234)
-    random = rand(rng, Float32, length(x), Const.burnintime+Const.iters_num)
-    randomset = [random[:, i] for i in 1:Const.burnintime+Const.iters_num]
 
     # MCMC Start!
     for i in 1:Const.burnintime
-        Func.update(x, randomset[i])
+        Func.update(x)
     end
     for i in 1:Const.iters_num
-        Func.update(x, randomset[Const.burnintime+i])
+        Func.update(x)
         @inbounds xdata[i] = x
     end
 
@@ -59,15 +56,12 @@ function calculation_energy()
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
-    rng = MersenneTwister(1234)
-    random = rand(rng, Float32, length(x), Const.burnintime+Const.num)
-    randomset = [random[:, i] for i in 1:Const.burnintime+Const.num]
 
     for i in 1:Const.burnintime
-        Func.update(x, randomset[i])
+        Func.update(x)
     end
     for i in 1:Const.num
-        Func.update(x, randomset[burnintime+i])
+        Func.update(x)
         @inbounds xdata[i] = x
     end
 

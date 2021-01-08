@@ -1,7 +1,7 @@
 module Func
 include("./setup.jl")
 include("./ann.jl")
-using .Const, .ANN, LinearAlgebra
+using .Const, .ANN, LinearAlgebra, Random
 
 struct Flip
     flip::Vector{Diagonal{Float32}}
@@ -17,7 +17,9 @@ function Flip()
 end
 a = Flip()
 
-function update(x::Vector{Float32}, randomnum::Vector{Float32})
+function update(x::Vector{Float32})
+    rng = MersenneTwister(1234)
+    randomnum = rand(rng, Float32, length(x))
     for ix in 1:length(x)
         x₁ = x[ix]
         z = ANN.forward(x)
