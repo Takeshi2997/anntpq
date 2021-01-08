@@ -1,29 +1,31 @@
 module Func
 include("./setup.jl")
 include("./ann.jl")
-using .Const, .ANN, LinearAlgebra
+using .Const, .ANN, LinearAlgebra, Random
 
-struct Flip
-    flip::Vector{Diagonal{Float32}}
-end
-function Flip()
-    flip = Vector{Diagonal{Float32}}(undef, Const.layer[1])
+function makeflip()
+    flip = Vector{Vector{Float32}}(undef, Const.layer[1])
     for i in 1:Const.layer[1]
-        o = Diagonal(ones(Float32, Const.layer[1]))
-        o[i, i] *= -1f0
+        o = ones(Float32, Const.layer[1])
+        o[i] *= -1f0
         flip[i] = o
     end
-    Flip(flip)
+    return flip
 end
-a = Flip()
 
-function update(x::Vector{Float32}, randomnum::Vector{Float32})
-    for ix in 1:length(x)
+const flip = makeflip()
+
+function update(x::Vector{Float32})
+    rng = MersenneTwister(1234)
+    l = length(x)
+    randamnum = rand(rng, Float32, l)
+    for ix in 1:l
         x₁ = x[ix]
         z = ANN.forward(x)
-        zflip = ANN.forward(a.flip[ix] * x)
+        xflip = x .* flip[ix]
+        zflip = ANN.forward(xflip)
         prob = exp(2.0f0 * real(zflip - z))
-        @inbounds x[ix] = ifelse(randomnum[ix] < prob, -x₁, x₁)
+        @inbounds x[ix] = ifelse(randamnum[ix] < prob, -x₁, x₁)
     end
 end
 
@@ -32,7 +34,8 @@ function hamiltonianS(x::Vector{Float32},
     out = 0f0im
     ixnext = Const.dimB + (ix - Const.dimB) % Const.dimS + 1
     if x[ix] != x[ixnext]
-        zflip = ANN.forward(a.flip[ixnext] * a.flip[ix] * x)
+        xflip = x .* flip[ix] .* flip[ixnext]
+        zflip = ANN.forward(xflip)
         out  += 2f0 * exp(zflip - z) - 1f0
     else
         out += 1f0
@@ -54,7 +57,8 @@ function hamiltonianB(x::Vector{Float32},
     out = 0f0im
     iynext = iy%Const.dimB + 1
     if x[iy] != x[iynext]
-        zflip = ANN.forward(a.flip[iynext] * a.flip[iy] * x)
+        xflip = x .* flip[iy] .* flip[iynext]
+        zflip = ANN.forward(xflip)
         out  += exp(zflip - z)
     end
     return -Const.t * out

@@ -15,33 +15,36 @@ mutable struct Layer <: Parameters
     b::Array{Complex{Float32}}
 end
 
-const oimid = [[zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]),
-                zeros(Complex{Float32}, Const.layer[i+1])] for i in 1:Const.layers_num-1]
-const oiend =  [zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1]),
-                zeros(Complex{Float32}, Const.layer[end], Const.layer[1])]
+o   = Vector{Parameters}(undef, Const.layers_num)
+oe  = Vector{Parameters}(undef, Const.layers_num)
 
-o  = Vector{Parameters}(undef, Const.layers_num)
-oe = Vector{Parameters}(undef, Const.layers_num)
 function initO()
     for i in 1:Const.layers_num-1
-        global o[i]  = Layer(oimid[i]...)
-        global oe[i] = Layer(oimid[i]...)
+        W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
+        b = zeros(Complex{Float32}, Const.layer[i+1])
+        global o[i]   = Layer(W, b)
+        global oe[i]  = Layer(W, b)
     end
-    global o[end]  = Layer(oiend...)
-    global oe[end] = Layer(oiend...)
+    W = zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1])
+    b = zeros(Complex{Float32}, Const.layer[end], Const.layer[1])
+    global o[end]   = Layer(W, b)
+    global oe[end]  = Layer(W, b)
 end
 
 # Define Network
 
-struct Output{S<:AbstractArray, T<:AbstractArray}
+struct Output{S<:AbstractArray,T<:AbstractArray}
   W::S
   b::T
 end
+
 function Output(in::Integer, out::Integer, first::Integer;
                 initW = Flux.glorot_uniform, initb = Flux.zeros)
     return Output(initW(out, in), initb(out, first))
 end
+
 @functor Output
+
 function (a::Output)(x::AbstractArray)
   W, b = a.W, a.b
   W*x, b
@@ -94,6 +97,7 @@ function init()
 end
 
 # Learning Method
+
 function forward(x::Vector{Float32})
     out, b = network.f(x)
     B = b * x

@@ -1,29 +1,25 @@
 module MLcore
 include("./setup.jl")
 include("./functions.jl")
-using .Const, .Func, Random
-
-const xdatainit = [zeros(Float32, Const.dimB+Const.dimS) for n in 1:Const.iters_num]
+using .Const, .Func
 
 function sampling(ϵ::Float32, lr::Float32)
+
     # Initialize
     x = rand([1f0, -1f0], Const.dimB+Const.dimS)
-    xdata = xdatainit
+    xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
     energy  = 0f0
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
     Func.ANN.initO()
-    rng = MersenneTwister(1234)
-    random = rand(rng, Float32, length(x), Const.burnintime+Const.iters_num)
-    randomset = [random[:, i] for i in 1:Const.burnintime+Const.iters_num]
- 
+
     # MCMC Start!
     for i in 1:Const.burnintime
-        Func.update(x, randomset[i])
+        Func.update(x)
     end
     for i in 1:Const.iters_num
-        Func.update(x, randomset[Const.burnintime+i])
+        Func.update(x)
         @inbounds xdata[i] = x
     end
 
@@ -56,19 +52,15 @@ function calculation_energy()
     x = rand([1f0, -1f0], Const.dimB+Const.dimS)
     xdata = Vector{Vector{Float32}}(undef, Const.num)
     energy  = 0f0
-    senergy = 0f0
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
-    rng = MersenneTwister(1234)
-    random = rand(rng, Float32, length(x), Const.burnintime+Const.num)
-    randomset = [random[:, i] for i in 1:Const.burnintime+Const.num]
- 
+
     for i in 1:Const.burnintime
-        Func.update(x, randomset[i])
+        Func.update(x)
     end
     for i in 1:Const.num
-        Func.update(x, randomset[Const.burnintime+i])
+        Func.update(x)
         @inbounds xdata[i] = x
     end
 
@@ -79,17 +71,14 @@ function calculation_energy()
         energyS += eS
         energyB += eB
         energy  += e
-        senergy += abs2(eS)
         numberB += sum(x[1:Const.dimB])
     end
     energy   = real(energy)  / Const.num
-    senergy /= Const.num
     energyS  = real(energyS) / Const.num
     energyB  = real(energyB) / Const.num
     numberB /= Const.num
-    variance = senergy - energyS^2
 
-    return energyS, energyB, numberB, variance
+    return energyS, energyB, numberB
 end
 
 end
