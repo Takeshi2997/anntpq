@@ -14,33 +14,14 @@ mutable struct Layer <: Parameters
     b::Array{Complex{Float32}}
 end
 
-function initparamlist()
-    paramlist = Vector{Array}(undef, Const.layers_num)
+o   = Vector{Parameters}(undef, Const.layers_num)
+oe  = Vector{Parameters}(undef, Const.layers_num)
+function initO()
     for i in 1:Const.layers_num
         W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
         b = zeros(Complex{Float32}, Const.layer[i+1])
-        paramlist[i] = [W, b]
-    end
-    return paramlist
-end
-const paramlist = initparamlist()
-
-mutable struct Diff{S <: Parameters}
-    o::Vector{S}
-    e::Vector{S}
-end
-function Diff()
-    oinit = Vector{Parameters}(undef, Const.layers_num)
-    for i in 1:Const.layers_num
-        oinit[i] = Layer(paramlist[i]...)
-    end
-    Diff(oinit, oinit)
-end
-o = Diff()
-function initO()
-    for i in 1:Const.layers_num
-        o.o[i] = Layer(paramlist[i]...)
-        o.e[i] = Layer(paramlist[i]...)
+        global o[i]   = Layer(W, b)
+        global oe[i]  = Layer(W, b)
     end
 end
 
@@ -80,7 +61,7 @@ end
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i]) 
+        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]) 
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
