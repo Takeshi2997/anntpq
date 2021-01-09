@@ -27,9 +27,9 @@ function repeatperm(n)
 end
 
 function view(N::Integer)
-#    MLcore.Func.ANN.init()
-    filenameparams = "./data/params_at_000.bson"
-    MLcore.Func.ANN.load(filenameparams)
+    MLcore.Func.ANN.init()
+    # filenameparams = "./data/params_at_000.bson"
+    # MLcore.Func.ANN.load(filenameparams)
     
     out = repeatperm(N)
     l = length(out)
@@ -50,7 +50,7 @@ function view(N::Integer)
     savefig("psihist.png")
 
     f = open("energy_data.txt", "w")
-    energyS, energyB, numberB, variance = MLcore.calculation_energy()
+    energyS, energyB, numberB = MLcore.calculation_energy()
     β = LegendreTF.calc_temperature(energyB / Const.dimB)
     # Write energy
     write(f, string(β))
@@ -60,13 +60,11 @@ function view(N::Integer)
     write(f, string(energyB / Const.dimB))
     write(f, "\t")
     write(f, string(numberB / Const.dimB))
-    write(f, "\t")
-    write(f, string(variance))
     write(f, "\n")
     close(f)
 end
 
-N = 16
+N = 24
 @time view(N)
 
 

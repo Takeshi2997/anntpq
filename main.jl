@@ -48,8 +48,8 @@ function main()
     rm(dirnameerror, force=true, recursive=true)
     mkdir(dirnameerror)
     MLcore.Func.ANN.init()
-    MLcore.Func.ANN.save("./data/params_at_000.bson")
-    learning(0, dirname, dirnameerror, 0.0001f0, 5000)
+    MLcore.Func.ANN.save(dirname * "/params_at_000.bson")
+    learning(0, dirname, dirnameerror, Const.lr, Const.it_num)
 
     pmap(iϵ -> learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num), 1:Const.iϵmax)
 end

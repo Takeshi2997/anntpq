@@ -9,38 +9,23 @@ using BSON: @load
 # Initialize Variables
 
 abstract type Parameters end
-
 mutable struct Layer <: Parameters
     W::Array{Complex{Float32}}
     b::Array{Complex{Float32}}
 end
 
-const oi = [[zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]),
-             zeros(Complex{Float32}, Const.layer[i+1])] for i in 1:Const.layers_num]
-
-o  = Vector{Parameters}(undef, Const.layers_num)
-oe = Vector{Parameters}(undef, Const.layers_num)
+o   = Vector{Parameters}(undef, Const.layers_num)
+oe  = Vector{Parameters}(undef, Const.layers_num)
 function initO()
     for i in 1:Const.layers_num
-        global o[i]  = Layer(oi[i]...)
-        global oe[i] = Layer(oi[i]...)
+        W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
+        b = zeros(Complex{Float32}, Const.layer[i+1])
+        global o[i]   = Layer(W, b)
+        global oe[i]  = Layer(W, b)
     end
 end
 
 # Define Network
-
-struct Output{S<:AbstractArray}
-  W::S
-end
-function Output(in::Integer, out::Integer;
-                initW = Flux.glorot_uniform)
-    return Output(initW(out, in))
-end
-@functor Output
-function (a::Output)(x::AbstractArray)
-  W = a.W
-  W*x
-end
 
 struct Res{F,S<:AbstractArray,T<:AbstractArray}
     W::S
@@ -68,7 +53,7 @@ function Network()
     for i in 2:Const.layers_num-1
         layer[i] = Res(Const.layer[i], Const.layer[i+1], tanh)
     end
-    layer[end] = Output(Const.layer[end-1], Const.layer[end])
+    layer[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
     Network(f, p)
@@ -91,19 +76,18 @@ end
 
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
-    for i in 1:Const.layers_num-1
+    for i in 1:Const.layers_num
         W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]) 
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
-    W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1])
-    parameters[end] = [W]
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
     Flux.loadparams!(network.f, p)
 end
 
 # Learning Method
+
 function forward(x::Vector{Float32})
     out = network.f(x)
     return out[1] + im * out[2]
