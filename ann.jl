@@ -84,14 +84,14 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     for i in 1:Const.layers_num-1
         dw = gs[network.f[i].W]
         db = gs[network.f[i].b]
-        o.o[i].W  += dw
-        o.e[i].W += dw .* e
-        o.o[i].b  += db
-        o.e[i].b += db .* e
+        o[i].W  += dw
+        oe[i].W += dw .* e
+        o[i].b  += db
+        oe[i].b += db .* e
     end
     dw = gs[network.f[end].W]
-    o.o[end].W  += dw
-    o.e[end].W += dw .* e
+    o[end].W  += dw
+    oe[end].W += dw .* e
 end
 
 opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
@@ -99,12 +99,12 @@ opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 1f0 / Const.iters_num
     for i in 1:Const.layers_num-1
-        ΔW = α .* 2f0 .* (energy - ϵ) .* real.(o.e[i].W .- energy * o.o[i].W)
-        Δb = α .* 2f0 .* (energy - ϵ) .* real.(o.e[i].b .- energy * o.o[i].b)
+        ΔW = α .* 2f0 .* (energy - ϵ) .* real.(oe[i].W .- energy * o[i].W)
+        Δb = α .* 2f0 .* (energy - ϵ) .* real.(oe[i].b .- energy * o[i].b)
         update!(opt(lr), network.f[i].W, ΔW)
         update!(opt(lr), network.f[i].b, Δb)
     end
-    ΔW = α .* 2f0 .* (energy - ϵ) .* real.(o.e[end].W .- energy * o.o[end].W)
+    ΔW = α .* 2f0 .* (energy - ϵ) .* real.(oe[end].W .- energy * o[end].W)
     update!(opt(lr), network.f[end].W, ΔW)
 end
 
