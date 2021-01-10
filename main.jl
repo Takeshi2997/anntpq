@@ -23,16 +23,18 @@ using Distributed
 
         # Calculate expected value
         error, energyS, energyB, numberB = MLcore.sampling(ϵ, lr)
-        write(io, string(it))
-        write(io, "\t")
-        write(io, string(error))
-        write(io, "\t")
-        write(io, string(energyS / Const.dimS))
-        write(io, "\t")
-        write(io, string(energyB / Const.dimB))
-        write(io, "\t")
-        write(io, string(numberB / Const.dimB))
-        write(io, "\n")
+        if it%100 == 0
+            write(io, string(it))
+            write(io, "\t")
+            write(io, string(error))
+            write(io, "\t")
+            write(io, string(energyS / Const.dimS))
+            write(io, "\t")
+            write(io, string(energyB / Const.dimB))
+            write(io, "\t")
+            write(io, string(numberB / Const.dimB))
+            write(io, "\n")
+        end
     end
     close(io)
 
