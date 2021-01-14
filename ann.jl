@@ -49,8 +49,7 @@ end
 
 function Network()
     layer = Vector(undef, Const.layers_num)
-    layer[1] = Dense(Const.layer[1], Const.layer[2])
-    for i in 2:Const.layers_num-1
+    for i in 1:Const.layers_num-1
         layer[i] = Res(Const.layer[i], Const.layer[i+1], tanh)
     end
     layer[end] = Dense(Const.layer[end-1], Const.layer[end])
