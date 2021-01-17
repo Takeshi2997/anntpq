@@ -76,7 +76,7 @@ end
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]) 
+        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i]) 
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
