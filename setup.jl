@@ -10,8 +10,8 @@ const J = 1.0f0
 
 # Repeat Number
 const burnintime = 10
-const iters_num = 500
-const it_num = 10000
+const iters_num = 200
+const it_num = 5000
 const iϵmax = 4
 const num = 100000
 
