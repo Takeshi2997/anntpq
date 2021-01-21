@@ -112,7 +112,7 @@ end
 opt(lr::Float32) = Optimise.QRMSProp(lr, 0.9f0)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
-    α = (2f0 .* (energy - ϵ) * (lr > 0f0) - 1f0 * (lr < 0f0)) / Const.iters_num
+    α = (2f0 .* (energy - ϵ) * (lr > 0f0) + 1f0 * (lr < 0f0)) / Const.iters_num
     for i in 1:Const.layers_num-1
         ΔW = α .*  real.(oe[i].W .- energy * o[i].W)
         Δb = α .*  real.(oe[i].b .- energy * o[i].b)
