@@ -119,7 +119,7 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         Optimise.update!(opt(lr), network.f[i].W, ΔW, o[i].W)
         Optimise.update!(opt(lr), network.f[i].b, Δb, o[i].b)
     end
-    ΔW = α .* 2f0 .* (energy - ϵ) .* real.(oe[end].W .- energy * o[end].W)
+    ΔW = α .* real.(oe[end].W .- energy * o[end].W)
     Optimise.update!(opt(lr), network.f[end].W, ΔW, o[end].W)
 end
 
