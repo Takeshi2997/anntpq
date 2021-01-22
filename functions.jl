@@ -23,13 +23,13 @@ function update(x::Vector{Float32})
     random2 = rand(rng, Float32, length(x))
     for ix in 1:length(x)
         x₁ = x[ix]
-        Π     = exp(2f0 * real(ANN.forward(x)))
-        Πflip = abs2(ANN.forward(a.flip[ix] * x) - ANN.forward(-a.flip[ix] * x)) / 2f0
+        Π     = abs2(exp(ANN.forward(x)))
+        Πflip = abs2(exp(ANN.forward(a.flip[ix] * x)) - exp(ANN.forward(-a.flip[ix] * x))) / 2f0
         prob  = Πflip / Π
         @inbounds x[ix] = ifelse(random1[ix] < prob, -x₁, x₁)
         x₁ = x[ix]
-        Π     = abs2(ANN.forward(x) - ANN.forward(-x)) / 2f0
-        Πflip = exp(2f0 * real(a.flip[ix] * ANN.forward(x)))
+        Π     = abs2(exp(ANN.forward(x)) - exp(ANN.forward(-x))) / 2f0
+        Πflip = abs2(exp(ANN.forward(a.flip[ix] * x)))
         prob  = Πflip / Π
         @inbounds x[ix] = ifelse(random2[ix] < prob, -x₁, x₁)
     end
