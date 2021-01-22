@@ -27,6 +27,7 @@ function update(x::Vector{Float32})
         Πflip = abs2(ANN.forward(a.flip[ix] * x) - ANN.forward(-a.flip[ix] * x)) / 2f0
         prob  = Πflip / Π
         @inbounds x[ix] = ifelse(random1[ix] < prob, -x₁, x₁)
+        x₁ = x[ix]
         Π     = abs2(ANN.forward(x) - ANN.forward(-x)) / 2f0
         Πflip = exp(2f0 * real(a.flip[ix] * ANN.forward(x)))
         prob  = Πflip / Π
