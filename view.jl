@@ -64,7 +64,7 @@ function view(N::Integer)
     close(f)
 end
 
-N = 24
+N = 20
 @time view(N)
 
 
