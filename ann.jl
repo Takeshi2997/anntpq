@@ -1,8 +1,8 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote, Distributions
+include("./optimiser.jl")
+using .Const, .Optimise, LinearAlgebra, Flux, Zygote, Distributions
 using Flux: @functor
-using Flux.Optimise: update!
 using BSON: @save
 using BSON: @load
 
@@ -114,17 +114,15 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     end
 end
 
-opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
+opt(lr::Float32) = Optimise.QRMSProp(lr, 0.9f0)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 2f0 .* (energy - ϵ) / Const.iters_num
     for i in 1:Const.layers_num
         ΔW = α .*  real.(oe[i].W .- energy * o[i].W)
         Δb = α .*  real.(oe[i].b .- energy * o[i].b)
-        println(size(Δb))
-        update!(opt(lr), network.f[i].W, ΔW)
-        update!(opt(lr), network.f[i].b, Δb)
+        Optimise.update!(opt(lr), network.f[i].W, ΔW, o[i].W)
+        Optimise.update!(opt(lr), network.f[i].b, Δb, o[i].b)
     end
 end
-
 end
