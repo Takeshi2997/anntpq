@@ -79,17 +79,18 @@ end
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]) 
+        W = randn(Float32, Const.layer[i+1], Const.layer[i]) ./ Const.layer[i]
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
-    W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1])
+    W = randn(Float32, Const.layer[end], Const.layer[end-1]) ./ Const.layer[end-1]
     b = rand(Float32, Const.layer[1]) .* π
     parameters[end] = [W, b]
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
     Flux.loadparams!(network.f, p)
 end
+
 
 # Learning Method
 
