@@ -47,10 +47,10 @@ function sampling(ϵ::Float32, lr::Float32)
     return error, energyS, energyB, numberB
 end
 
-function calculation_energy()
+function calculation_energy(num::Integer)
 
     x = rand([1f0, -1f0], Const.dimB+Const.dimS)
-    xdata = Vector{Vector{Float32}}(undef, Const.num)
+    xdata = Vector{Vector{Float32}}(undef, num)
     energy  = 0f0
     senergy = 0f0
     energyS = 0f0
@@ -60,7 +60,7 @@ function calculation_energy()
     for i in 1:Const.burnintime
         Func.update(x)
     end
-    for i in 1:Const.num
+    for i in 1:num
         Func.update(x)
         @inbounds xdata[i] = x
     end
@@ -75,12 +75,12 @@ function calculation_energy()
         senergy += abs2(eS)
         numberB += sum(x[1:Const.dimB])
     end
-    energy   = real(energy)  / Const.num
-    energy  /= Const.num
-    energyS  = real(energyS) / Const.num
-    energyB  = real(energyB) / Const.num
-    numberB /= Const.num
-    variance = senergy - energyS^2
+    energy   = real(energy)  / num
+    energy  /= num
+    energyS  = real(energyS) / num
+    energyB  = real(energyB) / num
+    numberB /= num
+    variance = sqrt(senergy - energyS^2)
 
     return energyS, energyB, numberB, variance
 end
