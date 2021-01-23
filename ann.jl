@@ -83,8 +83,8 @@ function init()
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
-    W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]) * 0.001f0
-    b = rand(Float32, Const.layer[1]) * π
+    W = Flux.glorot_uniform(Const.layer[end], Const.layer[end-1]) .* 0.001f0
+    b = rand(Float32, Const.layer[1]) .* π
     parameters[end] = [W, b]
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
@@ -95,7 +95,7 @@ end
 
 function forward(x::Vector{Float32})
     out, b = network.f(x)
-    B = transpose(b) * x
+    B = transpose(x) * b
     return out[1] + im * out[2] + im * B
 end
 
@@ -120,6 +120,7 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     for i in 1:Const.layers_num
         ΔW = α .*  real.(oe[i].W .- energy * o[i].W)
         Δb = α .*  real.(oe[i].b .- energy * o[i].b)
+        println(size(Δb))
         update!(opt(lr), network.f[i].W, ΔW)
         update!(opt(lr), network.f[i].b, Δb)
     end
