@@ -25,8 +25,8 @@ function initO()
     end
     W = zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1])
     b = zeros(Complex{Float32}, Const.layer[1])
-    global o[i]   = Layer(W, b)
-    global oe[i]  = Layer(W, b)
+    global o[end]   = Layer(W, b)
+    global oe[end]  = Layer(W, b)
 end
 
 # Define Network
