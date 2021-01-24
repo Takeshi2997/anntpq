@@ -67,8 +67,8 @@ function view2()
     close(f)
 end
 N = 20
-view(N)
-# view2()
+# view(N)
+view2()
 
 
 
