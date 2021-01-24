@@ -52,7 +52,7 @@ end
 
 function calculation_energy(num::Integer)
 
-    x = shuffle(x)
+    x = shuffle(X)
     xdata = Vector{Vector{Float32}}(undef, num)
     energy  = 0f0
     senergy = 0f0
