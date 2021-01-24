@@ -3,8 +3,8 @@ include("./setup.jl")
 include("./functions.jl")
 using .Const, .Func, Random
 
-const X = vcat(ones(Float32, (Const.dimB+Const.dimS)/2), 
-              -ones(Float32, (Const.dimB+Const.dimS)/2))
+const X = vcat(ones(Float32, Int((Const.dimB+Const.dimS)/2)), 
+              -ones(Float32, Int((Const.dimB+Const.dimS)/2)))
 
 function sampling(ϵ::Float32, lr::Float32)
 
