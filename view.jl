@@ -48,9 +48,12 @@ function view(N::Integer)
     histogram(reψ, title="Histogram of wave function", label="real part", bins=500)
     histogram!(imψ, label="imag part", bins=500)
     savefig("psihist.png")
+end
 
+function view2()
+    MLcore.Func.ANN.init()
     f = open("energy_data.txt", "w")
-    energyS, energyB, numberB = MLcore.calculation_energy()
+    energyS, energyB, numberB = MLcore.calculation_energy(30000)
     β = LegendreTF.calc_temperature(energyB / Const.dimB)
     # Write energy
     write(f, string(β))
@@ -63,10 +66,9 @@ function view(N::Integer)
     write(f, "\n")
     close(f)
 end
-
-N = 24
-@time view(N)
-
+N = 20
+# view(N)
+view2()
 
 
 

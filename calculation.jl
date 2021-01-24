@@ -8,11 +8,12 @@ function calculate()
 
     dirname = "./data"
     f = open("energy_data.txt", "w")
+    num = Const.num
     for iϵ in 1:Const.iϵmax
         filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
         MLcore.Func.ANN.load(filenameparams)
 
-        energyS, energyB, numberB, variance = MLcore.calculation_energy()
+        energyS, energyB, numberB, variance = MLcore.calculation_energy(num)
 
         β = LegendreTF.calc_temperature(energyB / Const.dimB)
         # Write energy
