@@ -17,12 +17,16 @@ end
 o   = Vector{Parameters}(undef, Const.layers_num)
 oe  = Vector{Parameters}(undef, Const.layers_num)
 function initO()
-    for i in 1:Const.layers_num
+    for i in 1:Const.layers_num-1
         W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
         b = zeros(Complex{Float32}, Const.layer[i+1])
         global o[i]   = Layer(W, b)
         global oe[i]  = Layer(W, b)
     end
+    W = zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1])
+    b = zeros(Complex{Float32}, Const.layer[1])
+    global o[i]   = Layer(W, b)
+    global oe[i]  = Layer(W, b)
 end
 
 # Define Network
