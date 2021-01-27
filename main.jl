@@ -51,7 +51,7 @@ function main()
     MLcore.Func.ANN.save(dirname * "/params_at_000.bson")
     learning(0, dirname, dirnameerror, Const.lr, Const.it_num)
 
-    pmap(iϵ -> learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num), 1:Const.iϵmax)
+    for iϵ in 1:Const.iϵmax learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num) end
 end
 
 main()
