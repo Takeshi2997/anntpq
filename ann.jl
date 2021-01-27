@@ -140,9 +140,9 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     O  = α .* o[end].W
     OE = α .* oe[end].W
     OO = α .* oo[end].W
-    R  = 2f0 .* (energy - ϵ) .* reshape((OE .- energy * O), length(O))
-    S  = (OO - kron(O, O'))
-    I  = Diagonal(ones(Float32, size(S)))
+    R  = CuArray(2f0 .* (energy - ϵ) .* reshape((OE .- energy * O), length(O)))
+    S  = CuArray((OO - kron(O, O')))
+    I  = Diagonal(CUDA.ones(Float32, size(S)))
     ΔW = reshape((S .+ Const.ϵ .* I)\R, size(O)) |> cpu
     update!(opt(lr), network.f[end].W, ΔW)
 end
