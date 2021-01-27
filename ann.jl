@@ -128,22 +128,22 @@ opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 1f0 / Const.iters_num
     for i in 1:Const.layers_num-1
-        o  = real.(o[i].W)
-        oe = real.(oe[i].W)
-        oo = real.(oo[i].W)
-        R  = α .*  2f0 .* (energy - ϵ) .* reshape((oe .- energy * o), length(o))
-        S  = α .* (oo - kron(o, o'))
+        O  = real.(o[i].W)
+        OE = real.(oe[i].W)
+        OO = real.(oo[i].W)
+        R  = α .*  2f0 .* (energy - ϵ) .* reshape((OE .- energy * O), length(O))
+        S  = α .* (OO - kron(O, O'))
         I  = Diagonal(ones(Float32, size(S)))
-        ΔW = resgape((S .+ Const.ϵ .* I)\R, size(o))
+        ΔW = resgape((S .+ Const.ϵ .* I)\R, size(O))
         update!(opt(lr), network.f[i].W, ΔW)
     end
-    o  = o[end].W
-    oe = oe[end].W
-    oo = oo[end].W
-    R  = α .*  2f0 .* (energy - ϵ) .* reshape((oe .- energy * o), length(o))
-    S  = α .* (oo - kron(o, o'))
+    O  = o[end].W
+    OE = oe[end].W
+    OO = oo[end].W
+    R  = α .*  2f0 .* (energy - ϵ) .* reshape((OE .- energy * O), length(O))
+    S  = α .* (OO - kron(O, O'))
     I  = Diagonal(ones(Float32, size(S)))
-    ΔW = resgape((S .+ Const.ϵ .* I)\R, size(o))
+    ΔW = resgape((S .+ Const.ϵ .* I)\R, size(O))
     update!(opt(lr), network.f[i].W, ΔW)
 end
 
