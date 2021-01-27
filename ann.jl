@@ -144,7 +144,7 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     S  = α .* (OO - kron(O, O'))
     I  = Diagonal(ones(Float32, size(S)))
     ΔW = reshape((S .+ Const.ϵ .* I)\R, size(O))
-    update!(opt(lr), network.f[i].W, ΔW)
+    update!(opt(lr), network.f[end].W, ΔW)
 end
 
 end
