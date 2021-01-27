@@ -1,13 +1,12 @@
-include("./setup.jl")
-include("./ml_core.jl")
-using .Const, .MLcore, InteractiveUtils, CUDA
-using Flux
+using Distributed
+@everywhere include("./setup.jl")
+@everywhere include("./ml_core.jl")
+@everywhere using .Const, .MLcore
+@everywhere using Flux
 
-everywhere using Flux
-
-function learning(iϵ::Integer, 
-                  dirname::String, dirnameerror::String, 
-                  lr::Float32, it_num::Integer)
+@everywhere function learning(iϵ::Integer, 
+                              dirname::String, dirnameerror::String, 
+                              lr::Float32, it_num::Integer)
     # Initialize
     error   = 0f0
     energyS = 0f0
@@ -50,10 +49,9 @@ function main()
     mkdir(dirnameerror)
     MLcore.Func.ANN.init()
     MLcore.Func.ANN.save(dirname * "/params_at_000.bson")
+    learning(0, dirname, dirnameerror, Const.lr, Const.it_num)
 
-    for iϵ in 1:Const.iϵmax
-        @time learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num)
-    end
+    for iϵ in 1:Const.iϵmax learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num) end
 end
 
 main()

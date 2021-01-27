@@ -3,7 +3,7 @@ include("./ml_core.jl")
 include("./ann.jl")
 include("./legendreTF.jl")
 using .Const, .ANN, .MLcore, .LegendreTF
-using LinearAlgebra, Flux, BSON, CUDA
+using LinearAlgebra, Flux, BSON
 
 function test()
     MLcore.Func.ANN.init()
@@ -24,5 +24,7 @@ function test()
 end
 
 @time test()
+
+
 
 

@@ -35,7 +35,7 @@ function view(N::Integer)
     l = length(out)
     ψall = Vector{Complex{Float32}}(undef, l)
     z = 0f0
-    for i in 1:l
+    @simd for i in 1:l
         x = out[i]
         ψ = exp(ANN.forward(x))
         @inbounds ψall[i] = ψ
@@ -45,8 +45,8 @@ function view(N::Integer)
     
     reψ = real.(ψall)
     imψ = imag.(ψall)
-    histogram(reψ, title="Histogram of wave function", label="real part", bins=100)
-    histogram!(imψ, label="imag part", bins=100)
+    histogram(reψ, title="Histogram of wave function", label="real part", bins=500)
+    histogram!(imψ, label="imag part", bins=500)
     savefig("psihist.png")
 
     f = open("energy_data.txt", "w")
@@ -66,4 +66,7 @@ end
 
 N = 24
 @time view(N)
+
+
+
 

@@ -22,20 +22,36 @@ function ds(u, t)
     return -(u - f(t)) / t^2 - df(t) / t
 end
 
-function calc_temperature(u)
-    outputs = 0.0f0
+function translate(u)
+    sout = 0f0
     t = 5.0f0
     tm = 0.0f0
     tv = 0.0f0
     for n in 1:1000
         dt = ds(u, t)
-        lr_t = 0.1f0 * sqrt(1.0f0 - 0.999f0^n) / (1.0f0 - 0.9f0^n)
+        lr_t = 0.5f0 * sqrt(1.0f0 - 0.999f0^n) / (1.0f0 - 0.9f0^n)
         tm += (1.0f0 - 0.9f0) * (dt - tm)
         tv += (1.0f0 - 0.999f0) * (dt.^2 - tv)
         t  -= lr_t * tm ./ (sqrt.(tv) .+ 10.0f0^(-7))
-        outputs = s(u, t)
+        sout = s(u, t)
     end
-    return 1.0f0 / t
+    return sout
+end
+
+function calc_temperature(u)
+    sout = 0f0
+    t = 5.0f0
+    tm = 0.0f0
+    tv = 0.0f0
+    for n in 1:1000
+        dt = ds(u, t)
+        lr_t = 0.5f0 * sqrt(1.0f0 - 0.999f0^n) / (1.0f0 - 0.9f0^n)
+        tm += (1.0f0 - 0.9f0) * (dt - tm)
+        tv += (1.0f0 - 0.999f0) * (dt.^2 - tv)
+        t  -= lr_t * tm ./ (sqrt.(tv) .+ 10.0f0^(-7))
+        sout = s(u, t)
+    end
+    return 1f0 / t
 end
 
 end

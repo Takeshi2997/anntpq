@@ -11,9 +11,10 @@ function calculate()
     for iϵ in 1:Const.iϵmax
         filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
         MLcore.Func.ANN.load(filenameparams)
-        energyS, energyB, numberB = MLcore.calculation_energy()
 
-        β = LegendreTF.translate(energyB / Const.dimB)
+        energyS, energyB, numberB, variance = MLcore.calculation_energy()
+
+        β = LegendreTF.calc_temperature(energyB / Const.dimB)
         # Write energy
         write(f, string(β))
         write(f, "\t")
@@ -22,10 +23,13 @@ function calculate()
         write(f, string(energyB / Const.dimB))
         write(f, "\t")
         write(f, string(numberB / Const.dimB))
+        write(f, "\t")
+        write(f, string(variance / Const.dimS))
         write(f, "\n")
     end
     close(f)
 end
 
 calculate()
+
 
