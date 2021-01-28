@@ -13,17 +13,17 @@ mutable struct Params{S<:AbstractArray} <: Parameters
     W::S
 end
 
-o    = Vector{Parameters}(undef, Const.layers_num)
-o†e  = Vector{Parameters}(undef, Const.layers_num)
-o†o  = Vector{Parameters}(undef, Const.layers_num)
+o   = Vector{Parameters}(undef, Const.layers_num)
+oe  = Vector{Parameters}(undef, Const.layers_num)
+oo  = Vector{Parameters}(undef, Const.layers_num)
 
 function initO()
     for i in 1:Const.layers_num
         W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i] + 1)
         S = kron(W, W')
         global o[i]   = Params(W)
-        global o†e[i]  = Params(W)
-        global o†o[i]  = Params(S)
+        global oe[i]  = Params(W)
+        global oo[i]  = Params(S)
     end
 end
 
@@ -117,9 +117,9 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     gs = gradient(() -> loss(x), network.p)
     for i in 1:Const.layers_num
         dw = gs[network.f[i].W] |> conj
-        o[i].W   += dw
-        o†e[i].W += dw' .* e
-        o†o[i].W += kron(dw', dw)
+        o[i].W  += dw
+        oe[i].W += dw' .* e
+        oo[i].W += kron(dw', dw)
     end
 end
 
@@ -129,19 +129,19 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 1f0 / Const.iters_num
     for i in 1:Const.layers_num-1
         O  = α .* real.(o[i].W')
-        OE = α .* real.(o†e[i].W)
-        OO = α .* real.(o†o[i].W)
+        OE = α .* real.(oe[i].W)
+        OO = α .* real.(oo[i].W)
         R  = CuArray(2f0 .* (energy - ϵ) .* reshape((OE .- energy * O), length(O)))
         S  = CuArray(OO - kron(O', O))
         I  = Diagonal(CUDA.ones(Float32, size(S)))
         ΔW = reshape((S .+ Const.ϵ .* I)\R, size(O)) |> cpu
         update!(opt(lr), network.f[i].W, ΔW)
     end
-    O   = α .* o[end].W
-    O†E = α .* o†e[end].W
-    O†O = α .* o†o[end].W
-    R  = CuArray(2f0 .* (energy - ϵ) .* reshape((O†E .- energy * O'), length(O)))
-    S  = CuArray((O†O - kron(O', O)))
+    O  = α .* o[end].W
+    OE = α .* oe[end].W
+    OO = α .* oo[end].W
+    R  = CuArray(2f0 .* (energy - ϵ) .* reshape((OE .- energy * O'), length(O)))
+    S  = CuArray((OO - kron(O', O)))
     I  = Diagonal(CUDA.ones(Float32, size(S)))
     ΔW = reshape((S .+ Const.ϵ .* I)\R, size(O)) |> cpu
     update!(opt(lr), network.f[end].W, ΔW)
