@@ -3,7 +3,6 @@ using Distributed
 @everywhere include("./ml_core.jl")
 @everywhere using .Const, .MLcore
 @everywhere using Flux
-@everywhere using HDF5
 
 @everywhere function learning(iϵ::Integer, 
                               dirname::String, dirnameerror::String, 
@@ -19,7 +18,7 @@ using Distributed
     filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".h5"
 
     # Learning
-    h5open(filename, "w") do io
+    open(filename, "w") do io
         write(io, "iter")
         write(io, "\t")
         write(io, "error")
@@ -32,7 +31,7 @@ using Distributed
         write(io, "\n")
     end 
 
-    io = h5open(filename, "cw")
+    io = open(filename, "a")
     for it in 1:it_num
         # Calculate expected value
         error, energyS, energyB, numberB = MLcore.sampling(ϵ, lr)
