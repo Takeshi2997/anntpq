@@ -3,6 +3,7 @@ using Distributed
 @everywhere include("./ml_core.jl")
 @everywhere using .Const, .MLcore
 @everywhere using Flux
+@everywhere using HDF5
 
 @everywhere function learning(iϵ::Integer, 
                               dirname::String, dirnameerror::String, 
@@ -15,12 +16,24 @@ using Distributed
     MLcore.Func.ANN.load(dirname * "/params_at_000.bson")
     ϵ = - 0.5f0 * iϵ / Const.iϵmax * Const.t * Const.dimB
     filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
-    filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
+    filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".h5"
 
     # Learning
-    io = open(filename, "w")
-    for it in 1:it_num
+    h5open(filename, "w") do io
+        write(io, "iter")
+        write(io, "\t")
+        write(io, "error")
+        write(io, "\t")
+        write(io, "energyS")
+        write(io, "\t")
+        write(io, "energyB")
+        write(io, "\t")
+        write(io, "density")
+        write(io, "\n")
+    end 
 
+    io = h5open(filename, "cw")
+    for it in 1:it_num
         # Calculate expected value
         error, energyS, energyB, numberB = MLcore.sampling(ϵ, lr)
         write(io, string(it))
@@ -49,8 +62,9 @@ function main()
     mkdir(dirnameerror)
     MLcore.Func.ANN.init()
     MLcore.Func.ANN.save(dirname * "/params_at_000.bson")
-    learning(0, dirname, dirnameerror, Const.lr, Const.it_num)
+    learning(0, dirname, dirnameerror, Const.lr, 1)# Const.it_num)
 
+    exit()
     for iϵ in 1:Const.iϵmax learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num) end
 end
 
