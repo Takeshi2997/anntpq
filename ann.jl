@@ -13,17 +13,17 @@ mutable struct Params{S<:AbstractArray} <: Parameters
     W::S
 end
 
-o   = Vector{Parameters}(undef, Const.layers_num)
-oe  = Vector{Parameters}(undef, Const.layers_num)
-oo  = Vector{Parameters}(undef, Const.layers_num)
+o    = Vector{Parameters}(undef, Const.layers_num)
+o†e  = Vector{Parameters}(undef, Const.layers_num)
+o†o  = Vector{Parameters}(undef, Const.layers_num)
 
 function initO()
     for i in 1:Const.layers_num
         W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i] + 1)
         S = kron(W, W')
         global o[i]   = Params(W)
-        global oe[i]  = Params(W)
-        global oo[i]  = Params(S)
+        global o†e[i]  = Params(W)
+        global o†o[i]  = Params(S)
     end
 end
 
@@ -49,7 +49,7 @@ struct Output{F,S<:AbstractArray}
     σ::F
 end
 function Output(in::Integer, out::Integer, σ = identity;
-               initW = randn)
+                initW = randn)
     return Output(initW(Complex{Float32}, out, in+1), σ)
 end
 @functor Output
@@ -116,10 +116,10 @@ loss(x::Vector{Float32}) = real(forward(x))
 function backward(x::Vector{Float32}, e::Complex{Float32})
     gs = gradient(() -> loss(x), network.p)
     for i in 1:Const.layers_num
-        dw = gs[network.f[i].W]
-        o[i].W  += dw
-        oe[i].W += dw .* e
-        oo[i].W += kron(dw, dw')
+        dw = gs[network.f[i].W] |> conj
+        o[i].W   += dw
+        o†e[i].W += dw' .* e
+        o†o[i].W += kron(dw', dw)
     end
 end
 
@@ -128,20 +128,20 @@ opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 1f0 / Const.iters_num
     for i in 1:Const.layers_num-1
-        O  = α .* real.(o[i].W)
-        OE = α .* real.(oe[i].W)
-        OO = α .* real.(oo[i].W)
+        O  = α .* real.(o[i].W')
+        OE = α .* real.(o†e[i].W)
+        OO = α .* real.(o†o[i].W)
         R  = CuArray(2f0 .* (energy - ϵ) .* reshape((OE .- energy * O), length(O)))
-        S  = CuArray(OO - kron(O, O'))
+        S  = CuArray(OO - kron(O', O))
         I  = Diagonal(CUDA.ones(Float32, size(S)))
         ΔW = reshape((S .+ Const.ϵ .* I)\R, size(O)) |> cpu
         update!(opt(lr), network.f[i].W, ΔW)
     end
-    O  = α .* o[end].W
-    OE = α .* oe[end].W
-    OO = α .* oo[end].W
-    R  = CuArray(2f0 .* (energy - ϵ) .* reshape((OE .- energy * O), length(O)))
-    S  = CuArray((OO - kron(O, O')))
+    O   = α .* o[end].W
+    O†E = α .* o†e[end].W
+    O†O = α .* o†o[end].W
+    R  = CuArray(2f0 .* (energy - ϵ) .* reshape((O†E .- energy * O'), length(O)))
+    S  = CuArray((O†O - kron(O', O)))
     I  = Diagonal(CUDA.ones(Float32, size(S)))
     ΔW = reshape((S .+ Const.ϵ .* I)\R, size(O)) |> cpu
     update!(opt(lr), network.f[end].W, ΔW)
