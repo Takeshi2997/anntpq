@@ -18,19 +18,7 @@ using Distributed
     filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
 
     # Learning
-    open(filename, "w") do io
-        write(io, "iter")
-        write(io, "\t")
-        write(io, "error")
-        write(io, "\t")
-        write(io, "energyS")
-        write(io, "\t")
-        write(io, "energyB")
-        write(io, "\t")
-        write(io, "density")
-        write(io, "\n")
-    end 
-
+    touch(filename)
     for it in 1:it_num
         # Calculate expected value
         open(filename, "a") do io
@@ -61,7 +49,6 @@ function main()
     mkdir(dirnameerror)
     MLcore.Func.ANN.init()
     MLcore.Func.ANN.save(dirname * "/params_at_000.bson")
-    learning(0, dirname, dirnameerror, Const.lr, Const.it_num)
 
     for iϵ in 1:Const.iϵmax learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num) end
 end
