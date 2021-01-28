@@ -15,7 +15,7 @@ using Distributed
     MLcore.Func.ANN.load(dirname * "/params_at_000.bson")
     ϵ = - 0.5f0 * iϵ / Const.iϵmax * Const.t * Const.dimB
     filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
-    filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".h5"
+    filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
 
     # Learning
     open(filename, "w") do io
@@ -61,9 +61,8 @@ function main()
     mkdir(dirnameerror)
     MLcore.Func.ANN.init()
     MLcore.Func.ANN.save(dirname * "/params_at_000.bson")
-    learning(0, dirname, dirnameerror, Const.lr, 1)# Const.it_num)
+    learning(0, dirname, dirnameerror, Const.lr, Const.it_num)
 
-    exit()
     for iϵ in 1:Const.iϵmax learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num) end
 end
 
