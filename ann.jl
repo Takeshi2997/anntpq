@@ -122,12 +122,11 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
         dwvec = reshape(dw, length(dw))
         o[i].W  += dwvec
         oe[i].W += dwvec .* e
-        oo[i].W += transpose(dwvec) .* dwvec
+        oo[i].W += transpose(dwvec) .* conj.(dwvec)
     end
 end
 
 opt(lr::Float32) = Descent(lr)
-
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 1f0 / Const.iters_num
@@ -144,7 +143,7 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     OE = α .* oe[end].W
     OO = α .* oo[end].W
     R  = CuArray((energy - ϵ) .* (OE .- energy * O))
-    S  = CuArray((OO - transpose(O) .* O))
+    S  = CuArray((OO - transpose(O) .* conj.(O)))
     ΔW = reshape((S .+ Const.ϵ .* I[end])\R, (Const.layer[end], Const.layer[end-1]+1)) |> cpu
     update!(opt(lr), network.f[end].W, ΔW)
 end
