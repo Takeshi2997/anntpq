@@ -22,7 +22,7 @@ const I   = [Diagonal(CUDA.ones(Float32, Const.layer[i+1] * (Const.layer[i] + 1)
 function initO()
     for i in 1:Const.layers_num
         W  = zeros(Complex{Float32}, Const.layer[i+1] * (Const.layer[i] + 1))
-        S  = kron(transpose(W), W)
+        S  = transpose(W) .* W
         global o[i]   = Params(W)
         global oe[i]  = Params(W)
         global oo[i]  = Params(S)
@@ -121,8 +121,8 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
         dw = gs[network.f[i].W] |> conj
         dwvec = reshape(dw, length(dw))
         o[i].W  += dwvec
-        oe[i].W += conj.(dwvec) .* e
-        oo[i].W += kron(dwvec', dwvec)
+        oe[i].W += dwvec .* e
+        oo[i].W += transpose(dwvec) .* dwvec
     end
 end
 
@@ -135,16 +135,16 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         O  = α .* 2f0 .* real.(o[i].W)
         OE = α .* 2f0 .* real.(oe[i].W)
         OO = α .* 2f0 .* real.(oo[i].W)
-        R  = CuArray((energy - ϵ) .* (OE .- energy * conj.(O)))
-        S  = CuArray(OO - kron(O', O))
+        R  = CuArray((energy - ϵ) .* (OE .- energy * O))
+        S  = CuArray(OO - transpose(O) .* O)
         ΔW = reshape((S .+ Const.ϵ .* I[i])\R, (Const.layer[i+1], Const.layer[i]+1)) |> cpu
         update!(opt(lr), network.f[i].W, ΔW)
     end
     O  = α .* o[end].W
     OE = α .* oe[end].W
     OO = α .* oo[end].W
-    R  = CuArray((energy - ϵ) .* (OE .- energy * conj.(O)))
-    S  = CuArray((OO - kron(O', O)))
+    R  = CuArray((energy - ϵ) .* (OE .- energy * O))
+    S  = CuArray((OO - transpose(O) .* O))
     ΔW = reshape((S .+ Const.ϵ .* I[end])\R, (Const.layer[end], Const.layer[end-1]+1)) |> cpu
     update!(opt(lr), network.f[end].W, ΔW)
 end
