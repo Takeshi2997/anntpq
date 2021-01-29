@@ -129,10 +129,10 @@ opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 1f0 / Const.iters_num
     for i in 1:Const.layers_num-1
-        O  = α .* real.(o[i].W')
+        O  = α .* real.(o[i].W)
         OE = α .* real.(oe[i].W)
         OO = α .* real.(oo[i].W)
-        R  = CuArray(2f0 .* (energy - ϵ) .* reshape((OE .- energy * O), length(O)))
+        R  = CuArray(2f0 .* (energy - ϵ) .* reshape((OE .- energy * O'), length(O)))
         S  = CuArray(OO - kron(O', O))
         I  = Diagonal(CUDA.ones(Float32, size(S)))
         ΔW = reshape((S .+ Const.ϵ .* I)\R, size(O)) |> cpu
