@@ -19,8 +19,9 @@ oo  = Vector{Parameters}(undef, Const.layers_num)
 
 function initO()
     for i in 1:Const.layers_num
-        W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i] + 1)
-        S = kron(W', W)
+        W  = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i] + 1)
+        W′ = zeros(Complex{Float32}, Const.layer[i] + 1, Const.layer[i+1])
+        S  = kron(W', W)
         global o[i]   = Params(W)
         global oe[i]  = Params(W')
         global oo[i]  = Params(S)
