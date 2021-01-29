@@ -23,7 +23,7 @@ function initO()
         W′ = zeros(Complex{Float32}, Const.layer[i] + 1, Const.layer[i+1])
         S  = kron(W', W)
         global o[i]   = Params(W)
-        global oe[i]  = Params(W')
+        global oe[i]  = Params(W′)
         global oo[i]  = Params(S)
     end
 end
