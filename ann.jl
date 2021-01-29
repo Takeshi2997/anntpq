@@ -19,7 +19,7 @@ oo  = Vector{Parameters}(undef, Const.layers_num)
 
 function initO()
     for i in 1:Const.layers_num
-        W  = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i] + 1)
+        W  = zeros(Complex{Float32}, Const.layer[i+1] * (Const.layer[i] + 1))
         S  = kron(transpose(W), W)
         global o[i]   = Params(W)
         global oe[i]  = Params(W)
@@ -117,33 +117,34 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     gs = gradient(() -> loss(x), network.p)
     for i in 1:Const.layers_num
         dw = gs[network.f[i].W] |> conj
-        o[i].W  += dw
-        oe[i].W += conj.(dw) .* e
-        oo[i].W += kron(dw', dw)
+        dwvec = reshape(dw, length(dw))
+        o[i].W  += dwvec
+        oe[i].W += conj.(dwvec) .* e
+        oo[i].W += kron(dwvec', dwvec)
     end
 end
 
 opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 
+I = [Diagonal(CUDA.ones(Float32, size(S))) for S in oo]
+
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 1f0 / Const.iters_num
     for i in 1:Const.layers_num-1
-        O  = α .* real.(o[i].W)
-        OE = α .* real.(oe[i].W)
-        OO = α .* real.(oo[i].W)
-        R  = CuArray(2f0 .* (energy - ϵ) .* reshape((OE .- energy * conj.(O)), length(O)))
+        O  = α .* 2f0 .* real.(o[i].W)
+        OE = α .* 2f0 .* real.(oe[i].W)
+        OO = α .* 2f0 .* real.(oo[i].W)
+        R  = CuArray((energy - ϵ) .* (OE .- energy * conj.(O)))
         S  = CuArray(OO - kron(O', O))
-        I  = Diagonal(CUDA.ones(Float32, size(S)))
-        ΔW = reshape((S .+ Const.ϵ .* I)\R, size(O)) |> cpu
+        ΔW = reshape((S .+ Const.ϵ .* I[i])\R, (Const.layer[i+1], Const.layer[i]+1)) |> cpu
         update!(opt(lr), network.f[i].W, ΔW)
     end
     O  = α .* o[end].W
     OE = α .* oe[end].W
     OO = α .* oo[end].W
-    R  = CuArray(2f0 .* (energy - ϵ) .* reshape((OE .- energy * conj.(O)), length(O)))
+    R  = CuArray((energy - ϵ) .* (OE .- energy * conj.(O)))
     S  = CuArray((OO - kron(O', O)))
-    I  = Diagonal(CUDA.ones(Float32, size(S)))
-    ΔW = reshape((S .+ Const.ϵ .* I)\R, size(O)) |> cpu
+    ΔW = reshape((S .+ Const.ϵ .* I[end])\R, (Const.layer[end], Const.layer[end-1]+1)) |> cpu
     update!(opt(lr), network.f[end].W, ΔW)
 end
 
