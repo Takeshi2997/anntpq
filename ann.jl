@@ -126,7 +126,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     end
 end
 
-opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
+opt(lr::Float32) = Descent(lr)
 
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
