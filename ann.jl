@@ -26,7 +26,6 @@ function initO()
         global o[i]   = Params(W)
         global oe[i]  = Params(W)
         global oo[i]  = Params(S)
-        global I = Params(Diagonal(CUDA.ones(Float32, size(S))))
     end
 end
 
