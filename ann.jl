@@ -118,11 +118,11 @@ loss(x::Vector{Float32}) = real(forward(x))
 function backward(x::Vector{Float32}, e::Complex{Float32})
     gs = gradient(() -> loss(x), network.p)
     for i in 1:Const.layers_num
-        dw = gs[network.f[i].W] |> conj
+        dw = gs[network.f[i].W]
         dwvec = reshape(dw, length(dw))
         o[i].W  += dwvec
         oe[i].W += dwvec .* e
-        oo[i].W += transpose(dwvec) .* dwvec
+        oo[i].W += transpose(dwvec) .* conj.(dwvec)
     end
 end
 
@@ -136,7 +136,7 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         OE = α .* 2f0 .* real.(oe[i].W)
         OO = α .* 2f0 .* real.(oo[i].W)
         R  = CuArray((energy - ϵ) .* (OE .- energy * O))
-        S  = CuArray(OO - transpose(O) .* O)
+        S  = CuArray(OO - transpose(O) .* conj.(O))
         ΔW = reshape((S .+ Const.ϵ .* I[i])\R, (Const.layer[i+1], Const.layer[i]+1)) |> cpu
         update!(opt(lr), network.f[i].W, ΔW)
     end
@@ -144,7 +144,7 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     OE = α .* oe[end].W
     OO = α .* oo[end].W
     R  = CuArray((energy - ϵ) .* (OE .- energy * O))
-    S  = CuArray((OO - transpose(O) .* O))
+    S  = CuArray((OO - transpose(O) .* conj.(O)))
     ΔW = reshape((S .+ Const.ϵ .* I[end])\R, (Const.layer[end], Const.layer[end-1]+1)) |> cpu
     update!(opt(lr), network.f[end].W, ΔW)
 end
