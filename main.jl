@@ -5,6 +5,7 @@ using Distributed
 @everywhere using Flux
 
 @everywhere function learning(iϵ::Integer, dirname::String, dirnameerror::String, lr::Float32, it_num::Integer)
+
     # Initialize
     error   = 0f0
     energyS = 0f0
@@ -21,7 +22,7 @@ using Distributed
 
         # Calculate expected value
         error, energyS, energyB, numberB = MLcore.sampling(ϵ, lr)
-        io = open(filename, "w")
+        io = open(filename, "a")
         write(io, string(it))
         write(io, "\t")
         write(io, string(error))
