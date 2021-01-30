@@ -31,6 +31,21 @@ end
 
 # Define Network
 
+struct Res{F,S<:AbstractArray}
+    W::S
+    σ::F
+end
+function Res(in::Integer, out::Integer, σ = identity;
+             initW = Flux.glorot_uniform)
+    return Res(initW(out, in+1), σ)
+end
+@functor Res
+function (m::Res)(x::AbstractArray)
+    W, σ = m.W, m.σ
+    z = vcat(x, 1)
+    x .+ σ.(W*z)
+end
+
 struct Layer{F,S<:AbstractArray}
     W::S
     σ::F
@@ -54,7 +69,7 @@ end
 function Network()
     layers = Vector(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layers[i] = Layer(Const.layer[i], Const.layer[i+1], tanh)
+        layers[i] = Res(Const.layer[i], Const.layer[i+1], tanh)
     end
     layers[end] = Layer(Const.layer[end-1], Const.layer[end])
     f = Chain([layers[i] for i in 1:Const.layers_num]...)
@@ -108,16 +123,16 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     end
 end
 
-opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
+opt(lr::Float32) = RMSProp(lr, 0.9)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 1f0 / Const.iters_num
     for i in 1:Const.layers_num
-        O  = α .* 2f0 .* real.(o[i].W)
-        OE = α .* 2f0 .* real.(oe[i].W)
-        OO = α .* 2f0 .* real.(oo[i].W)
-        R  = CuArray((energy - ϵ) .* (OE .- energy * O))
-        S  = CuArray(OO - transpose(O) .* O)
+        O  = α .* real.(o[i].W)
+        OE = α .* real.(oe[i].W)
+        OO = α .* real.(oo[i].W)
+        R  = CuArray((energy - ϵ) .* 2f0 .* real.(OE .- energy * O))
+        S  = CuArray(2f0 .* real.(OO - transpose(O) .* conj.(O)))
         ΔW = reshape((S .+ Const.ϵ .* I[i])\R, (Const.layer[i+1], Const.layer[i]+1)) |> cpu
         update!(opt(lr), network.f[i].W, ΔW)
     end
