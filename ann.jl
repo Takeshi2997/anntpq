@@ -46,33 +46,17 @@ function (m::Layer)(x::AbstractArray)
     σ.(W*z)
 end
 
-struct Output{F,S<:AbstractArray}
-    W::S
-    σ::F
-end
-function Output(in::Integer, out::Integer, σ = identity;
-                initW = randn)
-    return Output(initW(Complex{Float32}, out, in+1), σ)
-end
-@functor Output
-function (m::Output)(x::AbstractArray)
-    W, σ = m.W, m.σ
-    z = vcat(x, 1)
-    σ.(W*z)
-end
-
 mutable struct Network
     f::Flux.Chain
     p::Zygote.Params
 end
 
-NNlib.logcosh(z::Complex) = log(cosh(z))
 function Network()
     layers = Vector(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
         layers[i] = Layer(Const.layer[i], Const.layer[i+1], tanh)
     end
-    layers[end] = Output(Const.layer[end-1], Const.layer[end], logcosh)
+    layers[end] = Layer(Const.layer[end-1], Const.layer[end])
     f = Chain([layers[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
     Network(f, p)
@@ -110,7 +94,7 @@ end
 
 function forward(x::Vector{Float32})
     out = network.f(x)
-    return sum(out)
+    return out[1] + im * out[2]
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
@@ -126,11 +110,11 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     end
 end
 
-opt(lr::Float32) = Descent(lr)
+opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 1f0 / Const.iters_num
-    for i in 1:Const.layers_num-1
+    for i in 1:Const.layers_num
         O  = α .* 2f0 .* real.(o[i].W)
         OE = α .* 2f0 .* real.(oe[i].W)
         OO = α .* 2f0 .* real.(oo[i].W)
@@ -139,13 +123,6 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         ΔW = reshape((S .+ Const.ϵ .* I[i])\R, (Const.layer[i+1], Const.layer[i]+1)) |> cpu
         update!(opt(lr), network.f[i].W, ΔW)
     end
-    O  = α .* o[end].W
-    OE = α .* oe[end].W
-    OO = α .* oo[end].W
-    R  = CuArray((energy - ϵ) .* (OE .- energy * O))
-    S  = CuArray((OO - transpose(O) .* conj.(O)))
-    ΔW = reshape((S .+ Const.ϵ .* I[end])\R, (Const.layer[end], Const.layer[end-1]+1)) |> cpu
-    update!(opt(lr), network.f[end].W, ΔW)
 end
 
 end
