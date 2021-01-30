@@ -1,149 +1,133 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote, Distributions
+using .Const, LinearAlgebra, Flux, Zygote, BlockDiagonals
 using Flux: @functor
 using Flux.Optimise: update!
 using BSON: @save
 using BSON: @load
 
-# Initialize Variables
+mutable struct Parameters
 
-abstract type Parameters end
-mutable struct Params{S<:AbstractArray} <: Parameters
-    W::S
+    W::Array
+    b::Array
 end
 
-o   = Vector{Parameters}(undef, Const.layers_num)
-oe  = Vector{Parameters}(undef, Const.layers_num)
-oo  = Vector{Parameters}(undef, Const.layers_num)
+o  = Vector{Any}(undef, Const.layers_num)
+oe = Vector{Any}(undef, Const.layers_num)
 
 function initO()
+
     for i in 1:Const.layers_num
-        W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i] + 1)
-        S = kron(W, W')
-        global o[i]   = Params(W)
-        global oe[i]  = Params(W)
-        global oo[i]  = Params(S)
+        W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
+        b = zeros(Complex{Float32}, Const.layer[i+1])
+        global o[i]  = Parameters(W, b)
+        global oe[i] = Parameters(W, b)
     end
 end
 
-# Define Network
-
-struct Layer{F,S<:AbstractArray}
-    W::S
-    σ::F
-end
-function Layer(in::Integer, out::Integer, σ = identity;
-               initW = Flux.glorot_uniform)
-    return Layer(initW(out, in+1), σ)
-end
-@functor Layer
-function (m::Layer)(x::AbstractArray)
-    W, σ = m.W, m.σ
-    z = vcat(x, 1)
-    σ.(W*z)
-end
-
-struct Output{F,S<:AbstractArray}
-    W::S
-    σ::F
-end
-function Output(in::Integer, out::Integer, σ = identity;
-               initW = randn)
-    return Output(initW(Complex{Float32}, out, in+1), σ)
-end
-@functor Output
-function (m::Output)(x::AbstractArray)
-    W, σ = m.W, m.σ
-    z = vcat(x, 1)
-    σ.(W*z)
-end
-
 mutable struct Network
+
     f::Flux.Chain
     p::Zygote.Params
 end
 
-NNlib.logcosh(z::Complex) = log(cosh(z))
+struct Res{F,S<:AbstractArray,T<:AbstractArray}
+    W::S
+    b::T
+    σ::F
+end
+
+function Res(in::Integer, out::Integer, σ = identity;
+             initW = Flux.glorot_uniform, initb = zeros)
+  return Res(initW(out, in), initb(Float32, out), σ)
+end
+
+@functor Res
+
+function (m::Res)(x::AbstractArray)
+    W, b, σ = m.W, m.b, m.σ
+    x .+ σ.(W*x.+b)
+end
+
+NNlib.logcosh(x::Complex{Float32}) = log(cosh(x))
+
 function Network()
-    layers = Vector(undef, Const.layers_num)
+
+    layer = Vector{Any}(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layers[i] = Layer(Const.layer[i], Const.layer[i+1], tanh)
+        layer[i] = Res(Const.layer[i], Const.layer[i+1], tanh)
     end
-    layers[end] = Output(Const.layer[end-1], Const.layer[end], logcosh)
-    f = Chain([layers[i] for i in 1:Const.layers_num]...)
-    p = Flux.params(f)
+    layer[end] = Dense(Const.layer[end-1], Const.layer[end])
+    f = Chain([layer[i] for i in 1:Const.layers_num]...)
+    p = params(f)
     Network(f, p)
 end
 
 network = Network()
 
-# Network Utility
-
 function save(filename)
+
     f = getfield(network, :f)
     @save filename f
 end
 
 function load(filename)
+
     @load filename f
-    p = Flux.params(f)
+    p = params(f)
     Flux.loadparams!(network.f, p)
 end
 
 function init()
+
     parameters = Vector{Array}(undef, Const.layers_num)
-    for i in 1:Const.layers_num-1
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]+1) 
-        parameters[i] = [W]
+    for i in 1:Const.layers_num
+        W = randn(Float32, Const.layer[i+1], Const.layer[i]) ./ Float32(sqrt(Const.layer[i]))
+        b = zeros(Float32, Const.layer[i+1])
+        parameters[i] = [W, b]
     end
-    W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1]+1) 
-    parameters[end] = [W]
     paramset = [param for param in parameters]
-    p = Flux.params(paramset...)
+    p = params(paramset...)
     Flux.loadparams!(network.f, p)
 end
 
-# Learning Method
-
 function forward(x::Vector{Float32})
+
     out = network.f(x)
-    return sum(out)
+    return out[1] + im * out[2]
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
 
 function backward(x::Vector{Float32}, e::Complex{Float32})
+
     gs = gradient(() -> loss(x), network.p)
-    for i in 1:Const.layers_num
+    for i in 1:Const.layers_num-1
         dw = gs[network.f[i].W]
+        db = gs[network.f[i].b]
         o[i].W  += dw
-        oe[i].W += dw .* e
-        oo[i].W += kron(dw, dw')
+        oe[i].W += dw * e
+        o[i].b  += db
+        oe[i].b += db * e
     end
+    dw = gs[network.f[end].W]
+    o[end].W  += dw
+    oe[end].W += dw * e
 end
 
 opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
-    α = 1f0 / Const.iters_num
+
+    x = (energy - ϵ)
+    α = 2f0 * x / Const.iters_num
     for i in 1:Const.layers_num-1
-        O  = α .* real.(o[i].W)
-        OE = α .* real.(oe[i].W)
-        OO = α .* real.(oo[i].W)
-        R  = 2f0 .* (energy - ϵ) .* reshape((OE .- energy * O), length(O))
-        S  = (OO - kron(O, O'))
-        I  = Diagonal(ones(Float32, size(S)))
-        ΔW = reshape((S .+ Const.ϵ .* I)\R, size(O))
+        ΔW = α .* 2f0 .* real.(oe[i].W .- energy * o[i].W)
+        Δb = α .* 2f0 .* real.(oe[i].b .- energy * o[i].b)
         update!(opt(lr), network.f[i].W, ΔW)
+        update!(opt(lr), network.f[i].b, Δb)
     end
-    O  = α .* o[end].W
-    OE = α .* oe[end].W
-    OO = α .* oo[end].W
-    R  = 2f0 .* (energy - ϵ) .* reshape((OE .- energy * O), length(O))
-    S  = (OO - kron(O, O'))
-    I  = Diagonal(ones(Float32, size(S)))
-    ΔW = reshape((S .+ Const.ϵ .* I)\R, size(O))
+    ΔW = α .* 2f0 * real(oe[end].W .- energy * o[end].W)
     update!(opt(lr), network.f[end].W, ΔW)
 end
 
