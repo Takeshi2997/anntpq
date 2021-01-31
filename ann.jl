@@ -31,21 +31,6 @@ end
 
 # Define Network
 
-struct Res{F,S<:AbstractArray}
-    W::S
-    σ::F
-end
-function Res(in::Integer, out::Integer, σ = identity;
-             initW = Flux.glorot_uniform)
-    return Res(initW(out, in+1), σ)
-end
-@functor Res
-function (m::Res)(x::AbstractArray)
-    W, σ = m.W, m.σ
-    z = vcat(x, 1)
-    x .+ σ.(W*z)
-end
-
 struct Layer{F,S<:AbstractArray}
     W::S
     σ::F
@@ -69,7 +54,7 @@ end
 function Network()
     layers = Vector(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layers[i] = Res(Const.layer[i], Const.layer[i+1], tanh)
+        layers[i] = Layer(Const.layer[i], Const.layer[i+1], tanh)
     end
     layers[end] = Layer(Const.layer[end-1], Const.layer[end])
     f = Chain([layers[i] for i in 1:Const.layers_num]...)
