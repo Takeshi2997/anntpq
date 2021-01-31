@@ -108,7 +108,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     end
 end
 
-opt(lr::Float32) = RMSProp(lr, 0.9)
+opt(lr::Float32) = Descent(lr)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 1f0 / Const.iters_num
