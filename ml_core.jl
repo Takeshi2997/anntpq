@@ -1,7 +1,7 @@
 module MLcore
 include("./setup.jl")
 include("./functions.jl")
-using .Const, .Func, Distributed
+using .Const, .Func, Random
 
 const X = vcat(ones(Float32, Int((Const.dimB+Const.dimS)/2)), 
               -ones(Float32, Int((Const.dimB+Const.dimS)/2)))
