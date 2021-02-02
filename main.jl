@@ -4,36 +4,36 @@ using Distributed
 @everywhere using .Const, .MLcore
 @everywhere using Flux
 
-@everywhere function learning(iϵ::Integer, dirname::String, dirnameerror::String, lr::Float32, it_num::Integer)
-
+@everywhere function learning(iϵ::Integer, 
+                              dirname::String, dirnameerror::String, 
+                              lr::Float32, it_num::Integer)
     # Initialize
     error   = 0f0
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
     MLcore.Func.ANN.load(dirname * "/params_at_000.bson")
-    ϵ = (-0.2f0 - 0.3f0 * iϵ / Const.iϵmax) * Const.t * Const.dimB
+    ϵ = (-0.3f0 - 0.2f0 * iϵ / Const.iϵmax) * Const.t * Const.dimB
     filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
     filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
 
     # Learning
     touch(filename)
     for it in 1:it_num
-
         # Calculate expected value
-        error, energyS, energyB, numberB = MLcore.sampling(ϵ, lr)
-        io = open(filename, "a")
-        write(io, string(it))
-        write(io, "\t")
-        write(io, string(error))
-        write(io, "\t")
-        write(io, string(energyS / Const.dimS))
-        write(io, "\t")
-        write(io, string(energyB / Const.dimB))
-        write(io, "\t")
-        write(io, string(numberB / Const.dimB))
-        write(io, "\n")
-        close(io)
+        open(filename, "a") do io
+            error, energyS, energyB, numberB = MLcore.sampling(ϵ, lr)
+            write(io, string(it))
+            write(io, "\t")
+            write(io, string(error))
+            write(io, "\t")
+            write(io, string(energyS / Const.dimS))
+            write(io, "\t")
+            write(io, string(energyB / Const.dimB))
+            write(io, "\t")
+            write(io, string(numberB / Const.dimB))
+            write(io, "\n")
+        end
     end
 
     MLcore.Func.ANN.save(filenameparams)
@@ -50,7 +50,7 @@ function main()
     MLcore.Func.ANN.init()
     MLcore.Func.ANN.save(dirname * "/params_at_000.bson")
 
-    pmap(iϵ -> learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num), 1:Const.iϵmax)
+    for iϵ in 1:Const.iϵmax learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num) end
 end
 
 main()
