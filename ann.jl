@@ -52,7 +52,7 @@ struct Output{F,S<:AbstractArray}
 end
 function Output(in::Integer, out::Integer, σ = identity;
                 initW = randn)
-    return Output(initW(Complex, out, in+1), σ)
+    return Output(initW(Complex{Float32}, out, in+1), σ)
 end
 @functor Output
 function (m::Output)(x::AbstractArray)
