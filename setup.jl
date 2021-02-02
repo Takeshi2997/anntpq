@@ -16,10 +16,10 @@ const iϵmax = 1
 const ϵ = 0.001f0
 
 # Network Params
-const layer = [dimB+dimS, 2]
+const layer = [dimB+dimS, 20, 20, 2]
 const layers_num = length(layer) - 1
 
 # Learning Rate
-const lr = 1f-3
+const lr = 1f-2
 
 end
