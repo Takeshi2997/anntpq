@@ -1,8 +1,8 @@
 module ANN
 include("./setup.jl")
-include("./optimiser.jl")
-using .Const, .Optimise, LinearAlgebra, Flux, Zygote, Distributions
+using .Const, LinearAlgebra, Flux, Zygote, Distributions
 using Flux: @functor
+using Flux.Optimise: update!
 using BSON: @save
 using BSON: @load
 
@@ -24,26 +24,12 @@ function initO()
         global oe[i]  = Layer(W, b)
     end
     W = zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1])
-    b = zeros(Complex{Float32}, Const.layer[1])
+    b = zeros(Complex{Float32}, Const.layer[end])
     global o[end]   = Layer(W, b)
     global oe[end]  = Layer(W, b)
 end
 
 # Define Network
-
-struct Output{S<:AbstractArray,T<:AbstractArray}
-  W::S
-  b::T
-end
-function Output(in::Integer, out::Integer, first::Integer;
-                initW = Flux.glorot_uniform, initb = Flux.zeros)
-    return Output(initW(out, in), initb(first))
-end
-@functor Output
-function (a::Output)(x::AbstractArray)
-  W, b = a.W, a.b
-  W*x, b
-end
 
 mutable struct Network
     f::Flux.Chain
@@ -55,7 +41,7 @@ function Network()
     for i in 1:Const.layers_num-1
         layer[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
     end
-    layer[end] = Output(Const.layer[end-1], Const.layer[end], Const.layer[1])
+    layer[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layer[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
     Network(f, p)
@@ -78,14 +64,11 @@ end
 
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
-    for i in 1:Const.layers_num-1
-        W = randn(Float32, Const.layer[i+1], Const.layer[i]) ./ Const.layer[i]
+    for i in 1:Const.layers_num
+        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
-    W = randn(Float32, Const.layer[end], Const.layer[end-1]) ./ Const.layer[end-1]
-    b = rand(Float32, Const.layer[1]) .* π
-    parameters[end] = [W, b]
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
     Flux.loadparams!(network.f, p)
@@ -95,16 +78,15 @@ end
 # Learning Method
 
 function forward(x::Vector{Float32})
-    out, b = network.f(x)
-    B = transpose(x) * b
-    return out[1] + im * out[2] + im * B
+    out = network.f(x)
+    return out[1] + im * out[2]
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
 
 function backward(x::Vector{Float32}, e::Complex{Float32})
     gs = gradient(() -> loss(x), network.p)
-    for i in 1:Const.layers_num
+    for i in 1:Const.layers_num-1
         dw = gs[network.f[i].W]
         db = gs[network.f[i].b]
         o[i].W  += dw
@@ -112,17 +94,22 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
         o[i].b  += db
         oe[i].b += db .* e
     end
+    dw = gs[network.f[end].W]
+    o[end].W  += dw
+    oe[end].W += dw .* e
 end
 
-opt(lr::Float32) = Optimise.QRMSProp(lr, 0.9f0)
+opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
-    α = 2f0 .* (energy - ϵ) / Const.iters_num
+    α = 2f0 / Const.iters_num
     for i in 1:Const.layers_num
-        ΔW = α .*  real.(oe[i].W .- energy * o[i].W)
-        Δb = α .*  real.(oe[i].b .- energy * o[i].b)
-        Optimise.update!(opt(lr), network.f[i].W, ΔW, o[i].W)
-        Optimise.update!(opt(lr), network.f[i].b, Δb, o[i].b)
+        ΔW = α .*  real.(oe[i].W .- (energy - ϵ)* o[i].W)
+        Δb = α .*  real.(oe[i].b .- (energy - ϵ)* o[i].b)
+        update!(opt(lr), network.f[i].W, ΔW)
+        update!(opt(lr), network.f[i].b, Δb)
     end
+    ΔW = α .*  real.(oe[end].W .- (energy - ϵ)* o[end].W)
+    update!(opt(lr), network.f[end].W, ΔW)
 end
 end

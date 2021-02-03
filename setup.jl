@@ -15,7 +15,7 @@ const it_num = 5000
 const iϵmax = 4
 
 # Network Params
-const layer = [dimB+dimS, 80, 80, 80, 80, 2]
+const layer = [dimB+dimS, 80, 80, 80, 2]
 const layers_num = length(layer) - 1
 
 # Learning Rate
