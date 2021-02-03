@@ -104,12 +104,12 @@ opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 2f0 / Const.iters_num
     for i in 1:Const.layers_num
-        ΔW = α .*  real.(oe[i].W .- (energy - ϵ)* o[i].W)
-        Δb = α .*  real.(oe[i].b .- (energy - ϵ)* o[i].b)
+        ΔW = α .*  real.(oe[i].W .- (ϵ - energy)* o[i].W)
+        Δb = α .*  real.(oe[i].b .- (ϵ - energy)* o[i].b)
         update!(opt(lr), network.f[i].W, ΔW)
         update!(opt(lr), network.f[i].b, Δb)
     end
-    ΔW = α .*  real.(oe[end].W .- (energy - ϵ)* o[end].W)
+    ΔW = α .*  real.(oe[end].W .- (ϵ - energy)* o[end].W)
     update!(opt(lr), network.f[end].W, ΔW)
 end
 end
