@@ -13,7 +13,7 @@ using Distributed
     energyB = 0f0
     numberB = 0f0
     MLcore.Func.ANN.load(dirname * "/params_at_000.bson")
-    ϵ = - 0.5f0 * iϵ / Const.iϵmax * Const.t * Const.dimB
+    ϵ = (-0.3f0 - 0.2f0 * iϵ / Const.iϵmax) * Const.t * Const.dimB
     filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
     filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
 
@@ -23,18 +23,18 @@ using Distributed
 
         # Calculate expected value
         error, energyS, energyB, numberB = MLcore.sampling(ϵ, lr)
-        io = open(filename, "a")
-        write(io, string(it))
-        write(io, "\t")
-        write(io, string(error))
-        write(io, "\t")
-        write(io, string(energyS / Const.dimS))
-        write(io, "\t")
-        write(io, string(energyB / Const.dimB))
-        write(io, "\t")
-        write(io, string(numberB / Const.dimB))
-        write(io, "\n")
-        close(io)
+        open(filename, "a") do io
+            write(io, string(it))
+            write(io, "\t")
+            write(io, string(error))
+            write(io, "\t")
+            write(io, string(energyS / Const.dimS))
+            write(io, "\t")
+            write(io, string(energyB / Const.dimB))
+            write(io, "\t")
+            write(io, string(numberB / Const.dimB))
+            write(io, "\n")
+        end
     end
 
     MLcore.Func.ANN.save(filenameparams)
