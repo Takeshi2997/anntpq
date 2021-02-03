@@ -116,9 +116,9 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         O  = α .* real.(o[i].W)
         OE = α .* real.(oe[i].W)
         OO = α .* real.(oo[i].W)
-        R  = CuArray(2f0 .* real.(OE .- energy * O))
+        R  = CuArray(2f0 .* real.(OE .- (ϵ - energy) * O))
         S  = CuArray(2f0 .* real.(OO - transpose(O) .* conj.(O)))
-        ΔW = reshape((S .+ ϵ^(-1) .* I[i])\R, (Const.layer[i+1], Const.layer[i]+1)) |> cpu
+        ΔW = reshape((S .+ Const.η .* I[i])\R, (Const.layer[i+1], Const.layer[i]+1)) |> cpu
         update!(opt(lr), network.f[i].W, ΔW)
     end
 end
