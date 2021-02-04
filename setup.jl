@@ -18,6 +18,7 @@ const iϵmax = 1
 const layer = [dimB+dimS, 80, 80, 80, 2]
 const layers_num = length(layer) - 1
 const η = 0.01f0
+
 # Learning Rate
 const lr = 0.001f0
 
