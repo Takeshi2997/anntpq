@@ -102,7 +102,7 @@ end
 opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
-    α = (1f0 - (ϵ - energy)) / Const.iters_num
+    α = ((ϵ - energy) - 1f0) / Const.iters_num
     for i in 1:Const.layers_num
         ΔW = α .* 2f0 .*  real.(oe[i].W .- (ϵ - energy)* o[i].W)
         Δb = α .* 2f0 .*  real.(oe[i].b .- (ϵ - energy)* o[i].b)

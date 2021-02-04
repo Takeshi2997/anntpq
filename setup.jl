@@ -10,9 +10,9 @@ const J = 1.0f0
 
 # Repeat Number
 const burnintime = 10
-const iters_num = 200
-const it_num = 5000
-const iϵmax = 4
+const iters_num = 1000
+const it_num = 1000
+const iϵmax = 1
 
 # Network Params
 const layer = [dimB+dimS, 80, 80, 80, 2]
