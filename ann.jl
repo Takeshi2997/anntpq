@@ -82,7 +82,8 @@ function forward(x::Vector{Float32})
     return out[1] + im * out[2]
 end
 
-loss(x::Vector{Float32}) = real(forward(x))
+sqnorm(x::Real) = sum(abs2, x)
+loss(x::Vector{Float32}) = real(forward(x)) + η * sum(sqnorm, Flux.params(network.f))
 
 function backward(x::Vector{Float32}, e::Complex{Float32})
     gs = gradient(() -> loss(x), network.p)
@@ -99,7 +100,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     oe[end].W += dw .* e
 end
 
-opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
+opt(lr::Float32) = Descent(lr)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = ((ϵ - energy) - 1f0) / Const.iters_num
