@@ -103,15 +103,14 @@ end
 opt(lr::Float32) = Descent(lr)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
-    α = 1f0 / Const.iters_num
-    lr_loc = (lr * (ϵ - energy) - 1f0)
-    for i in 1:Const.layers_num
-        ΔW = α .* x .* 2f0 .*  real.(oe[i].W .- (ϵ - energy)* o[i].W)
-        Δb = α .* x .* 2f0 .*  real.(oe[i].b .- (ϵ - energy)* o[i].b)
-        update!(opt(lr_loc), network.f[i].W, ΔW)
-        update!(opt(lr_loc), network.f[i].b, Δb)
+    α = ((ϵ - energy) - 1f0) / Const.iters_num
+    for i in 1:Const.layers_num-1
+        ΔW = α .* 2f0 .* real.(oe[i].W .- (ϵ - energy)* o[i].W)
+        Δb = α .* 2f0 .* real.(oe[i].b .- (ϵ - energy)* o[i].b)
+        update!(opt(lr), network.f[i].W, ΔW)
+        update!(opt(lr), network.f[i].b, Δb)
     end
-    ΔW = α .* x .* 2f0 .* real.(oe[end].W .- (ϵ - energy)* o[end].W)
-    update!(opt(lr_loc), network.f[end].W, ΔW)
+    ΔW = α .* 2f0 .* real.(oe[end].W .- (ϵ - energy)* o[end].W)
+    update!(opt(lr), network.f[end].W, ΔW)
 end
 end
