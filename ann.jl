@@ -103,14 +103,14 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     for i in 1:Const.layers_num
         dw1 = gs[network.f[i].W1]
         dw2 = gs[network.f[i].W2]
-        o[i, 1]  += dw1[i]
-        o[i, 2]  += dw2[i]
-        oe[i, 1] += dw1[i] .* e
-        oe[i, 2] += dw2[i] .* e
-        oo[i, 1, 1] += transpose(dw1[i]) .* conj.(dw1[i])
-        oo[i, 1, 2] += transpose(dw1[i]) .* conj.(dw2[i])
+        o[i, 1]  += dw1
+        o[i, 2]  += dw2
+        oe[i, 1] += dw1 .* e
+        oe[i, 2] += dw2 .* e
+        oo[i, 1, 1] += transpose(dw1) .* conj.(dw1)
+        oo[i, 1, 2] += transpose(dw1) .* conj.(dw2)
         oo[i, 2, 1] += oo[i, 1, 2]'
-        oo[i, 2, 2] += transpose(dw2[i]) .* conj.(dw2[i])
+        oo[i, 2, 2] += transpose(dw2) .* conj.(dw2)
     end
 end
 
