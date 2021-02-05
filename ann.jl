@@ -141,9 +141,9 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     end
     for i in 1:Const.layers_num
         j = i%Const.layers_num + 1
-        R  = CuArray(2f0 .* real.(o[i] .- energy * o[i]))
+        R  = CuArray(2f0 .* real.(o[i] .- (ϵ - energy) * o[i]))
+        R′ = CuArray(2f0 .* real.(o[j] .- (ϵ - energy) * o[j]))
         S  = CuArray(2f0 .* energy .* real.(oo[i, i] - transpose(o[i]) .* conj.(o[i])))
-        R′ = CuArray(2f0 .* real.(o[j+1] .- energy * o[j]))
         S′ = CuArray(2f0 .* energy .* real.(oo[j, i] - transpose(o[j]) .* conj.(o[i])))
         ΔW = reshape((S′ .+ Const.η .* I[j])\R′ - (S .+ Const.η .* I[i])\R, 
                      (Const.layer[i+1], Const.layer[i]+1)) |> cpu
