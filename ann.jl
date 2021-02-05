@@ -103,6 +103,8 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     for i in 1:Const.layers_num
         dw1 = gs[network.f[i].W1]
         dw2 = gs[network.f[i].W2]
+        dw1 = reshape(dw1, length(dw1))
+        dw2 = reshape(dw2, length(dw2))
         o[i, 1]  += dw1
         o[i, 2]  += dw2
         oe[i, 1] += dw1 .* e
