@@ -118,7 +118,7 @@ loss(x::Vector{Float32}) = real(forward(x))
 
 function backward(x::Vector{Float32}, e::Complex{Float32})
     gs = gradient(() -> loss(x), network.p)
-    dw = [reshape(gs[network.f[i]], length(gs[network.f[i]])) for i in 1:Const.layers_num]
+    dw = [reshape(gs[network.f[i].W], length(gs[network.f[i].W])) for i in 1:Const.layers_num]
     for i in 1:Const.layers_num
         j = i%Const.layers_num + 1
         o[i]  += dw[i]
