@@ -8,24 +8,24 @@ using BSON: @load
 
 # Initialize Variables
 
-abstract type Parameters end
-mutable struct Params{S<:AbstractArray} <: Parameters
-    W::S
-end
-
-o   = Vector{Parameters}(undef, Const.layers_num)
-oe  = Vector{Parameters}(undef, Const.layers_num)
-oo  = Vector{Parameters}(undef, Const.layers_num)
+o   = Vector{Array}(undef, Const.layers_num)
+oe  = Vector{Array}(undef, Const.layers_num)
+oo  = Array{Array}(undef, Const.layers_num, Const.layers_num)
 const I   = [Diagonal(CUDA.ones(Float32, Const.layer[i+1] * (Const.layer[i] + 1)))
              for i in 1:Const.layers_num]
 
 function initO()
     for i in 1:Const.layers_num
-        W  = zeros(Complex{Float32}, Const.layer[i+1] * (Const.layer[i] + 1))
+        j = i%Const.layers_num + 1
+        k = j%Const.layers_num + 1
+        W  = zeros(Complex{Float32}, Const.layer[j] * (Const.layer[i] + 1))
+        W′ = zeros(Complex{Float32}, Const.layer[k] * (Const.layer[j] + 1))
         S  = transpose(W) .* W
-        global o[i]   = Params(W)
-        global oe[i]  = Params(W)
-        global oo[i]  = Params(S)
+        S′ = transpose(W′) .* W
+        global o[i]   = W
+        global oe[i]  = W
+        global oo[i, i] = S
+        global oo[j, i] = S′
     end
 end
 
@@ -99,12 +99,13 @@ loss(x::Vector{Float32}) = real(forward(x))
 
 function backward(x::Vector{Float32}, e::Complex{Float32})
     gs = gradient(() -> loss(x), network.p)
+    dw = [reshape(gs[network.f[i].W], length(gs[network.f[i].W])) for i in 1:Const.layers_num]
     for i in 1:Const.layers_num
-        dw = gs[network.f[i].W]
-        dwvec = reshape(dw, length(dw))
-        o[i].W  += dwvec
-        oe[i].W += dwvec .* e
-        oo[i].W += transpose(dwvec) .* conj.(dwvec)
+        j = i%Const.layers_num + 1
+        o[i]  += dw[i]
+        oe[i] += dw[i] .* e
+        oo[i, i] += transpose(dw[i]) .* conj.(dw[i])
+        oo[j, i] += transpose(dw[j]) .* conj.(dw[i])
     end
 end
 
@@ -113,12 +114,20 @@ opt(lr::Float32) = Descent(lr)
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 1f0 / Const.iters_num
     for i in 1:Const.layers_num
-        O  = α .* real.(o[i].W)
-        OE = α .* real.(oe[i].W)
-        OO = α .* real.(oo[i].W)
-        R  = CuArray(2f0 .* real.(OE .- (ϵ - energy) * O))
-        S  = CuArray(2f0 .* real.(OO - transpose(O) .* conj.(O)))
-        ΔW = reshape((S .+ Const.η .* I[i])\R, (Const.layer[i+1], Const.layer[i]+1)) |> cpu
+        j = i%Const.layers_num + 1
+        o[i]  ./= Const.iters_num
+        oe[i] ./= Const.iters_num 
+        oo[i, i] ./= Const.iters_num 
+        oo[j, i] ./= Const.iters_num 
+    end
+    for i in 1:Const.layers_num
+        j = i%Const.layers_num + 1
+        R  = CuArray(2f0 .* real.(o[i] .- (ϵ - energy) * o[i]))
+        R′ = CuArray(2f0 .* real.(o[j] .- (ϵ - energy) * o[j]))
+        S  = CuArray(2f0 .* energy .* real.(oo[i, i] - transpose(o[i]) .* conj.(o[i])))
+        S′ = CuArray(2f0 .* energy .* real.(oo[j, i] - transpose(o[j]) .* conj.(o[i])))
+        ΔW = reshape((S′ .+ Const.η .* I[j])\R′ - (S .+ Const.η .* I[i])\R, 
+                     (Const.layer[i+1], Const.layer[i]+1)) |> cpu
         update!(opt(lr), network.f[i].W, ΔW)
     end
 end
