@@ -132,14 +132,14 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     end
     for i in 1:Const.layers_num
         R1  = CuArray(2f0 .* real.(o[i, 1] .- (ϵ - energy) * o[i, 1]))
-        R2  = CuArray(2f0 .* real.(o[i, 2] .- (ϵ - energy) * o[j, 2]))
+        R2  = CuArray(2f0 .* real.(o[i, 2] .- (ϵ - energy) * o[i, 2]))
         S11 = CuArray(2f0 .* real.(oo[i, 1, 1] - transpose(o[i, 1]) .* conj.(o[i, 1])))
         S12 = CuArray(2f0 .* real.(oo[i, 1, 2] - transpose(o[i, 1]) .* conj.(o[i, 2])))
         S21 = CuArray(2f0 .* real.(oo[i, 2, 1] - transpose(o[i, 2]) .* conj.(o[i, 1])))
         S22 = CuArray(2f0 .* real.(oo[i, 2, 2] - transpose(o[i, 2]) .* conj.(o[i, 2])))
-        ΔW1 = reshape((S11 .+ Const.η .* I[j])\R1 - (S21 .+ Const.η .* I[i])\R2, 
+        ΔW1 = reshape((S11 .+ Const.η .* I[i])\R1 - (S21 .+ Const.η .* I[i])\R2, 
                       (Const.layer[i+1], Const.layer[i]+1)) |> cpu
-        ΔW2 = reshape((S22 .+ Const.η .* I[j])\R2 - (S12 .+ Const.η .* I[i])\R1, 
+        ΔW2 = reshape((S22 .+ Const.η .* I[i])\R2 - (S12 .+ Const.η .* I[i])\R1, 
                       (Const.layer[i+1], Const.layer[i]+1)) |> cpu
         update!(opt(lr), network.f[i].W1, ΔW1)
         update!(opt(lr), network.f[i].W2, ΔW2)
