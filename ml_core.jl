@@ -1,15 +1,12 @@
 module MLcore
 include("./setup.jl")
 include("./functions.jl")
-using .Const, .Func, Random
-
-const X = vcat(ones(Float32, Int((Const.dimB+Const.dimS)/2)), 
-              -ones(Float32, Int((Const.dimB+Const.dimS)/2)))
+using .Const, .Func
 
 function sampling(ϵ::Float32, lr::Float32)
 
     # Initialize
-    x = shuffle(X)
+    x = rand([1f0, -1f0], Const.dimB+Const.dimS)
     xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
     energy  = 0f0
     energyS = 0f0
@@ -35,7 +32,7 @@ function sampling(ϵ::Float32, lr::Float32)
         energyB += eB
         energy  += e
         numberB += sum(x[1:Const.dimB])
-        Func.ANN.backward(x, e)
+        Func.ANN.backward(x, ϵ - e)
     end
     energy   = real(energy)  / Const.iters_num
     energyS  = real(energyS) / Const.iters_num
@@ -52,7 +49,7 @@ end
 
 function calculation_energy(num::Integer)
 
-    x = shuffle(X)
+    x = rand([1f0, -1f0], Const.dimB+Const.dimS)
     xdata = Vector{Vector{Float32}}(undef, num)
     energy  = 0f0
     senergy = 0f0
@@ -83,7 +80,7 @@ function calculation_energy(num::Integer)
     energyS  = real(energyS) / num
     energyB  = real(energyB) / num
     numberB /= num
-    variance = senergy - energyS^2
+    variance = sqrt(senergy - energyS^2)
 
     return energyS, energyB, numberB, variance
 end
