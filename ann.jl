@@ -104,12 +104,7 @@ opt(lr::Float32) = Descent(lr)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     α = 1f0 / Const.iters_num
-    Rnorm2 = 0f0
-    for i in 1:Const.layers_num
-        Rnorm2 += sum(abs2.(α .* 2f0 .*  real.(oe[i].W .- (ϵ - energy)* o[i].W)))
-        Rnorm2 += sum(abs2.(α .* 2f0 .*  real.(oe[i].b .- (ϵ - energy)* o[i].b)))
-    end
-    x = ((ϵ - energy) - 1f0) / Rnorm2
+    lr_loc = (lr * (ϵ - energy) - 1f0)
     for i in 1:Const.layers_num
         ΔW = α .* x .* 2f0 .*  real.(oe[i].W .- (ϵ - energy)* o[i].W)
         Δb = α .* x .* 2f0 .*  real.(oe[i].b .- (ϵ - energy)* o[i].b)
