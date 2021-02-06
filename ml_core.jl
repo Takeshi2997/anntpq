@@ -1,15 +1,23 @@
 module MLcore
 include("./setup.jl")
 include("./functions.jl")
-using .Const, .Func, Random
+using .Const, .Func
 
-const X = vcat(ones(Float32, Int((Const.dimB+Const.dimS)/2)), 
-              -ones(Float32, Int((Const.dimB+Const.dimS)/2)))
+function inv_iterative_method(ϵ::Float32, lr::Float32)
+    error   = 0f0
+    energyS = 0f0
+    energyB = 0f0
+    numberB = 0f0
+    for n in 1:Const.inv_n
+        Func.ANN.init_sub()
+        error, energyS, energyB, numberB = sampling(ϵ, lr)
+    end
+end
 
 function sampling(ϵ::Float32, lr::Float32)
 
     # Initialize
-    x = shuffle(X)
+    x = rand([1f0, -1f0], Const.dimB+Const.dimS)
     xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
     energy  = 0f0
     energyS = 0f0
@@ -35,7 +43,7 @@ function sampling(ϵ::Float32, lr::Float32)
         energyB += eB
         energy  += e
         numberB += sum(x[1:Const.dimB])
-        Func.ANN.backward(x, ϵ - e)
+        Func.ANN.backward(x, e)
     end
     energy   = real(energy)  / Const.iters_num
     energyS  = real(energyS) / Const.iters_num
@@ -50,10 +58,10 @@ function sampling(ϵ::Float32, lr::Float32)
     return error, energyS, energyB, numberB
 end
 
-function calculation_energy(num::Integer)
+function calculation_energy()
 
-    x = shuffle(X)
-    xdata = Vector{Vector{Float32}}(undef, num)
+    x = rand([1f0, -1f0], Const.dimB+Const.dimS)
+    xdata = Vector{Vector{Float32}}(undef, Const.num)
     energy  = 0f0
     senergy = 0f0
     energyS = 0f0
@@ -63,7 +71,7 @@ function calculation_energy(num::Integer)
     for i in 1:Const.burnintime
         Func.update(x)
     end
-    for i in 1:num
+    for i in 1:Const.num
         Func.update(x)
         @inbounds xdata[i] = x
     end
@@ -78,11 +86,11 @@ function calculation_energy(num::Integer)
         senergy += abs2(eS)
         numberB += sum(x[1:Const.dimB])
     end
-    energy   = real(energy)  / num
-    energy  /= num
-    energyS  = real(energyS) / num
-    energyB  = real(energyB) / num
-    numberB /= num
+    energy   = real(energy)  / Const.num
+    energy  /= Const.num
+    energyS  = real(energyS) / Const.num
+    energyB  = real(energyB) / Const.num
+    numberB /= Const.num
     variance = senergy - energyS^2
 
     return energyS, energyB, numberB, variance

@@ -1,6 +1,6 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote
+using .Const, LinearAlgebra, Flux, Zygote, CUDA
 using Flux: @functor
 using Flux.Optimise: update!
 using BSON: @save
@@ -8,42 +8,61 @@ using BSON: @load
 
 # Initialize Variables
 
-o   = Vector{Vector{Array}}(undef, Const.layers_num)
-oe  = Vector{Vector{Array}}(undef, Const.layers_num)
-oo  = Vector{Vector{Array}}(undef, Const.layers_num)
-const I = [Diagonal(ones(Float32, Const.layer[i+1], Const.layer[i+1])) for i in 1:Const.layers_num] 
+abstract type Parameters end
+mutable struct Params{S<:AbstractArray} <: Parameters
+    W::S
+end
+
+o   = Vector{Parameters}(undef, Const.layers_num)
+oe  = Vector{Parameters}(undef, Const.layers_num)
+oo  = Vector{Parameters}(undef, Const.layers_num)
+v1  = Vector{Parameters}(undef, Const.layers_num)
+v2  = 0f0im
+const I = [Diagonal(CUDA.ones(Float32, Const.layer[i+1] * (Const.layer[i] + 1))) for i in 1:Const.layers_num]
 
 function initO()
-    for i in 1:Const.layers_num-1
-        v = zeros(Complex{Float32}, Const.layer[i+1])
-        S = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i+1])
-        global o[i]  = [v for j in 1:Const.layer[i] + 1]
-        global oe[i] = [v for j in 1:Const.layer[i] + 1]
-        global oo[i] = [S for j in 1:Const.layer[i] + 1]
+    for i in 1:Const.layers_num
+        W  = zeros(Complex{Float32}, Const.layer[i+1] * (Const.layer[i] + 1))
+        S  = transpose(W) .* W
+        global o[i]   = Params(W)
+        global oe[i]  = Params(W)
+        global oo[i]  = Params(S)
     end
-    v = zeros(Complex{Float32}, Const.layer[end])
-    S = zeros(Complex{Float32}, Const.layer[end], Const.layer[end])
-    global o[end]  = [v for j in 1:Const.layer[end-1]]
-    global oe[end] = [v for j in 1:Const.layer[end-1]]
-    global oo[end] = [S for j in 1:Const.layer[end-1]]
 end
 
 # Define Network
 
+struct Layer{F,S<:AbstractArray}
+    W::S
+    σ::F
+end
+function Layer(in::Integer, out::Integer, σ = identity;
+               initW = Flux.glorot_uniform)
+    return Layer(initW(out, in+1), σ)
+end
+@functor Layer
+function (m::Layer)(x::AbstractArray)
+    W, σ = m.W, m.σ
+    z = vcat(x, 1)
+    σ.(W*z)
+end
+
 mutable struct Network
     f::Flux.Chain
+    g::Flux.Chain
     p::Zygote.Params
+    q::Zygote.Params
 end
 
 function Network()
     layers = Vector(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layers[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
+        layers[i] = Layer(Const.layer[i], Const.layer[i+1], tanh)
     end
-    layers[end] = Dense(Const.layer[end-1], Const.layer[end])
-    f = Chain([layers[i] for i in 1:Const.layers_num]...)
-    p = Flux.params(f)
-    Network(f, p)
+    layers[end] = Layer(Const.layer[end-1], Const.layer[end])
+    ψ = Chain([layers[i] for i in 1:Const.layers_num]...)
+    p = Flux.params(ψ)
+    Network(ψ, ψ, p, p)
 end
 
 network = Network()
@@ -61,13 +80,20 @@ function load(filename)
     Flux.loadparams!(network.f, p)
 end
 
+function init_sub()
+    f = getfield(network, :f)
+    p = Flux.params(f)
+    Flux.loadparams!(network.g, p)
+end
+
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
-    for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
-        b = Flux.zeros(Const.layer[i+1])
-        parameters[i] = [W, b]
+    for i in 1:Const.layers_num-1
+        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]+1) 
+        parameters[i] = [W]
     end
+    W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1]+1) 
+    parameters[end] = [W]
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
     Flux.loadparams!(network.f, p)
@@ -76,6 +102,11 @@ end
 # Learning Method
 
 function forward(x::Vector{Float32})
+    out = network.g(x)
+    return out[1] + im * out[2]
+end
+
+function forward_ϕ(x::Vector{Float32})
     out = network.f(x)
     return out[1] + im * out[2]
 end
@@ -83,50 +114,36 @@ end
 loss(x::Vector{Float32}) = real(forward(x))
 
 function backward(x::Vector{Float32}, e::Complex{Float32})
-    gs = gradient(() -> loss(x), network.p)
+    gs = gradient(() -> loss(x), network.q)
     for i in 1:Const.layers_num
         dw = gs[network.f[i].W]
-        dwvec = vcat([@views dw[:, j] for j in 1:Const.layer[i]])
-        for j in 1:Const.layer[i]
-            oo[i][j] += transpose(dwvec[j]) .* conj.(dwvec[j])
-            o[i][j]  += dwvec[j]
-            oe[i][j] += dwvec[j] .* e
-        end
-        if i < Const.layers_num
-            db = gs[network.f[i].b]
-            oo[i][end] += transpose(db) .* conj.(db)
-            o[i][end]  += db
-            oe[i][end] += db .* e
-        end 
+        dw = reshape(dw, length(dw))
+        o[i].W  += dw
+        oe[i].W += dw .* e
+        oo[i].W += transpose(dw) .* conj.(dw)
+        v1[i].W += dw .* forward_ϕ(x) ./ forward(x)
     end
+    v2 += forward_ϕ(x) ./ forward(x)
 end
 
 opt(lr::Float32) = Descent(lr)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     for i in 1:Const.layers_num
-        for j in 1:length(o[i])
-            o[i][j]  ./= Const.iters_num
-            oe[i][j] ./= Const.iters_num 
-            oo[i][j] ./= Const.iters_num 
-        end
+        o[i].W  /= Const.iters_num
+        oe[i].W /= Const.iters_num
+        oo[i].W /= Const.iters_num
+        v1[i].W /= Const.iters_num
     end
-    @simd for i in 1:Const.layers_num
-        R  = [2f0 * real.(oe[i][j] - (ϵ - energy) * o[i][j]) for j in 1:Const.layer[i]]
-        ΔW = zeros(Float32, Const.layer[i+1], Const.layer[i])
-        for j in 1:Const.layer[i]
-            OO = transpose(oo[i][j]) .* conj.(o[i][j])
-            S  = 2f0 * real.(oo[i][j] - OO)
-            ΔW[:, j]  = -(S + Const.η * I[i])\R[j]
-        end
+    v2 /= Const.iters_num
+    for i in 1:Const.layers_num-1
+        R = CuArray(2f0 .* real.(oe[i].W - ((ϵ - energy) - 1f0) * o[i].W))
+        S = CuArray(oo[i].W - transpose(o[i].W) .* conj.(o[i].W))
+        x = CuArray(real.(v1[i].W - v2 .* o[i].W))
+        v = (S .+ Const.η .* I[i])\x
+        α = dot(R, V)
+        ΔW = reshape(v ./ α, (Const.layer[i+1], Const.layer[i]+1)) |> cpu
         update!(opt(lr), network.f[i].W, ΔW)
-        if i < Const.layers_num
-            Rb = 2f0 * real.(oe[i][end] - (ϵ - energy) * o[i][end])
-            OO = transpose(o[i][end]) .* conj.(o[i][end])
-            S  = 2f0 * real.(oo[i][end] - OO)
-            Δb  = -(S + Const.η * I[i])\Rb
-            update!(opt(lr), network.f[i].b, Δb)
-        end
     end
 end
 

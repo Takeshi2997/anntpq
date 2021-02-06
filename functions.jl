@@ -9,9 +9,9 @@ end
 function Flip()
     flip = Vector{Diagonal{Float32}}(undef, Const.layer[1])
     for i in 1:Const.layer[1]
-        o = ones(Float32, Const.layer[1])
-        o[i] *= -1f0
-        flip[i] = Diagonal(o)
+        o = Diagonal(ones(Float32, Const.layer[1]))
+        o[i, i] *= -1f0
+        flip[i] = o
     end
     Flip(flip)
 end
@@ -19,13 +19,19 @@ a = Flip()
 
 function update(x::Vector{Float32})
     rng = MersenneTwister(1234)
-    randomnum = rand(rng, Float32, length(x))
+    random1 = rand(rng, Float32, length(x))
+    random2 = rand(rng, Float32, length(x))
     for ix in 1:length(x)
         x₁ = x[ix]
-        z = ANN.forward(x)
-        zflip = ANN.forward(a.flip[ix] * x)
-        prob = exp(2.0f0 * real(zflip - z))
-        @inbounds x[ix] = ifelse(randomnum[ix] < prob, -x₁, x₁)
+        Π     = abs2(exp(ANN.forward(x)))
+        Πflip = abs2(exp(ANN.forward(a.flip[ix] * x)) - exp(ANN.forward(-a.flip[ix] * x))) / 2f0
+        prob  = Πflip / Π
+        @inbounds x[ix] = ifelse(random1[ix] < prob, -x₁, x₁)
+        x₁ = x[ix]
+        Π     = abs2(exp(ANN.forward(x)) - exp(ANN.forward(-x))) / 2f0
+        Πflip = abs2(exp(ANN.forward(a.flip[ix] * x)))
+        prob  = Πflip / Π
+        @inbounds x[ix] = ifelse(random2[ix] < prob, -x₁, x₁)
     end
 end
 

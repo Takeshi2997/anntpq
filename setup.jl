@@ -12,14 +12,15 @@ const J = 1.0f0
 const burnintime = 10
 const iters_num = 1000
 const it_num = 1000
-const iϵmax = 1
+const iϵmax = 4
+const num = 100000
+const η = 0.001
 
 # Network Params
-const layer = [dimB+dimS, 40, 2]
+const layer = [dimB+dimS, 2]
 const layers_num = length(layer) - 1
-const η = 0.001f0
 
 # Learning Rate
-const lr = 1f-3
+const lr = 0.0001f0
 
 end
