@@ -17,17 +17,20 @@ o   = Vector{Parameters}(undef, Const.layers_num)
 oe  = Vector{Parameters}(undef, Const.layers_num)
 oo  = Vector{Parameters}(undef, Const.layers_num)
 v1  = Vector{Parameters}(undef, Const.layers_num)
-v2  = 0f0im
+v2  = Parameters
+
 const I = [Diagonal(CUDA.ones(Float32, Const.layer[i+1] * (Const.layer[i] + 1))) for i in 1:Const.layers_num]
 
 function initO()
     for i in 1:Const.layers_num
         W  = zeros(Complex{Float32}, Const.layer[i+1] * (Const.layer[i] + 1))
         S  = transpose(W) .* W
-        global o[i]   = Params(W)
-        global oe[i]  = Params(W)
-        global oo[i]  = Params(S)
+        global o[i]  = Params(W)
+        global oe[i] = Params(W)
+        global oo[i] = Params(S)
+        global v1[i] = Params(W)
     end
+    global v2 = Params(0f0)
 end
 
 # Define Network
@@ -121,7 +124,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
         oo[i].W += transpose(dw) .* conj.(dw)
         v1[i].W += dw .* forward_ϕ(x) ./ forward(x)
     end
-    v2 += forward_ϕ(x) ./ forward(x)
+    v2.W += forward_ϕ(x) ./ forward(x)
 end
 
 opt(lr::Float32) = Descent(lr)
@@ -133,15 +136,15 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         oo[i].W /= Const.iters_num
         v1[i].W /= Const.iters_num
     end
-    v2 /= Const.iters_num
+    v2.W /= Const.iters_num
     for i in 1:Const.layers_num-1
         R = CuArray(2f0 .* real.(oe[i].W - ((ϵ - energy) - 1f0) * o[i].W))
         S = CuArray(oo[i].W - transpose(o[i].W) .* conj.(o[i].W))
-        x = CuArray(real.(v1[i].W - v2 .* o[i].W))
+        x = CuArray(real.(v1[i].W - v2.W .* o[i].W))
         v = (S .+ Const.η .* I[i])\x
         α = dot(R, V)
         ΔW = reshape(v ./ α, (Const.layer[i+1], Const.layer[i]+1)) |> cpu
-        update!(opt(lr), network.f[i].W, ΔW)
+        update!(opt(lr), network.g[i].W, ΔW)
     end
 end
 
