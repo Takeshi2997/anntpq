@@ -86,10 +86,21 @@ function load(filename)
     Flux.loadparams!(network.f, p)
 end
 
+function reset()
+    g = getfield(network, :g)
+    q = Flux.params(g)
+    Flux.loadparams!(network.f, q)
+end
+
 function init_sub()
-    f = getfield(network, :f)
-    p = Flux.params(f)
-    Flux.loadparams!(network.g, p)
+    parameters = Vector{Array}(undef, Const.layers_num)
+    for i in 1:Const.layers_num
+        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]+1) 
+        parameters[i] = [W]
+    end
+    paramset = [param for param in parameters]
+    q = Flux.params(paramset...)
+    Flux.loadparams!(network.g, q)
 end
 
 function init()
@@ -147,7 +158,7 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         v = (S .+ Const.η .* I[i])\x
         α = dot(R, v) - 1f0
         ΔW = reshape(2f0 .* real.(v./α), (Const.layer[i+1], Const.layer[i]+1)) |> cpu
-        update!(opt(lr), network.f[i].W, ΔW)
+        update!(opt(lr), network.g[i].W, ΔW)
     end
 end
 

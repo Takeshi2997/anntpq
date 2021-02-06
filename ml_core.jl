@@ -8,8 +8,9 @@ function inv_iterative_method(ϵ::Float32, lr::Float32)
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
+    Func.ANN.init_sub()
     for n in 1:Const.inv_n
-        Func.ANN.init_sub()
+        Funx.ANN.reset()
         error, energyS, energyB, numberB = sampling(ϵ, lr)
     end
     return error, energyS, energyB, numberB
@@ -44,7 +45,7 @@ function sampling(ϵ::Float32, lr::Float32)
         energyB += eB
         energy  += e
         numberB += sum(x[1:Const.dimB])
-        Func.ANN.backward(x, e)
+        Func.ANN.backward(x, ϵ - e)
     end
     energy   = real(energy)  / Const.iters_num
     energyS  = real(energyS) / Const.iters_num
