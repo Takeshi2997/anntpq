@@ -3,14 +3,28 @@ include("./setup.jl")
 include("./functions.jl")
 using .Const, .Func
 
-function inv_iterative_method(ϵ::Float32, lr::Float32)
+function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Integer)
     error   = 0f0
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
     Func.ANN.init_sub()
-    for n in 1:Const.iters_num
+    filename = dirname * "/error_step" * lpad(it, 4, "0") * ".txt"
+    touch(filename)
+    for n in 1:Const.it_num
         error, energyS, energyB, numberB = sampling(ϵ, lr)
+        open(filename, "a") do io
+            write(io, string(n))
+            write(io, "\t")
+            write(io, string(error))
+            write(io, "\t")
+            write(io, string(energyS / Const.dimS))
+            write(io, "\t")
+            write(io, string(energyB / Const.dimB))
+            write(io, "\t")
+            write(io, string(numberB / Const.dimB))
+            write(io, "\n")
+        end
     end
     return error, energyS, energyB, numberB
 end

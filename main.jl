@@ -16,15 +16,18 @@ using Distributed
     ϵ = (-0.3f0 - 0.2f0 * iϵ / Const.iϵmax) * Const.t * Const.dimB
     filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
     filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
+    dirnameonestep = dirnameerror * "/error_onestep"
+    mkdir(dirnameonestep)
 
     # Learning
     touch(filename)
     for it in 1:Const.inv_n
+
         # Reset ANN Params
-        Func.ANN.reset()
+        MLcore.Func.ANN.reset()
  
         # Calculate expected value
-        error, energyS, energyB, numberB = MLcore.inv_iterative_method(ϵ, lr)
+        error, energyS, energyB, numberB = MLcore.inv_iterative_method(ϵ, lr, dirnameonestep, it)
         open(filename, "a") do io
             write(io, string(it))
             write(io, "\t")
