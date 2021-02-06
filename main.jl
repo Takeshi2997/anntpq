@@ -13,7 +13,7 @@ using Distributed
     energyB = 0f0
     numberB = 0f0
     MLcore.Func.ANN.load(dirname * "/params_at_000.bson")
-    ϵ = (-0.3f0 - 0.2f0 * iϵ / Const.iϵmax) * Const.t * Const.dimB
+    ϵ = - 0.5f0 * iϵ / Const.iϵmax * Const.t * Const.dimB
     filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
     filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
 
@@ -49,8 +49,7 @@ function main()
     mkdir(dirnameerror)
     MLcore.Func.ANN.init()
     MLcore.Func.ANN.save(dirname * "/params_at_000.bson")
-    learning(0, dirname, dirnameerror, Const.lr, Const.it_num)
-    for iϵ in 1:Const.iϵmax learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num) end
+    for iϵ in 0:Const.iϵmax learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num) end
 end
 
 main()
