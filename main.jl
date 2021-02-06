@@ -19,8 +19,10 @@ using Distributed
 
     # Learning
     touch(filename)
-    for it in 1:it_num
-
+    for it in 1:Const.inv_n
+        # Reset ANN Params
+        Func.ANN.reset()
+ 
         # Calculate expected value
         error, energyS, energyB, numberB = MLcore.inv_iterative_method(ϵ, lr)
         open(filename, "a") do io
