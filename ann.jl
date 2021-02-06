@@ -145,10 +145,10 @@ opt(lr::Float32) = Descent(lr)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     for i in 1:Const.layers_num
-        o[i].W  /= Const.iters_num
-        oe[i].W /= Const.iters_num
-        oo[i].W /= Const.iters_num
-        v1[i].W /= Const.iters_num
+        o[i].W  ./= Const.iters_num
+        oe[i].W ./= Const.iters_num
+        oo[i].W ./= Const.iters_num
+        v1[i].W ./= Const.iters_num
     end
     v2.ϕ /= Const.iters_num
     for i in 1:Const.layers_num-1
