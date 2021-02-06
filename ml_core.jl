@@ -12,6 +12,7 @@ function inv_iterative_method(ϵ::Float32, lr::Float32)
         Func.ANN.init_sub()
         error, energyS, energyB, numberB = sampling(ϵ, lr)
     end
+    return error, energyS, energyB, numberB
 end
 
 function sampling(ϵ::Float32, lr::Float32)
