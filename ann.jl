@@ -1,6 +1,6 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote, CUDA, BlockDiagonal
+using .Const, LinearAlgebra, Flux, Zygote, CUDA, BlockDiagonals
 using Flux: @functor
 using Flux.Optimise: update!
 using BSON: @save
@@ -10,17 +10,22 @@ using BSON: @load
 
 o   = Array{Array}(undef, Const.layers_num)
 oe  = Array{Array}(undef, Const.layers_num)
-oo  = Array{BlockDiagonal}(undef, Const.layers_num)
+oo  = Array{Array}(undef, Const.layers_num)
 const I = [Diagonal(CUDA.ones(Float32, Const.layer[i+1] * (Const.layer[i] + 1))) for i in 1:Const.layers_num]
 
 function initO()
-    for i in 1:Const.layers_num
+    for i in 1:Const.layers_num-1
         W  = zeros(Complex{Float32}, Const.layer[i+1] * (Const.layer[i] + 1))
         S  = transpose(W) .* W
         global o[i]  = W
         global oe[i] = W
         global oo[i] = S
     end
+    W  = zeros(Complex{Float32}, Const.layer[end] * Const.layer[end-1])
+    S  = transpose(W) .* W
+    global o[end]  = W
+    global oe[end] = W
+    global oo[end] = S
 end
 
 # Define Network
@@ -110,7 +115,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     gs = gradient(() -> loss(x), network.p)
     for i in 1:Const.layers_num
         dw = gs[network.f[i].W]
-        oo[i] = BlockDiagonal([transpose(dw[:, j]) .* conj.(dw[:, j]) for j in 1:axes(dw, 2)])
+        oo[i] = BlockDiagonal([transpose(dw[:, j]) .* conj.(dw[:, j]) for j in 1:size(dw, 2)])
         dw = reshape(dw, length(dw))
         o[i]  += dw
         oe[i] += dw .* e
