@@ -127,7 +127,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     b.ϕ += forward_b(x) ./ forward(x)
 end
 
-opt(lr::Float32) = Descent(lr)
+opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     for i in 1:Const.layers_num
@@ -143,7 +143,7 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         ΔW = real.(oe[i].W - (ϵ - energy) * o[i].W) - (real.(ob[i].W) - real.(o[i].W) .* real(b.ϕ))
         Δb = real.(oe[i].b - (ϵ - energy) * o[i].b) - (real.(ob[i].b) - real.(o[i].b) .* real(b.ϕ))
         update!(opt(lr), network.g[i].W, ΔW)
-        update!(opt(lr), network.g[i].W, Δb)
+        update!(opt(lr), network.g[i].b, Δb)
     end
 end
 

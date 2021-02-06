@@ -9,7 +9,7 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
     energyB = 0f0
     numberB = 0f0
     Func.ANN.init_sub()
-    filename = dirname * "/error_step" * lpad(it, 4, "0") * ".txt"
+    filename = dirname * "/errorstep" * lpad(it, 3, "0") * ".txt"
     touch(filename)
     for n in 1:Const.it_num
         error, energyS, energyB, numberB = sampling(ϵ, lr)
