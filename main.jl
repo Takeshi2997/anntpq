@@ -22,7 +22,7 @@ using Distributed
     for it in 1:it_num
 
         # Calculate expected value
-        error, energyS, energyB, numberB = MLcore.sampling(ϵ, lr)
+        error, energyS, energyB, numberB = MLcore.inv_iterative_method(ϵ, lr)
         open(filename, "a") do io
             write(io, string(it))
             write(io, "\t")
@@ -50,7 +50,6 @@ function main()
     mkdir(dirnameerror)
     MLcore.Func.ANN.init()
     MLcore.Func.ANN.save(dirname * "/params_at_000.bson")
-    learning(0, dirname, dirnameerror, Const.lr, Const.it_num)
     pmap(iϵ -> learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num), 1:Const.iϵmax)
 end
 

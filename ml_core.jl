@@ -3,6 +3,19 @@ include("./setup.jl")
 include("./functions.jl")
 using .Const, .Func
 
+function inv_iterative_method(ϵ::Float32, lr::Float32)
+    error   = 0f0
+    energyS = 0f0
+    energyB = 0f0
+    numberB = 0f0
+    Func.ANN.init_sub()
+    for n in 1:Const.inv_n
+        Func.ANN.reset()
+        error, energyS, energyB, numberB = sampling(ϵ, lr)
+    end
+    return error, energyS, energyB, numberB
+end
+
 function sampling(ϵ::Float32, lr::Float32)
 
     # Initialize
