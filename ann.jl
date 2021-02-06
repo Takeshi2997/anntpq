@@ -88,12 +88,10 @@ end
 
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
-    for i in 1:Const.layers_num-1
+    for i in 1:Const.layers_num
         W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]+1) 
         parameters[i] = [W]
     end
-    W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1]+1) 
-    parameters[end] = [W]
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
     Flux.loadparams!(network.f, p)

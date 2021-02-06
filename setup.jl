@@ -14,11 +14,12 @@ const iters_num = 1000
 const it_num = 1000
 const iϵmax = 4
 const num = 100000
-const η = 0.001
+const inv_n = 100
 
 # Network Params
 const layer = [dimB+dimS, 2]
 const layers_num = length(layer) - 1
+const η = 0.001
 
 # Learning Rate
 const lr = 0.0001f0
