@@ -115,7 +115,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     gs = gradient(() -> loss(x), network.p)
     for i in 1:Const.layers_num
         dw = gs[network.f[i].W]
-        oo[i] = BlockDiagonal([transpose(dw[:, j]) .* conj.(dw[:, j]) for j in 1:size(dw, 2)])
+        oo[i] += BlockDiagonal([transpose(dw[:, j]) .* conj.(dw[:, j]) for j in 1:size(dw, 2)])
         dw = reshape(dw, length(dw))
         o[i]  += dw
         oe[i] += dw .* e
@@ -130,13 +130,18 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         oe[i] ./= Const.iters_num 
         oo[i] ./= Const.iters_num 
     end
-    for i in 1:Const.layers_num
+    for i in 1:Const.layers_num-1
         R   = CuArray(2f0 * real.(o[i] - (ϵ - energy) * o[i]))
-        OO  = BlockDiagonal([transpose(o[:, j]) .* conj.(o[:, j]) for j in 1:axes(o, 2)])
+        OO  = BlockDiagonal([transpose(o[i][:, j]) .* conj.(o[i][:, j]) for j in 1:size(o[i], 2)])
         S   = CuArray(2f0 * real.(oo[i] - OO))
         ΔW  = reshape((S + Const.η * I[i])\R, (Const.layer[i+1], Const.layer[i]+1)) |> cpu
         update!(opt(lr), network.f[i].W, ΔW)
     end
+    R   = CuArray(2f0 * real.(o[end] - (ϵ - energy) * o[end]))
+    OO  = BlockDiagonal([transpose(o[end][:, j]) .* conj.(o[end][:, j]) for j in 1:size(o[end], 2)])
+    S   = CuArray(2f0 * real.(oo[end] - OO))
+    ΔW  = reshape((S + Const.η * I[end])\R, (Const.layer[end], Const.layer[end-1])) |> cpu
+    update!(opt(lr), network.f[end].W, ΔW)
 end
 
 end
