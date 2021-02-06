@@ -12,11 +12,11 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
     filename = dirname * "/errorstep" * lpad(it, 3, "0") * ".txt"
     touch(filename)
     for n in 1:Const.it_num
-        error, energyS, energyB, numberB = sampling(ϵ, lr)
+        residue, energyS, energyB, numberB = sampling(ϵ, lr)
         open(filename, "a") do io
             write(io, string(n))
             write(io, "\t")
-            write(io, string(error))
+            write(io, string(residue))
             write(io, "\t")
             write(io, string(energyS / Const.dimS))
             write(io, "\t")
@@ -26,6 +26,7 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
             write(io, "\n")
         end
     end
+    error = (ϵ - (energyS + energyB))^2
     return error, energyS, energyB, numberB
 end
 
@@ -64,13 +65,13 @@ function sampling(ϵ::Float32, lr::Float32)
     energyS  = real(energyS) / Const.iters_num
     energyB  = real(energyB) / Const.iters_num
     numberB /= Const.iters_num
-    error    = (energy - ϵ)^2 / 2f0
 
     # Update Parameters
     Func.ANN.update(energy, ϵ, lr)
+    residue = (energy - ϵ) - real(Func.ANN.b.ϕ)
 
     # Output
-    return error, energyS, energyB, numberB
+    return residue, energyS, energyB, numberB
 end
 
 function calculation_energy(num::Integer)
