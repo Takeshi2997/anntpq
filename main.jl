@@ -18,23 +18,24 @@ using Distributed
     filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
 
     # Learning
-    io = open(filename, "w")
+    touch(filename)
     for it in 1:it_num
 
         # Calculate expected value
-        error, energyS, energyB, numberB = MLcore.sampling(ϵ, lr)
-        write(io, string(it))
-        write(io, "\t")
-        write(io, string(error))
-        write(io, "\t")
-        write(io, string(energyS / Const.dimS))
-        write(io, "\t")
-        write(io, string(energyB / Const.dimB))
-        write(io, "\t")
-        write(io, string(numberB / Const.dimB))
-        write(io, "\n")
+        error, energyS, energyB, numberB = MLcore.inv_iterative_method(ϵ, lr)
+        open(filename, "a") do io
+            write(io, string(it))
+            write(io, "\t")
+            write(io, string(error))
+            write(io, "\t")
+            write(io, string(energyS / Const.dimS))
+            write(io, "\t")
+            write(io, string(energyB / Const.dimB))
+            write(io, "\t")
+            write(io, string(numberB / Const.dimB))
+            write(io, "\n")
+        end
     end
-    close(io)
 
     MLcore.Func.ANN.save(filenameparams)
 end
