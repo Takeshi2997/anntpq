@@ -11,7 +11,8 @@ using BSON: @load
 o   = Array{Array}(undef, Const.layers_num)
 oe  = Array{Array}(undef, Const.layers_num)
 oo  = Array{Array}(undef, Const.layers_num)
-const I = [Diagonal(CUDA.ones(Float32, Const.layer[i+1] * (Const.layer[i] + 1))) for i in 1:Const.layers_num]
+const I = vcat([Diagonal(CUDA.ones(Float32, Const.layer[i+1] * (Const.layer[i] + 1))) for i in 1:Const.layers_num-1], 
+               [Diagonal(CUDA.ones(Float32, Const.layer[end] * (Const.layer[end-1])))])
 
 function initO()
     for i in 1:Const.layers_num-1
