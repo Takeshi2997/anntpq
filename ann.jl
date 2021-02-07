@@ -12,28 +12,27 @@ abstract type Parameters end
 mutable struct Params{S<:AbstractArray} <: Parameters
     W::S
 end
-mutable struct Collect{S<:Complex} <: Parameters
+mutable struct WaveFunction{S<:Complex} <: Parameters
     ϕ::S
 end
 
 o   = Vector{Parameters}(undef, Const.layers_num)
 oe  = Vector{Parameters}(undef, Const.layers_num)
+ob  = Vector{Parameters}(undef, Const.layers_num)
 oo  = Vector{Parameters}(undef, Const.layers_num)
-v1  = Vector{Parameters}(undef, Const.layers_num)
-v2  = Parameters
-
+b   = Parameters
 const I = [Diagonal(CUDA.ones(Float32, Const.layer[i+1] * (Const.layer[i] + 1))) for i in 1:Const.layers_num]
 
 function initO()
     for i in 1:Const.layers_num
-        W  = zeros(Complex{Float32}, Const.layer[i+1] * (Const.layer[i] + 1))
-        S  = transpose(W) .* W
+        W = zeros(Complex{Float32}, Const.layer[i+1] * (Const.layer[i] + 1))
+        S = transpose(W) .* W
         global o[i]  = Params(W)
         global oe[i] = Params(W)
+        global ob[i] = Params(W)
         global oo[i] = Params(S)
-        global v1[i] = Params(W)
     end
-    global v2 = Collect(0f0im)
+    global b = WaveFunction(0f0im)
 end
 
 # Define Network
@@ -66,9 +65,9 @@ function Network()
         layers[i] = Layer(Const.layer[i], Const.layer[i+1], tanh)
     end
     layers[end] = Layer(Const.layer[end-1], Const.layer[end])
-    ψ = Chain([layers[i] for i in 1:Const.layers_num]...)
-    p = Flux.params(ψ)
-    Network(ψ, ψ, p, p)
+    f = Chain([layers[i] for i in 1:Const.layers_num]...)
+    p = Flux.params(f)
+    Network(f, f, p, p)
 end
 
 network = Network()
@@ -95,7 +94,7 @@ end
 function init_sub()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]+1) 
+        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i] + 1) 
         parameters[i] = [W]
     end
     paramset = [param for param in parameters]
@@ -106,7 +105,7 @@ end
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]+1) 
+        W = Flux.glorot_uniform(Const.layer[i+1] , Const.layer[i] + 1)
         parameters[i] = [W]
     end
     paramset = [param for param in parameters]
@@ -121,7 +120,7 @@ function forward(x::Vector{Float32})
     return out[1] + im * out[2]
 end
 
-function forward_ϕ(x::Vector{Float32})
+function forward_b(x::Vector{Float32})
     out = network.f(x)
     return out[1] + im * out[2]
 end
@@ -135,10 +134,10 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
         dw = reshape(dw, length(dw))
         o[i].W  += dw
         oe[i].W += dw .* e
+        ob[i].W += dw .* forward_b(x) ./ forward(x)
         oo[i].W += transpose(dw) .* conj.(dw)
-        v1[i].W += dw .* forward_ϕ(x) ./ forward(x)
     end
-    v2.ϕ += forward_ϕ(x) ./ forward(x)
+    b.ϕ += forward_b(x) ./ forward(x)
 end
 
 opt(lr::Float32) = Descent(lr)
@@ -147,17 +146,15 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     for i in 1:Const.layers_num
         o[i].W  ./= Const.iters_num
         oe[i].W ./= Const.iters_num
+        ob[i].W ./= Const.iters_num
         oo[i].W ./= Const.iters_num
-        v1[i].W ./= Const.iters_num
     end
-    v2.ϕ /= Const.iters_num
-    for i in 1:Const.layers_num-1
-        R = CuArray(oe[i].W - ((ϵ - energy) - 1f0) * o[i].W)
+    b.ϕ /= Const.iters_num
+    for i in 1:Const.layers_num
+        R = CuArray(oe[i].W - (ϵ - energy) * o[i].W)
+        B = CuArray(real.(ob[i].W) - real.(o[i].W) .* real.(b.ϕ))
         S = CuArray(oo[i].W - transpose(o[i].W) .* conj.(o[i].W))
-        x = CuArray(v1[i].W - v2.ϕ .* o[i].W)
-        v = (S .+ Const.η .* I[i])\x
-        α = dot(R, v) - 1f0
-        ΔW = reshape(2f0 .* real.(v./α), (Const.layer[i+1], Const.layer[i]+1)) |> cpu
+        ΔW = reshape(real.((S .+ Const.η .* I[i])\R) - B, (Const.layer[i+1], Const.layer[i]+1)) |> cpu 
         update!(opt(lr), network.g[i].W, ΔW)
     end
 end
