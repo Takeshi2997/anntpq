@@ -94,7 +94,7 @@ end
 function init_sub()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1] * (Const.layer[i] + 1)) 
+        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i] + 1) 
         parameters[i] = [W]
     end
     paramset = [param for param in parameters]
@@ -105,7 +105,7 @@ end
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1] * (Const.layer[i] + 1)) 
+        W = Flux.glorot_uniform(Const.layer[i+1] , Const.layer[i] + 1)
         parameters[i] = [W]
     end
     paramset = [param for param in parameters]
@@ -151,9 +151,9 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     end
     b.ϕ /= Const.iters_num
     for i in 1:Const.layers_num-1
-        R = CuArray(real.(oe[i].W - (ϵ - energy) * o[i].W) - (real.(ob[i].W) - real.(o[i].W) .* real(b.ϕ)))
+        R = CuArray(oe[i].W - (ϵ - energy) * o[i].W - (ob[i].W - o[i].W .* b.ϕ))
         S = CuArray(oo[i].W - transpose(o[i].W) .* conj.(o[i].W))
-        ΔW = reshape((S .+ Const.η .* I[i])\R, (Const.layer[i+1], Const.layer[i]+1)) |> cpu 
+        ΔW = reshape(real.((S .+ Const.η .* I[i])\R), (Const.layer[i+1], Const.layer[i]+1)) |> cpu 
         update!(opt(lr), network.g[i].W, ΔW)
     end
 end
