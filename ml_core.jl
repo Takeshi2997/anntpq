@@ -4,6 +4,7 @@ include("./functions.jl")
 using .Const, .Func
 
 function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Integer)
+    # Initialize
     error   = 0f0
     energyS = 0f0
     energyB = 0f0
@@ -11,6 +12,8 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
     Func.ANN.init_sub()
     filename = dirname * "/errorstep" * lpad(it, 3, "0") * ".txt"
     touch(filename)
+
+    # Inverse Iterative mathod Start
     for n in 1:Const.it_num
         residue, energyS, energyB, numberB = sampling(ϵ, lr)
         open(filename, "a") do io
