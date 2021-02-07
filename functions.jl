@@ -9,9 +9,9 @@ end
 function Flip()
     flip = Vector{Diagonal{Float32}}(undef, Const.layer[1])
     for i in 1:Const.layer[1]
-        o = ones(Float32, Const.layer[1])
-        o[i] *= -1f0
-        flip[i] = Diagonal(o)
+        o = Diagonal(ones(Float32, Const.layer[1]))
+        o[i, i] *= -1f0
+        flip[i] = o
     end
     Flip(flip)
 end
