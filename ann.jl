@@ -150,10 +150,11 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         oo[i].W ./= Const.iters_num
     end
     b.ϕ /= Const.iters_num
-    for i in 1:Const.layers_num-1
-        R = CuArray(oe[i].W - (ϵ - energy) * o[i].W - (ob[i].W - o[i].W .* b.ϕ))
+    for i in 1:Const.layers_num
+        R = CuArray(oe[i].W - (ϵ - energy) * o[i].W)
+        B = CuArray(real.(ob[i].W) - real.(o[i].W) .* real.(b.ϕ))
         S = CuArray(oo[i].W - transpose(o[i].W) .* conj.(o[i].W))
-        ΔW = reshape(real.((S .+ Const.η .* I[i])\R), (Const.layer[i+1], Const.layer[i]+1)) |> cpu 
+        ΔW = reshape(real.((S .+ Const.η .* I[i])\R) - B, (Const.layer[i+1], Const.layer[i]+1)) |> cpu 
         update!(opt(lr), network.g[i].W, ΔW)
     end
 end
