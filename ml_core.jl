@@ -4,6 +4,7 @@ include("./functions.jl")
 using .Const, .Func, Random
 
 function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Integer)
+
     # Initialize
     error   = 0f0
     energyS = 0f0
