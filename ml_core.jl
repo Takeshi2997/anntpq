@@ -1,7 +1,7 @@
 module MLcore
 include("./setup.jl")
 include("./functions.jl")
-using .Const, .Func, Random
+using .Const, .Func, Random, Threads
 
 function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Integer)
     # Initialize
@@ -39,7 +39,6 @@ end
 const X = vcat(ones(Float32, Int((Const.dimB+Const.dimS)/2)), -ones(Float32, Int((Const.dimB+Const.dimS)/2)))
 
 function sampling(ϵ::Float32, lr::Float32)
-
     # Initialize
     x = shuffle(X)
     xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
