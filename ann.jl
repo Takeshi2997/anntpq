@@ -24,8 +24,8 @@ b   = Parameters
 
 function initO()
     for i in 1:Const.layers_num
-        W  = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
-        b  = zeros(Complex{Float32}, Const.layer[i+1])
+        W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
+        b = zeros(Complex{Float32}, Const.layer[i+1])
         global o[i]  = Params(W, b)
         global oe[i] = Params(W, b)
         global ob[i] = Params(W, b)
@@ -89,8 +89,8 @@ end
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]) 
-        b = Flux.zeros(Const.layer[i+1]) 
+        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
+        b = Flux.glorot_uniform(Const.layer[i+1])
         parameters[i] = [W, b]
     end
     paramset = [param for param in parameters]
@@ -127,7 +127,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     b.ϕ += forward_b(x) ./ forward(x)
 end
 
-opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
+opt(lr::Float32) = Descent(lr)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     for i in 1:Const.layers_num
@@ -139,9 +139,9 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         ob[i].b ./= Const.iters_num
     end
     b.ϕ /= Const.iters_num
-    for i in 1:Const.layers_num-1
-        ΔW = real.(oe[i].W - (ϵ - energy) * o[i].W) - (real.(ob[i].W) - real.(o[i].W) .* real(b.ϕ))
-        Δb = real.(oe[i].b - (ϵ - energy) * o[i].b) - (real.(ob[i].b) - real.(o[i].b) .* real(b.ϕ))
+    for i in 1:Const.layers_num
+        ΔW = real.(oe[i].W - (energy - ϵ) * o[i].W) - (real.(ob[i].W) - real.(o[i].W) .* real.(b.ϕ))
+        Δb = real.(oe[i].b - (energy - ϵ) * o[i].b) - (real.(ob[i].b) - real.(o[i].b) .* real.(b.ϕ))
         update!(opt(lr), network.g[i].W, ΔW)
         update!(opt(lr), network.g[i].b, Δb)
     end

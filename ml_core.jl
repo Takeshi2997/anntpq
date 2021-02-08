@@ -28,6 +28,9 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
             write(io, string(numberB / Const.dimB))
             write(io, "\n")
         end
+        if abs(residue) < 0.1f0
+            break
+        end
     end
     error = (ϵ - (energyS + energyB))^2
     return error, energyS, energyB, numberB
@@ -62,7 +65,7 @@ function sampling(ϵ::Float32, lr::Float32)
         energyB += eB
         energy  += e
         numberB += sum(x[1:Const.dimB])
-        Func.ANN.backward(x, ϵ - e)
+        Func.ANN.backward(x, e - ϵ)
     end
     energy   = real(energy)  / Const.iters_num
     energyS  = real(energyS) / Const.iters_num
