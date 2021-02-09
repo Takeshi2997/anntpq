@@ -35,21 +35,6 @@ end
 
 # Define Network
 
-struct Res{F,S<:AbstractArray,T<:AbstractArray}
-    W::S
-    b::T
-    σ::F
-end
-function Res(in::Integer, out::Integer, σ = identity;
-             initW = Flux.glorot_uniform, initb = Flux.zeros)
-  return Res(initW(out, in), initb(out), σ)
-end
-@functor Res
-function (m::Res)(x::AbstractArray)
-    W, b, σ = m.W, m.b, m.σ
-    x .+ σ.(W*x.+b)
-end
-
 mutable struct Network
     f::Flux.Chain
     g::Flux.Chain
@@ -60,7 +45,7 @@ end
 function Network()
     layers = Vector(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layers[i] = Res(Const.layer[i], Const.layer[i+1], tanh)
+        layers[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
     end
     layers[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layers[i] for i in 1:Const.layers_num]...)
@@ -105,7 +90,7 @@ function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
         W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
-        b = Flux.glorot_uniform(Const.layer[i+1])
+        b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
     paramset = [param for param in parameters]
@@ -124,6 +109,7 @@ function forward_b(x::Vector{Float32})
     out = network.f(x)
     return out[1] + im * out[2]
 end
+
 sqnorm(x) = sum(abs2, x)
 loss(x::Vector{Float32}) = real(forward(x)) + 1f-3 * sum(sqnorm, Flux.params(network.g))
 
