@@ -18,8 +18,9 @@ const inv_n = 20
 # Network Params
 const layer = [dimB+dimS, 40, 2]
 const layers_num = length(layer) - 1
+const η = 0.001f0
 
 # Learning Rate
-const lr = 1f-2
+const lr = 1f-4
 
 end
