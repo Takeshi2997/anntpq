@@ -151,9 +151,9 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     end
     b.ϕ /= Const.iters_num
     for i in 1:Const.layers_num
-        R = oe[i].W - (energy - ϵ) * o[i].W - (ob[i].W - o[i].W .* b.ϕ)
-        S = oo[i].W - transpose(o[i].W) .* conj.(o[i].W)
-        ΔW = reshape(real.(svd(S + Const.η .* I[i])\R), (Const.layer[i+1], Const.layer[i]+1))
+        R = real.(oe[i].W - (energy - ϵ) * o[i].W) - (real.(ob[i].W) - real.(o[i].W) .* real(b.ϕ))
+        S = real.(oo[i].W - transpose(o[i].W) .* conj.(o[i].W))
+        ΔW = reshape(svd(S + Const.η .* I[i])\R, (Const.layer[i+1], Const.layer[i]+1))
         update!(opt(lr), network.g[i].W, ΔW)
     end
 end

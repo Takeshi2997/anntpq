@@ -21,6 +21,6 @@ const layers_num = length(layer) - 1
 const η = 0.001f0
 
 # Learning Rate
-const lr = 1f-4
+const lr = 1f-5
 
 end
