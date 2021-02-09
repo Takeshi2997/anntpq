@@ -109,8 +109,8 @@ function forward_b(x::Vector{Float32})
     out = network.f(x)
     return out[1] + im * out[2]
 end
-
-loss(x::Vector{Float32}) = real(forward(x))
+sqnorm(x) = sum(abs2, x)
+loss(x::Vector{Float32}) = real(forward(x)) + 1f-3 * sum(sqnorm, Flux.params(network.g))
 
 function backward(x::Vector{Float32}, e::Complex{Float32})
     gs = gradient(() -> loss(x), network.q)
