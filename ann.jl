@@ -21,7 +21,6 @@ oe  = Vector{Parameters}(undef, Const.layers_num)
 ob  = Vector{Parameters}(undef, Const.layers_num)
 oo  = Vector{Parameters}(undef, Const.layers_num)
 b   = Parameters
-const I = [Diagonal(CUDA.ones(Float32, Const.layer[i+1] * (Const.layer[i] + 1))) for i in 1:Const.layers_num]
 
 function initO()
     for i in 1:Const.layers_num
@@ -153,7 +152,7 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
     for i in 1:Const.layers_num
         R = CuArray(oe[i].W - (energy - ϵ) * o[i].W - (ob[i].W - o[i].W .* b.ϕ))
         S = CuArray(oo[i].W - transpose(o[i].W) .* conj.(o[i].W))
-        ΔW = reshape(real.((S .+ Const.η .* I[i])\R), (Const.layer[i+1], Const.layer[i]+1)) |> cpu 
+        ΔW = reshape(real.(qr(S, Val(true))\R), (Const.layer[i+1], Const.layer[i]+1)) |> cpu 
         update!(opt(lr), network.g[i].W, ΔW)
     end
 end
