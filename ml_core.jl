@@ -28,9 +28,6 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
             write(io, string(numberB / Const.dimB))
             write(io, "\n")
         end
-        if abs(residue) < 0.1f0
-            break
-        end
     end
     error = (ϵ - (energyS + energyB))^2
     return error, energyS, energyB, numberB
