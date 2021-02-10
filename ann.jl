@@ -45,7 +45,7 @@ end
 function Network()
     layers = Vector(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layers[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
+        layers[i] = Dense(Const.layer[i], Const.layer[i+1], swish)
     end
     layers[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layers[i] for i in 1:Const.layers_num]...)
@@ -77,7 +77,7 @@ end
 function init_sub()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]) 
+        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i]) 
         b = Flux.zeros(Const.layer[i+1]) 
         parameters[i] = [W, b]
     end
@@ -89,7 +89,7 @@ end
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
+        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i])
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
@@ -110,8 +110,7 @@ function forward_b(x::Vector{Float32})
     return out[1] + im * out[2]
 end
 
-sqnorm(x) = sum(abs2, x)
-loss(x::Vector{Float32}) = real(forward(x)) + 1f-3 * sum(sqnorm, Flux.params(network.g))
+loss(x::Vector{Float32}) = real(forward(x))
 
 function backward(x::Vector{Float32}, e::Complex{Float32})
     gs = gradient(() -> loss(x), network.q)
