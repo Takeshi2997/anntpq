@@ -1,6 +1,6 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote, Distributions
+using .Const, LinearAlgebra, Flux, Zygote
 using Flux: @functor
 using Flux.Optimise: update!
 using BSON: @save
@@ -9,24 +9,28 @@ using BSON: @load
 # Initialize Variables
 
 abstract type Parameters end
-mutable struct Layer <: Parameters
-    W::Array{Complex{Float32}}
-    b::Array{Complex{Float32}}
+mutable struct Params{S<:AbstractArray, T<:AbstractArray} <: Parameters
+    W::S
+    b::T
+end
+mutable struct WaveFunction{S<:Complex} <: Parameters
+    ϕ::S
 end
 
 o   = Vector{Parameters}(undef, Const.layers_num)
 oe  = Vector{Parameters}(undef, Const.layers_num)
+ob  = Vector{Parameters}(undef, Const.layers_num)
+b   = Parameters
+
 function initO()
-    for i in 1:Const.layers_num-1
+    for i in 1:Const.layers_num
         W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
         b = zeros(Complex{Float32}, Const.layer[i+1])
-        global o[i]   = Layer(W, b)
-        global oe[i]  = Layer(W, b)
+        global o[i]  = Params(W, b)
+        global oe[i] = Params(W, b)
+        global ob[i] = Params(W, b)
     end
-    W = zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1])
-    b = zeros(Complex{Float32}, Const.layer[end])
-    global o[end]   = Layer(W, b)
-    global oe[end]  = Layer(W, b)
+    global b = WaveFunction(0f0im)
 end
 
 # Define Network
@@ -48,18 +52,20 @@ end
 
 mutable struct Network
     f::Flux.Chain
+    g::Flux.Chain
     p::Zygote.Params
+    q::Zygote.Params
 end
 
 function Network()
-    layer = Vector(undef, Const.layers_num)
+    layers = Vector(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layer[i] = Res(Const.layer[i], Const.layer[i+1], tanh)
+        layers[i] = Res(Const.layer[i], Const.layer[i+1], swish)
     end
-    layer[end] = Dense(Const.layer[end-1], Const.layer[end])
-    f = Chain([layer[i] for i in 1:Const.layers_num]...)
+    layers[end] = Dense(Const.layer[end-1], Const.layer[end])
+    f = Chain([layers[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
-    Network(f, p)
+    Network(f, f, p, p)
 end
 
 network = Network()
@@ -77,10 +83,28 @@ function load(filename)
     Flux.loadparams!(network.f, p)
 end
 
+function reset()
+    g = getfield(network, :g)
+    q = Flux.params(g)
+    Flux.loadparams!(network.f, q)
+end
+
+function init_sub()
+    parameters = Vector{Array}(undef, Const.layers_num)
+    for i in 1:Const.layers_num
+        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i]) 
+        b = Flux.zeros(Const.layer[i+1]) 
+        parameters[i] = [W, b]
+    end
+    paramset = [param for param in parameters]
+    q = Flux.params(paramset...)
+    Flux.loadparams!(network.g, q)
+end
+
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
+        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i])
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
@@ -89,44 +113,54 @@ function init()
     Flux.loadparams!(network.f, p)
 end
 
-
 # Learning Method
 
 function forward(x::Vector{Float32})
+    out = network.g(x)
+    return out[1] + im * out[2]
+end
+
+function forward_b(x::Vector{Float32})
     out = network.f(x)
     return out[1] + im * out[2]
 end
 
-
-sqnorm(x::Array{Float32}) = sum(abs2, x)
-loss(x::Vector{Float32}) = real(forward(x)) + Const.η * sum(sqnorm, Flux.params(network.f))
+sqnorm(x) = sum(abs2, x)
+loss(x::Vector{Float32}) = real(forward(x)) + 1f-3 * sum(sqnorm, Flux.params(network.g))
 
 function backward(x::Vector{Float32}, e::Complex{Float32})
-    gs = gradient(() -> loss(x), network.p)
-    for i in 1:Const.layers_num-1
+    gs = gradient(() -> loss(x), network.q)
+    for i in 1:Const.layers_num
         dw = gs[network.f[i].W]
         db = gs[network.f[i].b]
         o[i].W  += dw
-        oe[i].W += dw .* e
         o[i].b  += db
+        oe[i].W += dw .* e
         oe[i].b += db .* e
+        ob[i].W += dw .* forward_b(x) ./ forward(x)
+        ob[i].b += db .* forward_b(x) ./ forward(x)
     end
-    dw = gs[network.f[end].W]
-    o[end].W  += dw
-    oe[end].W += dw .* e
+    b.ϕ += forward_b(x) ./ forward(x)
 end
 
-opt(lr::Float32) = Descent(lr)
+opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
-    α = ((ϵ - energy) - 1f0) / Const.iters_num
-    for i in 1:Const.layers_num-1
-        ΔW = α .* 2f0 .*  real.(oe[i].W .- (ϵ - energy)* o[i].W)
-        Δb = α .* 2f0 .*  real.(oe[i].b .- (ϵ - energy)* o[i].b)
-        update!(opt(lr), network.f[i].W, ΔW)
-        update!(opt(lr), network.f[i].b, Δb)
+    for i in 1:Const.layers_num
+        o[i].W  ./= Const.iters_num
+        o[i].b  ./= Const.iters_num
+        oe[i].W ./= Const.iters_num
+        oe[i].b ./= Const.iters_num
+        ob[i].W ./= Const.iters_num
+        ob[i].b ./= Const.iters_num
     end
-    ΔW = α .*  real.(oe[end].W .- (ϵ - energy)* o[end].W)
-    update!(opt(lr), network.f[end].W, ΔW)
+    b.ϕ /= Const.iters_num
+    for i in 1:Const.layers_num
+        ΔW = real.(oe[i].W - (energy - ϵ) * o[i].W) - (real.(ob[i].W) - real.(o[i].W) .* real.(b.ϕ))
+        Δb = real.(oe[i].b - (energy - ϵ) * o[i].b) - (real.(ob[i].b) - real.(o[i].b) .* real.(b.ϕ))
+        update!(opt(lr), network.g[i].W, ΔW)
+        update!(opt(lr), network.g[i].b, Δb)
+    end
 end
+
 end
