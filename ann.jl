@@ -6,8 +6,7 @@ using Flux.Optimise: update!
 using BSON: @save
 using BSON: @load
 
-# Initialize Variables
-
+# Initialize
 abstract type Parameters end
 mutable struct Params{S<:AbstractArray, T<:AbstractArray} <: Parameters
     W::S
@@ -17,12 +16,18 @@ mutable struct WaveFunction{S<:Complex} <: Parameters
     ϕ::S
 end
 
-o   = Vector{Parameters}(undef, Const.layers_num)
-oe  = Vector{Parameters}(undef, Const.layers_num)
-ob  = Vector{Parameters}(undef, Const.layers_num)
-b   = Parameters
+mutable struct ParamSet{T <: Parameters}
+    o::Vector{T}
+    oe::Vector{T}
+    ob::Vector{T}
+    b::T
+end
 
-function initO()
+function ParamSet()
+    o  = Vector{Parameters}(undef, Const.layers_num)
+    oe = Vector{Parameters}(undef, Const.layers_num)
+    ob = Vector{Parameters}(undef, Const.layers_num)
+    b  = Parameters
     for i in 1:Const.layers_num
         W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
         b = zeros(Complex{Float32}, Const.layer[i+1])
@@ -31,6 +36,7 @@ function initO()
         global ob[i] = Params(W, b)
     end
     global b = WaveFunction(0f0im)
+    ParamSet(o, oe, ob, b)
 end
 
 # Define Network
@@ -113,36 +119,38 @@ end
 
 loss(x::Vector{Float32}) = real(forward(x))
 
-function backward(x::Vector{Float32}, e::Complex{Float32})
+function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     gs = gradient(() -> loss(x), network.q)
     for i in 1:Const.layers_num
         dw = gs[network.f[i].W]
         db = gs[network.f[i].b]
-        o[i].W  += dw
-        o[i].b  += db
-        oe[i].W += dw .* e
-        oe[i].b += db .* e
-        ob[i].W += dw .* forward_b(x) ./ forward(x)
-        ob[i].b += db .* forward_b(x) ./ forward(x)
+        paramset.o[i].W  += dw
+        paramset.o[i].b  += db
+        paramset.oe[i].W += dw .* e
+        paramset.oe[i].b += db .* e
+        paramset.ob[i].W += dw .* forward_b(x) ./ forward(x)
+        paramset.ob[i].b += db .* forward_b(x) ./ forward(x)
     end
-    b.ϕ += forward_b(x) ./ forward(x)
+    paramset.b.ϕ += forward_b(x) ./ forward(x)
 end
 
 opt(lr::Float32) = Descent(lr)
 
-function update(energy::Float32, ϵ::Float32, lr::Float32)
+function update(e::Float32, lr::Float32, paramset::ParamSet)
     for i in 1:Const.layers_num
-        o[i].W  ./= Const.iters_num
-        o[i].b  ./= Const.iters_num
-        oe[i].W ./= Const.iters_num
-        oe[i].b ./= Const.iters_num
-        ob[i].W ./= Const.iters_num
-        ob[i].b ./= Const.iters_num
+        paramset.o[i].W  ./= Const.iters_num
+        paramset.o[i].b  ./= Const.iters_num
+        paramset.oe[i].W ./= Const.iters_num
+        paramset.oe[i].b ./= Const.iters_num
+        paramset.ob[i].W ./= Const.iters_num
+        paramset.ob[i].b ./= Const.iters_num
     end
-    b.ϕ /= Const.iters_num
+    paramset.b.ϕ /= Const.iters_num
     for i in 1:Const.layers_num
-        ΔW = real.(oe[i].W - (energy - ϵ) * o[i].W) - (real.(ob[i].W) - real.(o[i].W) .* real.(b.ϕ))
-        Δb = real.(oe[i].b - (energy - ϵ) * o[i].b) - (real.(ob[i].b) - real.(o[i].b) .* real.(b.ϕ))
+        ΔW = real.(paramset.oe[i].W - e * paramset.o[i].W) -
+        (real.(paramset.ob[i].W) - real.(paramset.o[i].W) .* real.(paramset.b.ϕ))
+        Δb = real.(paramset.oe[i].b - e * paramset.o[i].b) - 
+        (real.(paramset.ob[i].b) - real.(paramset.o[i].b) .* real.(paramset.b.ϕ))
         update!(opt(lr), network.g[i].W, ΔW)
         update!(opt(lr), network.g[i].b, Δb)
     end
