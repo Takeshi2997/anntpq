@@ -44,7 +44,6 @@ end
 
 function Network()
     layers = Vector(undef, Const.layers_num)
-    layers[1] = Dense(Const.layer[1], Const.layer[2], tanh)
     for i in 1:Const.layers_num-1
         layers[i] = Dense(Const.layer[i], Const.layer[i+1], swish)
     end
@@ -90,7 +89,7 @@ end
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i])
+        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i]) .+ 0.05f0
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
