@@ -37,8 +37,6 @@ const X = vcat(ones(Float32, Int((Const.dimB+Const.dimS)/2)), -ones(Float32, Int
 
 function sampling(ϵ::Float32, lr::Float32)
     # Initialize
-    x = shuffle(X)
-    xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
     batchenergyS = zeros(Float32, Const.batchsize)
     batchenergyB = zeros(Float32, Const.batchsize)
     batchnumberB = zeros(Float32, Const.batchsize)
@@ -50,49 +48,13 @@ function sampling(ϵ::Float32, lr::Float32)
         parameters[i] = [W, b]
     end
     Δparamset = [param for param in parameters]
+    paramsetvec = [Func.ANN.ParamSet() for n in 1:Const.batchsize]
 
     @threads for n in 1:Const.batchsize
-
-        # Initialize
-        energy  = 0f0
-        energyS = 0f0
-        energyB = 0f0
-        numberB = 0f0
-        residue = 0f0
-        paramset = Func.ANN.ParamSet()
-
-        # MCMC Start!
-        for i in 1:Const.burnintime
-            Func.update(x)
-        end
-        for i in 1:Const.iters_num
-            Func.update(x)
-            @inbounds xdata[i] = x
-        end
-    
-        # Calcurate Physical Value
-        @simd for x in xdata
-            eS = Func.energyS(x)
-            eB = Func.energyB(x)
-            e  = eS + eB
-            energyS += eS
-            energyB += eB
-            energy  += e
-            numberB += sum(x[1:Const.dimB])
-            Func.ANN.backward(x, e - ϵ, paramset)
-        end
-        energy   = real(energy)  / Const.iters_num
-        energyS  = real(energyS) / Const.iters_num
-        energyB  = real(energyB) / Const.iters_num
-        numberB /= Const.iters_num
-
-        # Update Parameters
-        Func.ANN.updateparams(energy - ϵ, lr, paramset, Δparamset, n)
-        residue = (energy - ϵ) - real(Func.ANN.b.ϕ)
-        batchenergyS[n] = energyS
-        batchenergyB[n] = energyB
-        batchnumberB[n] = numberB
-        batchresidue[n] = residue
+        batchresidue[n],
+        batchenergyS[n],
+        batchenergyB[n],
+        batchnumberB[n] = mcmc(paramsetvec[n], Δparamset, ϵ, lr)
     end
     for i in 1:Const.layers_num
         Δparamset[i][1] ./= Const.batchsize
@@ -105,6 +67,49 @@ function sampling(ϵ::Float32, lr::Float32)
     numberB = mean(batchnumberB)
 
     # Output
+    return residue, energyS, energyB, numberB
+end
+
+function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
+
+    # Initialize
+    energy  = 0f0
+    energyS = 0f0
+    energyB = 0f0
+    numberB = 0f0
+    residue = 0f0
+    x = shuffle(X)
+    xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
+    
+    # MCMC Start!
+    for i in 1:Const.burnintime
+        Func.update(x)
+    end
+    for i in 1:Const.iters_num
+        Func.update(x)
+        @inbounds xdata[i] = x
+    end
+    
+    # Calcurate Physical Value
+    @simd for x in xdata
+        eS = Func.energyS(x)
+        eB = Func.energyB(x)
+        e  = eS + eB
+        energyS += eS
+        energyB += eB
+        energy  += e
+        numberB += sum(x[1:Const.dimB])
+        Func.ANN.backward(x, e - ϵ, paramset)
+    end
+    energy   = real(energy)  / Const.iters_num
+    energyS  = real(energyS) / Const.iters_num
+    energyB  = real(energyB) / Const.iters_num
+    numberB /= Const.iters_num
+
+    # Update Parameters
+    Func.ANN.updateparams(energy - ϵ, lr, paramset, Δparamset)
+    residue = (energy - ϵ) - real(Func.ANN.b.ϕ)
+
     return residue, energyS, energyB, numberB
 end
 

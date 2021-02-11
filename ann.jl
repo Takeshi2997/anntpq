@@ -136,7 +136,7 @@ end
 
 opt(lr::Float32) = Descent(lr)
 
-function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::Vector, n::Integer)
+function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::Vector)
     for i in 1:Const.layers_num
         paramset.o[i].W  ./= Const.iters_num
         paramset.o[i].b  ./= Const.iters_num
