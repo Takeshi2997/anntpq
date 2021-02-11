@@ -77,7 +77,7 @@ end
 function init_sub()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i]) 
+        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i]) .+ 0.05
         b = Flux.zeros(Const.layer[i+1]) 
         parameters[i] = [W, b]
     end
@@ -89,7 +89,7 @@ end
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i]) .+ 0.05f0
+        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i])
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
@@ -127,7 +127,8 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     b.ϕ += forward_b(x) ./ forward(x)
 end
 
-opt(lr::Float32) = AdaBelief(lr, (0.9, 0.999))
+opt1(lr::Float32) = AdaBelief(lr, (0.9, 0.999))
+opt2(lr::Float32) = Descent(lr)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     for i in 1:Const.layers_num
@@ -139,6 +140,8 @@ function update(energy::Float32, ϵ::Float32, lr::Float32)
         ob[i].b ./= Const.iters_num
     end
     b.ϕ /= Const.iters_num
+    residue = (energy - ϵ) - real(b.ϕ)
+    opt = ifelse(abs(residue) > 5f0, opt1, opt2)
     for i in 1:Const.layers_num
         ΔW = real.(oe[i].W - (energy - ϵ) * o[i].W) - (real.(ob[i].W) - real.(o[i].W) .* real.(b.ϕ))
         Δb = real.(oe[i].b - (energy - ϵ) * o[i].b) - (real.(ob[i].b) - real.(o[i].b) .* real.(b.ϕ))
