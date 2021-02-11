@@ -43,8 +43,16 @@ function sampling(ϵ::Float32, lr::Float32)
     batchenergyB = zeros(Float32, Const.batchsize)
     batchnumberB = zeros(Float32, Const.batchsize)
     batchresidue = zeros(Float32, Const.batchsize)
+    parameters = Vector{Array}(undef, Const.layers_num)
+    for i in 1:Const.layers_num
+        W = zeros(Float32, Const.layer[i+1], Const.layer[i])
+        b = zeros(Float32, Const.layer[i+1])
+        parameters[i] = [W, b]
+    end
+    Δparamset = [param for param in parameters]
 
-    @threads for n in Const.batchsize
+    @threads for n in 1:Const.batchsize
+
         # Initialize
         energy  = 0f0
         energyS = 0f0
@@ -79,17 +87,23 @@ function sampling(ϵ::Float32, lr::Float32)
         numberB /= Const.iters_num
 
         # Update Parameters
-        Func.ANN.update(energy - ϵ, lr, paramset)
+        Func.ANN.updateparams(energy - ϵ, lr, paramset, Δparamset, n)
         residue = (energy - ϵ) - real(Func.ANN.b.ϕ)
         batchenergyS[n] = energyS
         batchenergyB[n] = energyB
         batchnumberB[n] = numberB
         batchresidue[n] = residue
     end
+    for i in 1:Const.layers_num
+        Δparamset[i][1] ./= Const.batchsize
+        Δparamset[i][2] ./= Const.batchsize
+    end
+    Func.ANN.update(Δparamset, lr)
     residue = mean(batchresidue)
     energyS = mean(batchenergyS)
     energyB = mean(batchenergyB)
     numberB = mean(batchnumberB)
+
     # Output
     return residue, energyS, energyB, numberB
 end

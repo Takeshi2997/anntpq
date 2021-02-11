@@ -136,7 +136,7 @@ end
 
 opt(lr::Float32) = Descent(lr)
 
-function update(e::Float32, lr::Float32, paramset::ParamSet)
+function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::Vector, n::Integer)
     for i in 1:Const.layers_num
         paramset.o[i].W  ./= Const.iters_num
         paramset.o[i].b  ./= Const.iters_num
@@ -147,13 +147,19 @@ function update(e::Float32, lr::Float32, paramset::ParamSet)
     end
     paramset.b.ϕ /= Const.iters_num
     for i in 1:Const.layers_num
-        ΔW = real.(paramset.oe[i].W - e * paramset.o[i].W) -
+        Δparamset[i][1] += real.(paramset.oe[i].W - e * paramset.o[i].W) -
         (real.(paramset.ob[i].W) - real.(paramset.o[i].W) .* real.(paramset.b.ϕ))
-        Δb = real.(paramset.oe[i].b - e * paramset.o[i].b) - 
+        Δparamset[i][2] += real.(paramset.oe[i].b - e * paramset.o[i].b) - 
         (real.(paramset.ob[i].b) - real.(paramset.o[i].b) .* real.(paramset.b.ϕ))
+    end
+end
+
+function update(Δparamset::Vector, lr::Float32)
+    for i in 1:Const.layers_num
+        ΔW = Δparamset[i][1]
+        Δb = Δparamset[i][2]
         update!(opt(lr), network.g[i].W, ΔW)
         update!(opt(lr), network.g[i].b, Δb)
     end
 end
-
 end

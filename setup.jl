@@ -18,7 +18,7 @@ const inv_n = 10
 # Network Params
 const layer = [dimB+dimS, 40, 40, 40, 2]
 const layers_num = length(layer) - 1
-const batchsize = 8
+const batchsize = 24
 
 # Learning Rate
 const lr = 1f-2
