@@ -99,7 +99,7 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
         energyB += eB
         energy  += e
         numberB += sum(x[1:Const.dimB])
-        Func.ANN.backward(x, e - ϵ, paramset)
+        Func.ANN.backward(x, ϵ - e, paramset)
     end
     energy   = real(energy)  / Const.iters_num
     energyS  = real(energyS) / Const.iters_num
@@ -107,8 +107,8 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     numberB /= Const.iters_num
 
     # Update Parameters
-    Func.ANN.updateparams(energy - ϵ, lr, paramset, Δparamset)
-    residue = (energy - ϵ) - real(paramset.b.ϕ)
+    Func.ANN.updateparams(ϵ - energy, lr, paramset, Δparamset)
+    residue = (ϵ - energy) - real(paramset.b.ϕ)
 
     return residue, energyS, energyB, numberB
 end
