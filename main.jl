@@ -22,10 +22,6 @@ using Distributed
     # Learning
     touch(filename)
     for it in 1:Const.inv_n
-
-        # Reset ANN Params
-        MLcore.Func.ANN.reset()
- 
         # Calculate expected value
         error, energyS, energyB, numberB = MLcore.inv_iterative_method(ϵ, lr, dirnameonestep, it)
         open(filename, "a") do io
@@ -40,6 +36,8 @@ using Distributed
             write(io, string(numberB / Const.dimB))
             write(io, "\n")
         end
+        # Reset ANN Params
+        MLcore.Func.ANN.reset()
     end
 
     MLcore.Func.ANN.save(filenameparams)
