@@ -16,7 +16,7 @@ using Distributed
     ϵ = (-0.3f0 - 0.2f0 * iϵ / Const.iϵmax) * Const.t * Const.dimB
     filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
     filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
-    dirnameonestep = dirnameerror * "/erroronestep"
+    dirnameonestep = dirnameerror * "/onestep"
     mkdir(dirnameonestep)
 
     # Learning

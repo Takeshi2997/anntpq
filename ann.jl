@@ -72,7 +72,7 @@ end
 function load(filename)
     @load filename f
     p = Flux.params(f)
-    Flux.loadparams!(network.f, p)
+    Flux.loadparams!(network.g, p)
 end
 
 function reset()
