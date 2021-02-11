@@ -44,8 +44,9 @@ end
 
 function Network()
     layers = Vector(undef, Const.layers_num)
-    for i in 1:Const.layers_num-1
-        layers[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
+    layers[1] = Dense(Const.layer[1], Const.layer[2], tanh)
+    for i in 2:Const.layers_num-1
+        layers[i] = Dense(Const.layer[i], Const.layer[i+1], swish)
     end
     layers[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layers[i] for i in 1:Const.layers_num]...)
@@ -77,7 +78,7 @@ end
 function init_sub()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]) .+ 0.02
+        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]) .+ 0.1f0
         b = Flux.zeros(Const.layer[i+1]) 
         parameters[i] = [W, b]
     end
@@ -127,7 +128,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
     b.ϕ += forward_b(x) ./ forward(x)
 end
 
-opt(lr::Float32) = AdaBelief(lr, (0.9, 0.999))
+opt(lr::Float32) = Descent(lr)
 
 function update(energy::Float32, ϵ::Float32, lr::Float32)
     for i in 1:Const.layers_num
