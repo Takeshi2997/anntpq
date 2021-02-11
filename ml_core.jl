@@ -108,7 +108,7 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
 
     # Update Parameters
     Func.ANN.updateparams(energy - ϵ, lr, paramset, Δparamset)
-    residue = (energy - ϵ) - real(Func.ANN.b.ϕ)
+    residue = (energy - ϵ) - real(paramset.b.ϕ)
 
     return residue, energyS, energyB, numberB
 end

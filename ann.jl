@@ -161,6 +161,5 @@ function update(Δparamset::Vector, lr::Float32)
         update!(opt(lr), network.g[i].W, ΔW)
         update!(opt(lr), network.g[i].b, Δb)
     end
-    exit()
 end
 end
