@@ -84,7 +84,7 @@ end
 function init_sub()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i]) .+ 0.1f0
+        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i]) .+ 0.1f0
         b = Flux.zeros(Const.layer[i+1]) 
         parameters[i] = [W, b]
     end
@@ -96,7 +96,7 @@ end
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
+        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i])
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
@@ -134,7 +134,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     paramset.b.ϕ += forward_b(x) ./ forward(x)
 end
 
-opt(lr::Float32) = Descent(lr)
+opt(lr::Float32) = AMSGrad(lr, (0.9, 0.999))
 
 function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::Vector)
     for i in 1:Const.layers_num
@@ -161,5 +161,6 @@ function update(Δparamset::Vector, lr::Float32)
         update!(opt(lr), network.g[i].W, ΔW)
         update!(opt(lr), network.g[i].b, Δb)
     end
+    exit()
 end
 end
