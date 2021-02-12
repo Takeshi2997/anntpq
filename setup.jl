@@ -13,7 +13,7 @@ const burnintime = 10
 const iters_num = 1000
 const it_num = 250
 const iϵmax = 5
-const inv_n = 20
+const inv_n = 10
 
 # Network Params
 const layer = [dimB+dimS, 40, 40, 40, 2]
