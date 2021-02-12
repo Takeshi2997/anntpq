@@ -21,6 +21,6 @@ const layers_num = length(layer) - 1
 const batchsize = 128
 
 # Learning Rate
-const lr = 1f-4
+const lr = 1f-3
 
 end
