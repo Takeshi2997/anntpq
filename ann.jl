@@ -162,13 +162,13 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
 end
 
 function update(Δparamset::Vector, lr::Float32, residue::Float32)
-    lr *= ifelse(abs(residue) > 1f0, 1f0, 0.0001f0)
+    lr_loc = ifelse(abs(residue) > 1f0, lr, lr * 0.001f0)
     opt = ifelse(abs(residue) > 1f0, opt1, opt2)
     for i in 1:Const.layers_num
         ΔW = hardtanh(residue) .* Δparamset[i][1]
         Δb = hardtanh(residue) .* Δparamset[i][2]
-        update!(opt(lr), network.g[i].W, ΔW)
-        update!(opt(lr), network.g[i].b, Δb)
+        update!(opt(lr_loc), network.g[i].W, ΔW)
+        update!(opt(lr_loc), network.g[i].b, Δb)
     end
 end
 end
