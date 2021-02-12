@@ -70,9 +70,15 @@ function save(filename)
 end
 
 function load(filename)
+    @load filename g
+    q = Flux.params(g)
+    Flux.loadparams!(network.g, q)
+end
+
+function load_b(filename)
     @load filename f
     p = Flux.params(f)
-    Flux.loadparams!(network.g, p)
+    Flux.loadparams!(network.f, p)
 end
 
 function reset()
@@ -134,7 +140,8 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     paramset.b.ϕ += forward_b(x) ./ forward(x)
 end
 
-opt(lr::Float32) = AMSGrad(lr, (0.9, 0.999))
+opt1(lr::Float32) = AMSGrad(lr, (0.9, 0.999))
+opt2(lr::Float32) = Descent(lr)
 
 function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::Vector)
     for i in 1:Const.layers_num
@@ -147,17 +154,19 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
     end
     paramset.b.ϕ /= Const.iters_num
     for i in 1:Const.layers_num
-        Δparamset[i][1] += sign(e - real(paramset.b.ϕ)) .* 
+        Δparamset[i][1] += 
         (real.(paramset.oe[i].W - e * paramset.o[i].W) - (real.(paramset.ob[i].W) - real.(paramset.o[i].W) .* real.(paramset.b.ϕ)))
-        Δparamset[i][2] += sign(e - real(paramset.b.ϕ)) .* 
+        Δparamset[i][2] += 
         real.(paramset.oe[i].b - e * paramset.o[i].b) - (real.(paramset.ob[i].b) - real.(paramset.o[i].b) .* real.(paramset.b.ϕ))
     end
 end
 
-function update(Δparamset::Vector, lr::Float32)
+function update(Δparamset::Vector, lr::Float32, residue::Float32)
+    lr *= ifelse(abs(residue) > 1f0, 1f0, 0.0001f0)
+    opt = ifelse(abs(residue) > 1f0, opt1, opt2)
     for i in 1:Const.layers_num
-        ΔW = Δparamset[i][1]
-        Δb = Δparamset[i][2]
+        ΔW = hardtanh(residue) .* Δparamset[i][1]
+        Δb = hardtanh(residue) .* Δparamset[i][2]
         update!(opt(lr), network.g[i].W, ΔW)
         update!(opt(lr), network.g[i].b, Δb)
     end

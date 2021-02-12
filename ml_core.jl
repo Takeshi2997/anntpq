@@ -60,11 +60,11 @@ function sampling(ϵ::Float32, lr::Float32)
         Δparamset[i][1] ./= Const.batchsize
         Δparamset[i][2] ./= Const.batchsize
     end
-    Func.ANN.update(Δparamset, lr)
     residue = mean(batchresidue)
     energyS = mean(batchenergyS)
     energyB = mean(batchenergyB)
     numberB = mean(batchnumberB)
+    Func.ANN.update(Δparamset, lr, residue)
 
     # Output
     return residue, energyS, energyB, numberB

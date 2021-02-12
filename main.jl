@@ -12,7 +12,7 @@ using Distributed
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
-    MLcore.Func.ANN.load(dirname * "/params_at_000.bson")
+    MLcore.Func.ANN.load_b(dirname * "/params_at_000.bson")
     ϵ = (-0.3f0 - 0.2f0 * iϵ / Const.iϵmax) * Const.t * Const.dimB
     filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
     filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
