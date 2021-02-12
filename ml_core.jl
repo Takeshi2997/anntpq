@@ -9,7 +9,6 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
-    Func.ANN.init_sub()
     filename = dirname * "/errorstep" * lpad(it, 3, "0") * ".txt"
     touch(filename)
 
