@@ -16,13 +16,13 @@ using Distributed
     ϵ = (-0.3f0 - 0.2f0 * iϵ / Const.iϵmax) * Const.t * Const.dimB
     filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
     filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
-    dirnameonestep = dirnameerror * "/onestep"
+    dirnameonestep = dirnameerror * "/onestep" * lpad(iϵ, 3, "0")
     mkdir(dirnameonestep)
 
     # Learning
     touch(filename)
     for it in 1:Const.inv_n
-        lr = ifelse(it > 1, 1f-6, 1f-3)
+        lr = 1f-3
         # Calculate expected value
         error, energyS, energyB, numberB = MLcore.inv_iterative_method(ϵ, lr, dirnameonestep, it)
         open(filename, "a") do io
