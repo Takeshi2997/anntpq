@@ -6,7 +6,7 @@ using Distributed
 
 @everywhere function learning(iϵ::Integer, 
                               dirname::String, dirnameerror::String, 
-                              lr::Float32, it_num::Integer)
+                              it_num::Integer)
     # Initialize
     error   = 0f0
     energyS = 0f0
@@ -22,6 +22,7 @@ using Distributed
     # Learning
     touch(filename)
     for it in 1:Const.inv_n
+        lr = ifelse(it > 1, 1f-6, 1f-3)
         # Calculate expected value
         error, energyS, energyB, numberB = MLcore.inv_iterative_method(ϵ, lr, dirnameonestep, it)
         open(filename, "a") do io
@@ -53,7 +54,7 @@ function main()
     mkdir(dirnameerror)
     MLcore.Func.ANN.init()
     MLcore.Func.ANN.save(dirname * "/params_at_000.bson")
-    map(iϵ -> learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num), 1:Const.iϵmax)
+    map(iϵ -> learning(iϵ, dirname, dirnameerror, Const.it_num), 1:Const.iϵmax)
 end
 
 main()

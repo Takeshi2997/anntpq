@@ -11,7 +11,7 @@ const J = 1.0f0
 # Repeat Number
 const burnintime = 10
 const iters_num = 1000
-const it_num = 100
+const it_num = 50
 const iϵmax = 5
 const inv_n = 10
 
@@ -19,8 +19,5 @@ const inv_n = 10
 const layer = [dimB+dimS, 40, 40, 40, 2]
 const layers_num = length(layer) - 1
 const batchsize = 128
-
-# Learning Rate
-const lr = 1f-3
 
 end
