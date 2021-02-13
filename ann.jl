@@ -161,7 +161,7 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
 end
 
 function update(Δparamset::Vector, lr::Float32, residue::Float32)
-    opt = ifelse(abs(residue) > 1f0, opt1, opt2)
+    opt = ifelse(abs(residue) > 3f0, opt1, opt2)
     for i in 1:Const.layers_num
         ΔW = hardtanh(residue) .* Δparamset[i][1]
         Δb = hardtanh(residue) .* Δparamset[i][2]
