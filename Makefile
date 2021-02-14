@@ -1,5 +1,5 @@
 JL          = ~/julia/julia
-OPTS        = "-t 8"
+OPTS        = "-t 16"
 BASE        = functions.jl setup.jl ann.jl
 CORE        = ml_core.jl
 OBJS        = main.jl
