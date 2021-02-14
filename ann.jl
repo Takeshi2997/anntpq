@@ -1,134 +1,170 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote, BlockDiagonals
+using .Const, LinearAlgebra, Flux, Zygote
 using Flux: @functor
 using Flux.Optimise: update!
 using BSON: @save
 using BSON: @load
 
-mutable struct Parameters
-
-    W::Array
-    b::Array
+# Initialize
+abstract type Parameters end
+mutable struct Params{S<:AbstractArray, T<:AbstractArray} <: Parameters
+    W::S
+    b::T
+end
+mutable struct WaveFunction{S<:Complex} <: Parameters
+    ϕ::S
 end
 
-o  = Vector{Any}(undef, Const.layers_num)
-oe = Vector{Any}(undef, Const.layers_num)
+mutable struct ParamSet{T <: Parameters}
+    o::Vector{T}
+    oe::Vector{T}
+    ob::Vector{T}
+    b::T
+end
 
-function initO()
-
+function ParamSet()
+    o  = Vector{Parameters}(undef, Const.layers_num)
+    oe = Vector{Parameters}(undef, Const.layers_num)
+    ob = Vector{Parameters}(undef, Const.layers_num)
+    b  = Parameters
     for i in 1:Const.layers_num
         W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
         b = zeros(Complex{Float32}, Const.layer[i+1])
-        global o[i]  = Parameters(W, b)
-        global oe[i] = Parameters(W, b)
+        global o[i]  = Params(W, b)
+        global oe[i] = Params(W, b)
+        global ob[i] = Params(W, b)
     end
+    global b = WaveFunction(0f0im)
+    ParamSet(o, oe, ob, b)
 end
+
+# Define Network
 
 mutable struct Network
-
     f::Flux.Chain
+    g::Flux.Chain
     p::Zygote.Params
+    q::Zygote.Params
 end
-
-struct Res{F,S<:AbstractArray,T<:AbstractArray}
-    W::S
-    b::T
-    σ::F
-end
-
-function Res(in::Integer, out::Integer, σ = identity;
-             initW = Flux.glorot_uniform, initb = zeros)
-  return Res(initW(out, in), initb(Float32, out), σ)
-end
-
-@functor Res
-
-function (m::Res)(x::AbstractArray)
-    W, b, σ = m.W, m.b, m.σ
-    x .+ σ.(W*x.+b)
-end
-
-NNlib.logcosh(x::Complex{Float32}) = log(cosh(x))
 
 function Network()
-
-    layer = Vector{Any}(undef, Const.layers_num)
+    layers = Vector(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layer[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
+        layers[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
     end
-    layer[end] = Dense(Const.layer[end-1], Const.layer[end])
-    f = Chain([layer[i] for i in 1:Const.layers_num]...)
-    p = params(f)
-    Network(f, p)
+    layers[end] = Dense(Const.layer[end-1], Const.layer[end])
+    f = Chain([layers[i] for i in 1:Const.layers_num]...)
+    p = Flux.params(f)
+    Network(f, f, p, p)
 end
 
 network = Network()
 
-function save(filename)
+# Network Utility
 
+function save(filename)
     f = getfield(network, :f)
     @save filename f
 end
 
 function load(filename)
-
     @load filename f
-    p = params(f)
+    p = Flux.params(f)
+    Flux.loadparams!(network.g, p)
+end
+
+function load_b(filename)
+    @load filename f
+    p = Flux.params(f)
     Flux.loadparams!(network.f, p)
 end
 
-function init()
+function reset()
+    g = getfield(network, :g)
+    q = Flux.params(g)
+    Flux.loadparams!(network.f, q)
+end
 
+function init_sub()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = randn(Float32, Const.layer[i+1], Const.layer[i]) ./ Float32(sqrt(Const.layer[i]))
-        b = zeros(Float32, Const.layer[i+1])
+        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i])
+        b = Flux.zeros(Const.layer[i+1]) 
         parameters[i] = [W, b]
     end
     paramset = [param for param in parameters]
-    p = params(paramset...)
+    q = Flux.params(paramset...)
+    Flux.loadparams!(network.g, q)
+end
+
+function init()
+    parameters = Vector{Array}(undef, Const.layers_num)
+    for i in 1:Const.layers_num
+        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i])
+        b = Flux.zeros(Const.layer[i+1])
+        parameters[i] = [W, b]
+    end
+    paramset = [param for param in parameters]
+    p = Flux.params(paramset...)
     Flux.loadparams!(network.f, p)
 end
 
-function forward(x::Vector{Float32})
+# Learning Method
 
+function forward(x::Vector{Float32})
+    out = network.g(x)
+    return out[1] + im * out[2]
+end
+
+function forward_b(x::Vector{Float32})
     out = network.f(x)
     return out[1] + im * out[2]
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
 
-function backward(x::Vector{Float32}, e::Complex{Float32})
-
-    gs = gradient(() -> loss(x), network.p)
-    for i in 1:Const.layers_num-1
+function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
+    gs = gradient(() -> loss(x), network.q)
+    for i in 1:Const.layers_num
         dw = gs[network.f[i].W]
         db = gs[network.f[i].b]
-        o[i].W  += dw
-        oe[i].W += dw * e
-        o[i].b  += db
-        oe[i].b += db * e
+        paramset.o[i].W  += dw
+        paramset.o[i].b  += db
+        paramset.oe[i].W += dw .* e
+        paramset.oe[i].b += db .* e
+        paramset.ob[i].W += dw .* forward_b(x) ./ forward(x)
+        paramset.ob[i].b += db .* forward_b(x) ./ forward(x)
     end
-    dw = gs[network.f[end].W]
-    o[end].W  += dw
-    oe[end].W += dw * e
+    paramset.b.ϕ += forward_b(x) ./ forward(x)
 end
 
-opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
+opt(lr::Float32) = AMSGrad(lr, (0.9, 0.999))
 
-function update(energy::Float32, ϵ::Float32, lr::Float32)
-
-    x = (energy - ϵ)
-    α = 2f0 * x / Const.iters_num
-    for i in 1:Const.layers_num-1
-        ΔW = α .* 2f0 .* real.(oe[i].W .- energy * o[i].W)
-        Δb = α .* 2f0 .* real.(oe[i].b .- energy * o[i].b)
-        update!(opt(lr), network.f[i].W, ΔW)
-        update!(opt(lr), network.f[i].b, Δb)
+function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::Vector)
+    for i in 1:Const.layers_num
+        paramset.o[i].W  ./= Const.iters_num
+        paramset.o[i].b  ./= Const.iters_num
+        paramset.oe[i].W ./= Const.iters_num
+        paramset.oe[i].b ./= Const.iters_num
+        paramset.ob[i].W ./= Const.iters_num
+        paramset.ob[i].b ./= Const.iters_num
     end
-    ΔW = α .* 2f0 * real(oe[end].W .- energy * o[end].W)
-    update!(opt(lr), network.f[end].W, ΔW)
+    paramset.b.ϕ /= Const.iters_num
+    for i in 1:Const.layers_num
+        Δparamset[i][1] += 
+        (real.(paramset.oe[i].W - e * paramset.o[i].W) - (real.(paramset.ob[i].W) - real.(paramset.o[i].W) .* real.(paramset.b.ϕ)))
+        Δparamset[i][2] += 
+        real.(paramset.oe[i].b - e * paramset.o[i].b) - (real.(paramset.ob[i].b) - real.(paramset.o[i].b) .* real.(paramset.b.ϕ))
+    end
 end
 
+function update(Δparamset::Vector, lr::Float32, residue::Float32)
+    for i in 1:Const.layers_num
+        ΔW = hardtanh(residue) .* Δparamset[i][1]
+        Δb = hardtanh(residue) .* Δparamset[i][2]
+        update!(opt(lr), network.g[i].W, ΔW)
+        update!(opt(lr), network.g[i].b, Δb)
+    end
+end
 end
