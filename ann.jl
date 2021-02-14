@@ -153,13 +153,14 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
     paramset.b.ϕ /= Const.iters_num
     for i in 1:Const.layers_num
         Δparamset[i][1] += 
-        (real.(paramset.oe[i].W - e * paramset.o[i].W) - (real.(paramset.ob[i].W) - real.(paramset.o[i].W) .* real.(paramset.b.ϕ)))
+        real.(paramset.oe[i].W - e * paramset.o[i].W) - (real.(paramset.ob[i].W) - real.(paramset.o[i].W) .* real.(paramset.b.ϕ))
         Δparamset[i][2] += 
         real.(paramset.oe[i].b - e * paramset.o[i].b) - (real.(paramset.ob[i].b) - real.(paramset.o[i].b) .* real.(paramset.b.ϕ))
     end
 end
 
 function update(Δparamset::Vector, lr::Float32, residue::Float32)
+    lr_loc = ifelse(residue > 2f0, lr, lr * 0.001f0)
     for i in 1:Const.layers_num
         ΔW = hardtanh(residue) .* Δparamset[i][1]
         Δb = hardtanh(residue) .* Δparamset[i][2]
