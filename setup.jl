@@ -18,6 +18,6 @@ const iϵmax = 4
 # Network Params
 const layer = [dimB+dimS, 48, 48, 48, 2]
 const layers_num = length(layer) - 1
-const batchsize = 512
+const batchsize = 216
 
 end

@@ -8,7 +8,7 @@ function calculate()
 
     dirname = "./data"
     f = open("energy_data.txt", "w")
-    num = 100000
+    num = 10000
     for iϵ in 1:Const.iϵmax
         filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
         MLcore.Func.ANN.load(filenameparams)
