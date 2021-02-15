@@ -115,14 +115,38 @@ end
 
 function calculation_energy(num::Integer)
 
-    x = rand([1f0, -1f0], Const.dimB+Const.dimS)
-    xdata = Vector{Vector{Float32}}(undef, num)
+    # Initialize
+    batchenergyS = zeros(Float32, Const.batchsize)
+    batchenergyB = zeros(Float32, Const.batchsize)
+    batchnumberB = zeros(Float32, Const.batchsize)
+    batchresidue = zeros(Float32, Const.batchsize)
+
+    @threads for n in 1:Const.batchsize
+        batchresidue[n],
+        batchenergyS[n],
+        batchenergyB[n],
+        batchnumberB[n] = mcmc_calc(num)
+    end
+    energyS = mean(batchenergyS)
+    energyB = mean(batchenergyB)
+    numberB = mean(batchnumberB)
+
+    # Output
+    return energyS, energyB, numberB
+end
+
+function mcmc_calc(num::Integer)
+
+    # Initialize
     energy  = 0f0
-    senergy = 0f0
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
-
+    residue = 0f0
+    x = shuffle(X)
+    xdata = Vector{Vector{Float32}}(undef, num)
+    
+    # MCMC Start!
     for i in 1:Const.burnintime
         Func.update(x)
     end
@@ -130,7 +154,8 @@ function calculation_energy(num::Integer)
         Func.update(x)
         @inbounds xdata[i] = x
     end
-
+    
+    # Calcurate Physical Value
     @simd for x in xdata
         eS = Func.energyS(x)
         eB = Func.energyB(x)
@@ -138,17 +163,14 @@ function calculation_energy(num::Integer)
         energyS += eS
         energyB += eB
         energy  += e
-        senergy += abs2(eS)
         numberB += sum(x[1:Const.dimB])
     end
     energy   = real(energy)  / num
-    energy  /= num
     energyS  = real(energyS) / num
     energyB  = real(energyB) / num
     numberB /= num
-    variance = sqrt(senergy - energyS^2)
 
-    return energyS, energyB, numberB, variance
+    return energyS, energyB, numberB
 end
 
 end
