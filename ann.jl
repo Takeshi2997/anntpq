@@ -163,8 +163,8 @@ function update(Δparamset::Vector, lr::Float32)
     for i in 1:Const.layers_num
         ΔW = Δparamset[i][1]
         Δb = Δparamset[i][2]
-        update!(opt(lr_loc), network.g[i].W, ΔW)
-        update!(opt(lr_loc), network.g[i].b, Δb)
+        update!(opt(lr), network.g[i].W, ΔW)
+        update!(opt(lr), network.g[i].b, Δb)
     end
 end
 end
