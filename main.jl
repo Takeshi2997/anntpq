@@ -22,7 +22,7 @@ using Distributed
     # Learning
     touch(filename)
     for it in 1:Const.inv_n
-        lr = 1f-3
+        lr = Const.lr
         # Calculate expected value
         error, energyS, energyB, numberB = MLcore.inv_iterative_method(ϵ, lr, dirnameonestep, it)
         open(filename, "a") do io
