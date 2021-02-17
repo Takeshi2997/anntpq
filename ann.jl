@@ -21,6 +21,7 @@ mutable struct ParamSet{T <: Parameters}
     oe::Vector{T}
     ob::Vector{T}
     b::T
+    x::T
 end
 
 function ParamSet()
@@ -36,7 +37,8 @@ function ParamSet()
         global ob[i] = Params(W, b)
     end
     global b = WaveFunction(0f0im)
-    ParamSet(o, oe, ob, b)
+    global x = WaveFunction(0f0im)
+    ParamSet(o, oe, ob, b, x)
 end
 
 # Define Network
@@ -126,6 +128,7 @@ loss(x::Vector{Float32}) = real(forward(x))
 
 function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     gs = gradient(() -> loss(x), network.q)
+    ϕ = exp(forward_b(x) - forward(x))
     for i in 1:Const.layers_num
         dw = gs[network.f[i].W]
         db = gs[network.f[i].b]
@@ -133,10 +136,11 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
         paramset.o[i].b  += db
         paramset.oe[i].W += dw .* e
         paramset.oe[i].b += db .* e
-        paramset.ob[i].W += dw .* forward_b(x) ./ forward(x)
-        paramset.ob[i].b += db .* forward_b(x) ./ forward(x)
+        paramset.ob[i].W += dw .* ϕ
+        paramset.ob[i].b += db .* ϕ
     end
-    paramset.b.ϕ += forward_b(x) ./ forward(x)
+    paramset.b.ϕ += ϕ
+    paramset.x.ϕ += conj(ϕ) * ϕ
 end
 
 opt(lr::Float32) = AMSGrad(lr, (0.9, 0.999))
@@ -151,11 +155,13 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
         paramset.ob[i].b ./= Const.iters_num
     end
     paramset.b.ϕ /= Const.iters_num
+    paramset.x.ϕ /= Const.iters_num
+    X = 1f0 / sqrt(real(paramset.x.ϕ))
     for i in 1:Const.layers_num
         Δparamset[i][1] += 
-        real.(paramset.oe[i].W - e * paramset.o[i].W) - (real.(paramset.ob[i].W) - real.(paramset.o[i].W) .* real.(paramset.b.ϕ))
+        real.(paramset.oe[i].W - e * paramset.o[i].W) - X * (real.(paramset.ob[i].W) - real.(paramset.o[i].W) .* real.(paramset.b.ϕ))
         Δparamset[i][2] += 
-        real.(paramset.oe[i].b - e * paramset.o[i].b) - (real.(paramset.ob[i].b) - real.(paramset.o[i].b) .* real.(paramset.b.ϕ))
+        real.(paramset.oe[i].b - e * paramset.o[i].b) - X * (real.(paramset.ob[i].b) - real.(paramset.o[i].b) .* real.(paramset.b.ϕ))
     end
 end
 

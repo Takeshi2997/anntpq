@@ -11,7 +11,7 @@ const J = 1.0f0
 # Repeat Number
 const burnintime = 10
 const iters_num = 500
-const it_num = 500
+const it_num = 100
 const inv_n = 20
 const iϵmax = 4
 
