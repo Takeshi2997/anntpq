@@ -11,7 +11,6 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
     numberB = 0f0
     filename = dirname * "/errorstep" * lpad(it, 3, "0") * ".txt"
     touch(filename)
-    Func.ANN.init_sub()
 
     # Inverse Iterative mathod Start
     for n in 1:Const.it_num
