@@ -1,28 +1,26 @@
-using Distributed
-@everywhere include("./setup.jl")
-@everywhere include("./ml_core.jl")
-@everywhere using .Const, .MLcore
-@everywhere using Flux
+include("./setup.jl")
+include("./ml_core.jl")
+using .Const, .MLcore
+using Flux
 
-@everywhere function learning(iϵ::Integer, 
-                              dirname::String, dirnameerror::String, 
-                              it_num::Integer)
+function learning(iϵ::Integer, dirname::String, dirnameerror::String, inv_n::Integer, lr::Float32)
     # Initialize
     error   = 0f0
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
-    MLcore.Func.ANN.load_b(dirname * "/params_at_000.bson")
-    ϵ = (-0.3f0 - 0.2f0 * iϵ / Const.iϵmax) * Const.t * Const.dimB
+    ϵ1 = (-0.3f0 - 0.2f0 * iϵ / Const.iϵmax) * Const.t * Const.dimB
+    ϵ  = ifelse(iϵ > 1, ϵ1, 0f0)
     filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
     filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
     dirnameonestep = dirnameerror * "/onestep" * lpad(iϵ, 3, "0")
     mkdir(dirnameonestep)
-
+    MLcore.Func.ANN.load_b(dirname * "/params_at_000.bson")
+ 
     # Learning
     touch(filename)
-    for it in 1:Const.inv_n
-        lr = Const.lr
+    for it in 1:inv_n
+        MLcore.Func.ANN.load(dirname * "/params_at_000.bson")
         # Calculate expected value
         error, energyS, energyB, numberB = MLcore.inv_iterative_method(ϵ, lr, dirnameonestep, it)
         open(filename, "a") do io
@@ -37,8 +35,6 @@ using Distributed
             write(io, string(numberB / Const.dimB))
             write(io, "\n")
         end
-        # Reset ANN Params
-        MLcore.Func.ANN.reset()
     end
 
     MLcore.Func.ANN.save(filenameparams)
@@ -54,7 +50,8 @@ function main()
     mkdir(dirnameerror)
     MLcore.Func.ANN.init()
     MLcore.Func.ANN.save(dirname * "/params_at_000.bson")
-    map(iϵ -> learning(iϵ, dirname, dirnameerror, Const.it_num), 1:Const.iϵmax)
+    learning(0, dirname, dirnameerror, 1, -1f-3)
+    map(iϵ -> learning(iϵ, dirname, dirnameerror, Const.inv_n, Const.lr), 1:Const.iϵmax)
 end
 
 main()

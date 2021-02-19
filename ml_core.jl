@@ -28,7 +28,11 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
             write(io, "\n")
         end
     end
-    error = (ϵ - (energyS + energyB))^2
+
+    # Reset ANN Params
+    Func.ANN.reset()
+
+    error = ((energyS + energyB) - ϵ)^2
     return error, energyS, energyB, numberB
 end
 
@@ -98,7 +102,7 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
         energyB += eB
         energy  += e
         numberB += sum(x[1:Const.dimB])
-        Func.ANN.backward(x, ϵ - e, paramset)
+        Func.ANN.backward(x, e - ϵ, paramset)
     end
     energy   = real(energy)  / Const.iters_num
     energyS  = real(energyS) / Const.iters_num
@@ -106,8 +110,8 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     numberB /= Const.iters_num
 
     # Update Parameters
-    Func.ANN.updateparams(ϵ - energy, lr, paramset, Δparamset)
-    action = (ϵ - energy) - real(paramset.b.ϕ)
+    Func.ANN.updateparams(energy - ϵ, lr, paramset, Δparamset)
+    action = (energy - ϵ) - real(paramset.b.ϕ)
 
     return action, energyS, energyB, numberB
 end
