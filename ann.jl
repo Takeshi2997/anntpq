@@ -76,7 +76,7 @@ function load(filename)
     Flux.loadparams!(network.g, p)
 end
 
-function load_b(filename)
+function load_f(filename)
     @load filename f
     p = Flux.params(f)
     Flux.loadparams!(network.f, p)

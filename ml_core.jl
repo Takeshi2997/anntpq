@@ -14,7 +14,7 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
 
     # Inverse Iterative mathod Start
     for n in 1:Const.it_num
-        action, energyS, energyB, numberB = sampling(ϵ, lr)
+        residue, energyS, energyB, numberB = sampling(ϵ, lr)
         open(filename, "a") do io
             write(io, string(n))
             write(io, "\t")
@@ -36,14 +36,12 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
     return error, energyS, energyB, numberB
 end
 
-const X = vcat(ones(Float32, Int((Const.dimB+Const.dimS)/2)), -ones(Float32, Int((Const.dimB+Const.dimS)/2)))
-
 function sampling(ϵ::Float32, lr::Float32)
     # Initialize
     batchenergyS = zeros(Float32, Const.batchsize)
     batchenergyB = zeros(Float32, Const.batchsize)
     batchnumberB = zeros(Float32, Const.batchsize)
-    batchaction  = zeros(Float32, Const.batchsize)
+    batchresidue = zeros(Float32, Const.batchsize)
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
         W = zeros(Float32, Const.layer[i+1], Const.layer[i])
@@ -54,7 +52,7 @@ function sampling(ϵ::Float32, lr::Float32)
     paramsetvec = [Func.ANN.ParamSet() for n in 1:Const.batchsize]
 
     @threads for n in 1:Const.batchsize
-        batchaction[n],
+        batchresidue[n],
         batchenergyS[n],
         batchenergyB[n],
         batchnumberB[n] = mcmc(paramsetvec[n], Δparamset, ϵ, lr)
@@ -63,15 +61,17 @@ function sampling(ϵ::Float32, lr::Float32)
         Δparamset[i][1] ./= Const.batchsize
         Δparamset[i][2] ./= Const.batchsize
     end
-    action  = mean(batchaction)
+    residue = mean(batchresidue)
     energyS = mean(batchenergyS)
     energyB = mean(batchenergyB)
     numberB = mean(batchnumberB)
     Func.ANN.update(Δparamset, lr)
 
     # Output
-    return action, energyS, energyB, numberB
+    return residue, energyS, energyB, numberB
 end
+
+const X = vcat(ones(Float32, Int((Const.dimB+Const.dimS)/2)), -ones(Float32, Int((Const.dimB+Const.dimS)/2)))
 
 function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
 
@@ -80,7 +80,7 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
-    action  = 0f0
+    residue = 0f0
     x = shuffle(X)
     xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
     
@@ -98,10 +98,12 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
         eS = Func.energyS(x)
         eB = Func.energyB(x)
         e  = eS + eB
+        r  = Func.residue(e - ϵ, x)
         energyS += eS
         energyB += eB
         energy  += e
         numberB += sum(x[1:Const.dimB])
+        residue += r
         Func.ANN.backward(x, e - ϵ, paramset)
     end
     energy   = real(energy)  / Const.iters_num

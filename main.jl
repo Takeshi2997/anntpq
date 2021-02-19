@@ -15,7 +15,7 @@ function learning(iϵ::Integer, dirname::String, dirnameerror::String, inv_n::In
     filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
     dirnameonestep = dirnameerror * "/onestep" * lpad(iϵ, 3, "0")
     mkdir(dirnameonestep)
-    MLcore.Func.ANN.load_b(dirname * "/params_at_000.bson")
+    MLcore.Func.ANN.load_f(dirname * "/params_at_000.bson")
  
     # Learning
     touch(filename)
