@@ -18,7 +18,7 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
         open(filename, "a") do io
             write(io, string(n))
             write(io, "\t")
-            write(io, string(action))
+            write(io, string(residue))
             write(io, "\t")
             write(io, string(energyS / Const.dimS))
             write(io, "\t")
@@ -110,12 +110,12 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     energyS  = real(energyS) / Const.iters_num
     energyB  = real(energyB) / Const.iters_num
     numberB /= Const.iters_num
+    residue /= Const.iters_num
 
     # Update Parameters
     Func.ANN.updateparams(energy - ϵ, lr, paramset, Δparamset)
-    action = (energy - ϵ) - real(paramset.b.ϕ)
 
-    return action, energyS, energyB, numberB
+    return residue, energyS, energyB, numberB
 end
 
 function calculation_energy(num::Integer)
