@@ -143,26 +143,28 @@ function forward_b(x::Vector{Float32})
     return out[1] + im * out[2]
 end
 
-loss(x::Vector{Float32}) = real(forward(x))
+rloss(x::Vector{Float32}) = network.g(x)[1]
+iloss(x::Vector{Float32}) = network.g(x)[2]
 
 function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
-    gs = gradient(() -> loss(x), network.q)
+    rgs = gradient(() -> rloss(x), network.q)
+    igs = gradient(() -> iloss(x), network.q)
     ϕ = exp(forward_b(x) - forward(x))
     for i in 1:Const.layers_num
-        dw1 = gs[network.f[i].W1]
-        dw2 = gs[network.f[i].W2]
-        db1 = gs[network.f[i].b1]
-        db2 = gs[network.f[i].b2]
-        paramset.or[i].W += dw1
-        paramset.oi[i].W += dw2
-        paramset.or[i].b += db1
-        paramset.oi[i].b += db2
-        paramset.oe[i].W += dw1 .* e
-        paramset.oe[i].b += db1 .* e
-        paramset.ϕr[i].W += dw1 .* ϕ
-        paramset.ϕi[i].W += dw2 .* ϕ
-        paramset.ϕr[i].b += db1 .* ϕ
-        paramset.ϕi[i].b += db2 .* ϕ
+        dwr = rgs[network.f[i].W1]
+        dwi = igs[network.f[i].W2]
+        dbr = rgs[network.f[i].b1]
+        dbi = igs[network.f[i].b2]
+        paramset.or[i].W += dwr
+        paramset.oi[i].W += dwi
+        paramset.or[i].b += dbr
+        paramset.oi[i].b += dbi
+        paramset.oe[i].W += dwr .* e
+        paramset.oe[i].b += dbr .* e
+        paramset.ϕr[i].W += dwr .* ϕ
+        paramset.ϕi[i].W += dwi .* ϕ
+        paramset.ϕr[i].b += dbr .* ϕ
+        paramset.ϕi[i].b += dbi .* ϕ
     end
     paramset.ϕ.x += conj(ϕ) * ϕ
     paramset.ϕ.y += ϕ
@@ -189,14 +191,14 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
     for i in 1:Const.layers_num
         Δparamset[i][1] += 
         real.(paramset.oe[i].W - e * paramset.or[i].W) - 
-        X * (real.(paramset.ϕr[i].W) - real.(paramset.or[i].W) .* real.(paramset.ϕ.y))
+         X * (real.(paramset.ϕr[i].W) - real.(paramset.or[i].W) .* real.(paramset.ϕ.y))
         Δparamset[i][2] += 
-        X * (imag.(paramset.ϕi[i].W) - real.(paramset.oi[i].W) .* imag.(paramset.ϕ.y))
+        -X * (imag.(paramset.ϕi[i].W) - real.(paramset.oi[i].W) .* imag.(paramset.ϕ.y))
         Δparamset[i][3] += 
         real.(paramset.oe[i].b - e * paramset.or[i].b) - 
-        X * (real.(paramset.ϕr[i].b) - real.(paramset.or[i].b) .* real.(paramset.ϕ.y))
+         X * (real.(paramset.ϕr[i].b) - real.(paramset.or[i].b) .* real.(paramset.ϕ.y))
         Δparamset[i][4] += 
-        X * (imag.(paramset.ϕi[i].b) - real.(paramset.oi[i].b) .* imag.(paramset.ϕ.y))
+        -X * (imag.(paramset.ϕi[i].b) - real.(paramset.oi[i].b) .* imag.(paramset.ϕ.y))
     end
 end
 
