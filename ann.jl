@@ -27,7 +27,7 @@ end
 function ParamSet()
     o  = Vector{Parameters}(undef, Const.layers_num)
     oe = Vector{Parameters}(undef, Const.layers_num)
-    ob = Vector{Parameters}(undef, Const.layers_num)
+    oϕ = Vector{Parameters}(undef, Const.layers_num)
     for i in 1:Const.layers_num
         W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
         b = zeros(Complex{Float32}, Const.layer[i+1])
@@ -36,7 +36,7 @@ function ParamSet()
         oϕ[i] = Params(W, b)
     end
     ϕ = WaveFunction(0f0im, 0f0im)
-    ParamSet(o, oe, ob, ϕ)
+    ParamSet(o, oe, oϕ, ϕ)
 end
 
 # Define Network
@@ -140,7 +140,6 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     paramset.ϕ.x += conj(ϕ) * ϕ
     paramset.ϕ.y += ϕ
 end
-end
 
 opt(lr::Float32) = AMSGrad(lr, (0.9, 0.999))
 
@@ -159,13 +158,13 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
     r = sqrt((e + X * real(paramset.ϕ.x))^2 + (X * imag(paramset.ϕ.x))^2)
     for i in 1:Const.layers_num
         Δparamset[i][1] += 
-        ((real.(paramset.oe[i].W - e * paramset.o[i].W) - 
-          X * (real.(paramset.oϕ[i].W) - real.(paramset.o[i].W) .* real.(paramset.ϕ.y))) - 
-          X * (imag.(paramset.oϕ[i].W) - real.(paramset.o[i].W) .* imag.(paramset.ϕ.y))) / r
+        ((e + X * real(paramset.ϕ.x)) * (real.(paramset.oe[i].W - e * paramset.o[i].W) - 
+          X * (real.(paramset.oϕ[i].W) - real.(paramset.o[i].W) .* real.(paramset.ϕ.y))) +
+         (X * imag(paramset.ϕ.x)) * X * (imag.(paramset.oϕ[i].W) - real.(paramset.o[i].W) .* imag.(paramset.ϕ.y))) / r
         Δparamset[i][2] += 
-        ((real.(paramset.oe[i].b - e * paramset.o[i].b) - 
-          X * (real.(paramset.oϕ[i].b) - real.(paramset.o[i].b) .* real.(paramset.ϕ.y))) - 
-          X * (imag.(paramset.oϕ[i].b) - real.(paramset.o[i].b) .* imag.(paramset.ϕ.y))) / r
+        ((e + X * real(paramset.ϕ.x)) * (real.(paramset.oe[i].b - e * paramset.o[i].b) - 
+          X * (real.(paramset.oϕ[i].b) - real.(paramset.o[i].b) .* real.(paramset.ϕ.y))) +
+         (X * imag(paramset.ϕ.x)) * X * X * (imag.(paramset.oϕ[i].b) - real.(paramset.o[i].b) .* imag.(paramset.ϕ.y))) / r
     end
 end
 
