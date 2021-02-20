@@ -130,8 +130,8 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     gs = gradient(() -> loss(x), network.q)
     ϕ = exp(forward_b(x) - forward(x))
     for i in 1:Const.layers_num
-        dw = gs[network.f[i].W]
-        db = gs[network.f[i].b]
+        dw = gs[network.g[i].W]
+        db = gs[network.g[i].b]
         paramset.o[i].W  += dw
         paramset.o[i].b  += db
         paramset.oe[i].W += dw .* e
@@ -160,12 +160,10 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
     for i in 1:Const.layers_num
         Δparamset[i][1] += 
         real.(paramset.oe[i].W - e * paramset.o[i].W) - 
-        X * (real.(paramset.ob[i].W) - real.(paramset.o[i].W) .* real.(paramset.b.ϕ)) - 
-        Const.η .* X * (imag.(paramset.ob[i].W) - real.(paramset.o[i].W) .* imag.(paramset.b.ϕ))
+        X * (real.(paramset.ob[i].W) - real.(paramset.o[i].W) .* real.(paramset.b.ϕ))
         Δparamset[i][2] += 
         real.(paramset.oe[i].b - e * paramset.o[i].b) - 
-        X * (real.(paramset.ob[i].b) - real.(paramset.o[i].b) .* real.(paramset.b.ϕ)) - 
-        Const.η .* X * (imag.(paramset.ob[i].b) - real.(paramset.o[i].b) .* imag.(paramset.b.ϕ))
+        X * (real.(paramset.ob[i].b) - real.(paramset.o[i].b) .* real.(paramset.b.ϕ))
     end
 end
 
