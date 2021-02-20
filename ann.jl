@@ -155,16 +155,13 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
     paramset.ϕ.x /= Const.iters_num
     paramset.ϕ.y /= Const.iters_num
     X = 1f0 / sqrt(real(paramset.ϕ.x))
-    r = sqrt((e + X * real(paramset.ϕ.x))^2 + (X * imag(paramset.ϕ.x))^2)
     for i in 1:Const.layers_num
         Δparamset[i][1] += 
-        ((e + X * real(paramset.ϕ.x)) * (real.(paramset.oe[i].W - e * paramset.o[i].W) - 
-          X * (real.(paramset.oϕ[i].W) - real.(paramset.o[i].W) .* real.(paramset.ϕ.y))) +
-         (X * imag(paramset.ϕ.x)) * X * (imag.(paramset.oϕ[i].W) - real.(paramset.o[i].W) .* imag.(paramset.ϕ.y))) / r
+        real.(paramset.oe[i].W - e * paramset.o[i].W) - 
+        X * (real.(paramset.oϕ[i].W) - real.(paramset.o[i].W) .* real.(paramset.ϕ.y))
         Δparamset[i][2] += 
-        ((e + X * real(paramset.ϕ.x)) * (real.(paramset.oe[i].b - e * paramset.o[i].b) - 
-          X * (real.(paramset.oϕ[i].b) - real.(paramset.o[i].b) .* real.(paramset.ϕ.y))) +
-         (X * imag(paramset.ϕ.x)) * X * X * (imag.(paramset.oϕ[i].b) - real.(paramset.o[i].b) .* imag.(paramset.ϕ.y))) / r
+        real.(paramset.oe[i].b - e * paramset.o[i].b) - 
+        X * (real.(paramset.oϕ[i].b) - real.(paramset.o[i].b) .* real.(paramset.ϕ.y))
     end
 end
 
