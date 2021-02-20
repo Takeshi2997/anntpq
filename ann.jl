@@ -13,32 +13,30 @@ mutable struct Params{S<:AbstractArray, T<:AbstractArray} <: Parameters
     b::T
 end
 mutable struct WaveFunction{S<:Complex} <: Parameters
-    ϕ::S
+    x::S
+    y::S
 end
 
 mutable struct ParamSet{T <: Parameters}
     o::Vector{T}
     oe::Vector{T}
-    ob::Vector{T}
-    b::T
-    x::T
+    oϕ::Vector{T}
+    ϕ::T
 end
 
 function ParamSet()
     o  = Vector{Parameters}(undef, Const.layers_num)
     oe = Vector{Parameters}(undef, Const.layers_num)
     ob = Vector{Parameters}(undef, Const.layers_num)
-    b  = Parameters
     for i in 1:Const.layers_num
         W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
         b = zeros(Complex{Float32}, Const.layer[i+1])
-        global o[i]  = Params(W, b)
-        global oe[i] = Params(W, b)
-        global ob[i] = Params(W, b)
+        o[i]  = Params(W, b)
+        oe[i] = Params(W, b)
+        oϕ[i] = Params(W, b)
     end
-    global b = WaveFunction(0f0im)
-    global x = WaveFunction(0f0im)
-    ParamSet(o, oe, ob, b, x)
+    ϕ = WaveFunction(0f0im, 0f0im)
+    ParamSet(o, oe, ob, ϕ)
 end
 
 # Define Network
@@ -136,11 +134,12 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
         paramset.o[i].b  += db
         paramset.oe[i].W += dw .* e
         paramset.oe[i].b += db .* e
-        paramset.ob[i].W += dw .* ϕ
-        paramset.ob[i].b += db .* ϕ
+        paramset.oϕ[i].W += dw .* ϕ
+        paramset.oϕ[i].b += db .* ϕ
     end
-    paramset.b.ϕ += ϕ
-    paramset.x.ϕ += conj(ϕ) * ϕ
+    paramset.ϕ.x += conj(ϕ) * ϕ
+    paramset.ϕ.y += ϕ
+end
 end
 
 opt(lr::Float32) = AMSGrad(lr, (0.9, 0.999))
@@ -151,22 +150,22 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
         paramset.o[i].b  ./= Const.iters_num
         paramset.oe[i].W ./= Const.iters_num
         paramset.oe[i].b ./= Const.iters_num
-        paramset.ob[i].W ./= Const.iters_num
-        paramset.ob[i].b ./= Const.iters_num
+        paramset.oϕ[i].W ./= Const.iters_num
+        paramset.oϕ[i].b ./= Const.iters_num
     end
-    paramset.b.ϕ /= Const.iters_num
-    paramset.x.ϕ /= Const.iters_num
-    X = 1f0 / sqrt(real(paramset.x.ϕ))
-    r = sqrt((e + X * real(paramset.x.ϕ))^2 + (imag(paramset.x.ϕ))^2)
+    paramset.ϕ.x /= Const.iters_num
+    paramset.ϕ.y /= Const.iters_num
+    X = 1f0 / sqrt(real(paramset.ϕ.x))
+    r = sqrt((e + X * real(paramset.ϕ.x))^2 + (X * imag(paramset.ϕ.x))^2)
     for i in 1:Const.layers_num
         Δparamset[i][1] += 
         ((real.(paramset.oe[i].W - e * paramset.o[i].W) - 
-          X * (real.(paramset.ob[i].W) - real.(paramset.o[i].W) .* real.(paramset.b.ϕ))) - 
-          X * (imag.(paramset.ob[i].W) - real.(paramset.o[i].W) .* imag.(paramset.b.ϕ))) / r
+          X * (real.(paramset.oϕ[i].W) - real.(paramset.o[i].W) .* real.(paramset.ϕ.y))) - 
+          X * (imag.(paramset.oϕ[i].W) - real.(paramset.o[i].W) .* imag.(paramset.ϕ.y))) / r
         Δparamset[i][2] += 
         ((real.(paramset.oe[i].b - e * paramset.o[i].b) - 
-          X * (real.(paramset.ob[i].b) - real.(paramset.o[i].b) .* real.(paramset.b.ϕ))) - 
-          X * (imag.(paramset.ob[i].b) - real.(paramset.o[i].b) .* imag.(paramset.b.ϕ))) / r
+          X * (real.(paramset.oϕ[i].b) - real.(paramset.o[i].b) .* real.(paramset.ϕ.y))) - 
+          X * (imag.(paramset.oϕ[i].b) - real.(paramset.o[i].b) .* imag.(paramset.ϕ.y))) / r
     end
 end
 
