@@ -51,7 +51,7 @@ end
 function Network()
     layers = Vector(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layers[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
+        layers[i] = Dense(Const.layer[i], Const.layer[i+1], swish)
     end
     layers[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layers[i] for i in 1:Const.layers_num]...)
@@ -89,7 +89,7 @@ end
 function init_sub()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
+        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i])
         b = Flux.zeros(Const.layer[i+1]) 
         parameters[i] = [W, b]
     end
@@ -101,7 +101,7 @@ end
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
+        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i])
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
@@ -155,13 +155,18 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
     paramset.ϕ.x /= Const.iters_num
     paramset.ϕ.y /= Const.iters_num
     X = 1f0 / sqrt(real(paramset.ϕ.x))
+    u = e / 2f0 - real(X * paramset.ϕ.y)
+    v = imag(X * paramset.ϕ.y)
+    r = sqrt(u^2 + v^2)
     for i in 1:Const.layers_num
-        Δparamset[i][1] += 
-        real.(paramset.oe[i].W - e * paramset.o[i].W) - 
-        X * (real.(paramset.oϕ[i].W) - real.(paramset.o[i].W) .* real.(paramset.ϕ.y))
-        Δparamset[i][2] += 
-        real.(paramset.oe[i].b - e * paramset.o[i].b) - 
-        X * (real.(paramset.oϕ[i].b) - real.(paramset.o[i].b) .* real.(paramset.ϕ.y))
+        ∂uW = real.(paramset.oe[i].W - e * paramset.o[i].W) -
+              X * (real.(paramset.oϕ[i].W) - real.(paramset.o[i].W) .* real.(paramset.ϕ.y))
+        ∂vW = X * (imag.(paramset.oϕ[i].W) - real.(paramset.o[i].W) .* imag.(paramset.ϕ.y))
+        Δparamset[i][1] += (u .* ∂uW + v * ∂vW) / r
+        ∂ub = real.(paramset.oe[i].b - e * paramset.o[i].b) -
+              X * (real.(paramset.oϕ[i].b) - real.(paramset.o[i].b) .* real.(paramset.ϕ.y))
+        ∂vb = X * (imag.(paramset.oϕ[i].b) - real.(paramset.o[i].b) .* imag.(paramset.ϕ.y))
+        Δparamset[i][2] += (u .* ∂ub + v .* ∂vb) / r
     end
 end
 
