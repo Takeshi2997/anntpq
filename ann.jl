@@ -179,7 +179,7 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
         Δparamset[i][2] += imagΔW
         realΔb = real.(paramset.realoe[i].b - e * paramset.realo[i].b) -
                  X * (real.(paramset.realoϕ[i].b) - real.(paramset.realo[i].b) .* real.(paramset.ϕ.y))
-        imagΔb = imag.(paramset.realoe[i].b ) - X * imag.(paramset.imagoϕ[i].b)
+        imagΔb = imag.(paramset.imagoe[i].b ) - X * imag.(paramset.imagoϕ[i].b)
         Δparamset[i][3] += realΔb
         Δparamset[i][4] += imagΔb
     end
