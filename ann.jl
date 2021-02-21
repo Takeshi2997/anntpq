@@ -22,6 +22,7 @@ mutable struct ParamSet{T <: Parameters}
     realoe::Vector{T}
     realoϕ::Vector{T}
     imago::Vector{T}
+    imagoe::Vector{T}
     imagoϕ::Vector{T}
     ϕ::T
 end
@@ -34,7 +35,7 @@ function ParamSet()
         p[i]  = Params(W, b)
     end
     ϕ = WaveFunction(0f0im, 0f0im)
-    ParamSet(p, p, p, p, p, ϕ)
+    ParamSet(p, p, p, p, p, p, ϕ)
 end
 
 # Define Network
@@ -143,6 +144,8 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
         paramset.realoϕ[i].b += realdb .* ϕ
         paramset.imago[i].W  += imagdw
         paramset.imago[i].b  += imagdb
+        paramset.imagoe[i].W += imagdw .* e
+        paramset.imagoe[i].b += imagdb .* e
         paramset.imagoϕ[i].W += imagdw .* ϕ
         paramset.imagoϕ[i].b += imagdb .* ϕ
     end
@@ -160,6 +163,8 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
         paramset.realoϕ[i].b ./= Const.iters_num
         paramset.imago[i].W  ./= Const.iters_num
         paramset.imago[i].b  ./= Const.iters_num
+        paramset.imagoe[i].W ./= Const.iters_num
+        paramset.imagoe[i].b ./= Const.iters_num
         paramset.imagoϕ[i].W ./= Const.iters_num
         paramset.imagoϕ[i].b ./= Const.iters_num
     end
@@ -167,14 +172,14 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
     paramset.ϕ.y /= Const.iters_num
     X = 1f0 / sqrt(real(paramset.ϕ.x))
     for i in 1:Const.layers_num
-        realΔW = -X * (imag.(paramset.imagoϕ[i].W) - real.(paramset.imago[i].W) .* imag.(paramset.ϕ.y))
-        imagΔW = real.(paramset.realoe[i].W - e * paramset.realo[i].W) -
-                  X * (real.(paramset.realoϕ[i].W) - real.(paramset.realo[i].W) .* real.(paramset.ϕ.y))
+        realΔW = real.(paramset.realoe[i].W - e * paramset.realo[i].W) -
+                 X * (real.(paramset.realoϕ[i].W) - real.(paramset.realo[i].W) .* real.(paramset.ϕ.y))
+        imagΔW = imag.(paramset.imagoe[i].W) - X * imag.(paramset.imagoϕ[i].W)
         Δparamset[i][1] += realΔW
         Δparamset[i][2] += imagΔW
-        realΔb = -X * (imag.(paramset.imagoϕ[i].b) - real.(paramset.realo[i].b) .* imag.(paramset.ϕ.y))
-        imagΔb = real.(paramset.realoe[i].b - e * paramset.realo[i].b) -
-                  X * (real.(paramset.realoϕ[i].b) - real.(paramset.realo[i].b) .* real.(paramset.ϕ.y))
+        realΔb = real.(paramset.realoe[i].b - e * paramset.realo[i].b) -
+                 X * (real.(paramset.realoϕ[i].b) - real.(paramset.realo[i].b) .* real.(paramset.ϕ.y))
+        imagΔb = imag.(paramset.realoe[i].b ) - X * imag.(paramset.imagoϕ[i].b)
         Δparamset[i][3] += realΔb
         Δparamset[i][4] += imagΔb
     end
