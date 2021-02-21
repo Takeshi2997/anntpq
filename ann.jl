@@ -168,13 +168,13 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
     X = 1f0 / sqrt(real(paramset.ϕ.x))
     for i in 1:Const.layers_num
         realΔW = real.(paramset.realoe[i].W - e * paramset.realo[i].W) -
-                 X * (real.(paramset.realoϕ[i].W) - real.(paramset.realo[i].W) .* real.(paramset.ϕ.y))
-        imagΔW = X * (imag.(paramset.imagoϕ[i].W) - real.(paramset.imago[i].W) .* imag.(paramset.ϕ.y))
+                  X * (real.(paramset.realoϕ[i].W) - real.(paramset.realo[i].W) .* real.(paramset.ϕ.y))
+        imagΔW = -X * (imag.(paramset.imagoϕ[i].W) - real.(paramset.imago[i].W) .* imag.(paramset.ϕ.y))
         Δparamset[i][1] += realΔW
         Δparamset[i][2] += imagΔW
         realΔb = real.(paramset.realoe[i].b - e * paramset.realo[i].b) -
-                 X * (real.(paramset.realoϕ[i].b) - real.(paramset.realo[i].b) .* real.(paramset.ϕ.y))
-        imagΔb = X * (imag.(paramset.imagoϕ[i].b) - real.(paramset.realo[i].b) .* imag.(paramset.ϕ.y))
+                  X * (real.(paramset.realoϕ[i].b) - real.(paramset.realo[i].b) .* real.(paramset.ϕ.y))
+        imagΔb = -X * (imag.(paramset.imagoϕ[i].b) - real.(paramset.realo[i].b) .* imag.(paramset.ϕ.y))
         Δparamset[i][3] += realΔb
         Δparamset[i][4] += imagΔb
     end
