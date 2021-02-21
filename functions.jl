@@ -72,7 +72,7 @@ function energyB(x::Vector{Float32})
 end
 
 function residue(e::Complex{Float32}, x::Vector{Float32})
-    ϕ = exp(ANN.forward_b(x) - ANN.forward(x))
+    ϕ = conj(exp(ANN.forward_b(x) - ANN.forward(x)))
     return abs2(e - ϕ)
 end
 end
