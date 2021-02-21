@@ -14,7 +14,7 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
 
     # Inverse Iterative mathod Start
     for n in 1:Const.it_num
-        residue, energyS, energyB, numberB = sampling(ϵ, lr)
+        residue, energyS, energyB, numberB = sampling(ϵ, lr, n)
         open(filename, "a") do io
             write(io, string(n))
             write(io, "\t")
@@ -36,7 +36,7 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
     return error, energyS, energyB, numberB
 end
 
-function sampling(ϵ::Float32, lr::Float32)
+function sampling(ϵ::Float32, lr::Float32, n::Integer)
     # Initialize
     batchenergyS = zeros(Float32, Const.batchsize)
     batchenergyB = zeros(Float32, Const.batchsize)
@@ -65,7 +65,7 @@ function sampling(ϵ::Float32, lr::Float32)
     energyS = mean(batchenergyS)
     energyB = mean(batchenergyB)
     numberB = mean(batchnumberB)
-    Func.ANN.update(Δparamset, lr)
+    Func.ANN.update(Δparamset, lr, n)
 
     # Output
     return residue, energyS, energyB, numberB

@@ -141,8 +141,6 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     paramset.ϕ.y += ϕ
 end
 
-opt(lr::Float32) = AMSGrad(lr, (0.9, 0.999))
-
 function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::Vector)
     for i in 1:Const.layers_num
         paramset.o[i].W  ./= Const.iters_num
@@ -170,7 +168,11 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
     end
 end
 
-function update(Δparamset::Vector, lr::Float32)
+opt1(lr::Float32) = Descent(lr)
+opt2(lr::Float32) = AMSGrad(lr, (0.9, 0.999))
+
+function update(Δparamset::Vector, lr::Float32, n::Integer)
+    opt = ifelse(n > 20, opt1, opt2)
     for i in 1:Const.layers_num
         ΔW = Δparamset[i][1]
         Δb = Δparamset[i][2]
