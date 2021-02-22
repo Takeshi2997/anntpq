@@ -18,9 +18,9 @@ mutable struct WaveFunction{S<:Complex} <: Parameters
 end
 
 mutable struct ParamSet{T <: Parameters}
-    o::Vector{Vector{T}}
-    oe::Vector{Vector{T}}
-    oϕ::Vector{Vector{T}}
+    o::Vector{T}
+    oe::Vector{T}
+    oϕ::Vector{T}
     ϕ::T
 end
 
@@ -29,10 +29,11 @@ function ParamSet()
     for i in 1:Const.layers_num
         W = zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i])
         b = zeros(Complex{Float32}, Const.layer[i+1])
-        p[i]  = Params([W, W], [b, b])
+        p[i]  = Params(W, b)
     end
+    pvec = [p, p]
     ϕ = WaveFunction(0f0im, 0f0im)
-    ParamSet(p, p, p, ϕ)
+    ParamSet(pvec, pvec, pvec, ϕ)
 end
 
 # Define Network
@@ -129,16 +130,16 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
         dyw = imaggs[network.g[2][i].W]
         dxb = realgs[network.g[1][i].b]
         dyb = imaggs[network.g[2][i].b]
-        paramset.o[i][1].W  += dxw
-        paramset.o[i][1].b  += dxb
-        paramset.oe[i][1].W += dxw .* e
-        paramset.oe[i][1].b += dxb .* e
-        paramset.oϕ[i][1].W += dxw .* ϕ
-        paramset.oϕ[i][1].b += dxb .* ϕ
-        paramset.oe[i][2].W += dyw .* e
-        paramset.oe[i][2].b += dyb .* e
-        paramset.oϕ[i][2].W += dyw .* ϕ
-        paramset.oϕ[i][2].b += dyb .* ϕ
+        paramset.o[1][i].W  += dxw
+        paramset.o[1][i].b  += dxb
+        paramset.oe[1][i].W += dxw .* e
+        paramset.oe[1][i].b += dxb .* e
+        paramset.oϕ[1][i].W += dxw .* ϕ
+        paramset.oϕ[1][i].b += dxb .* ϕ
+        paramset.oe[2][i].W += dyw .* e
+        paramset.oe[2][i].b += dyb .* e
+        paramset.oϕ[2][i].W += dyw .* ϕ
+        paramset.oϕ[2][i].b += dyb .* ϕ
     end
     paramset.ϕ.x += conj(ϕ) * ϕ
     paramset.ϕ.y += ϕ
@@ -149,16 +150,16 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
     X = 1f0 / sqrt(real(paramset.ϕ.x))
     ϕ =  real.(X * paramset.ϕ.y / Const.iters_num)
     for i in 1:Const.layers_num
-        oxW  = real.(paramset.o[i][1].W  / Const.iters_num)
-        oxb  = real.(paramset.o[i][1].b  / Const.iters_num)
-        oxeW = real.(paramset.oe[i][1].W / Const.iters_num)
-        oxeb = real.(paramset.oe[i][1].b / Const.iters_num)
-        oxϕW = real.(X * paramset.oϕ[i][1].W / Const.iters_num)
-        oxϕb = real.(X * paramset.oϕ[i][1].b / Const.iters_num)
-        oyeW = imag.(paramset.oe[i][2].W / Const.iters_num)
-        oyeb = imag.(paramset.oe[i][2].b / Const.iters_num)
-        oyϕW = imag.(X * paramset.oϕ[i][2].W / Const.iters_num)
-        oyϕb = imag.(X * paramset.oϕ[i][2].b / Const.iters_num)
+        oxW  = real.(paramset.o[1][i].W  / Const.iters_num)
+        oxb  = real.(paramset.o[1][i].b  / Const.iters_num)
+        oxeW = real.(paramset.oe[1][i].W / Const.iters_num)
+        oxeb = real.(paramset.oe[1][i].b / Const.iters_num)
+        oxϕW = real.(paramset.oϕ[1][i].W / Const.iters_num .* X)
+        oxϕb = real.(paramset.oϕ[1][i].b / Const.iters_num .* X)
+        oyeW = imag.(paramset.oe[2][i].W / Const.iters_num)
+        oyeb = imag.(paramset.oe[2][i].b / Const.iters_num)
+        oyϕW = imag.(paramset.oϕ[2][i].W / Const.iters_num .* X)
+        oyϕb = imag.(paramset.oϕ[2][i].b / Const.iters_num .* X)
         realΔW = oxeW - e * oxW - oxϕW + oxW .* ϕ
         imagΔW = oxeb - e * oxb - oxϕb + oxb .* ϕ
         realΔb = oyeW - oyϕW
