@@ -18,9 +18,9 @@ mutable struct WaveFunction{S<:Complex} <: Parameters
 end
 
 mutable struct ParamSet{T <: Parameters}
-    o::Vector{T}
-    oe::Vector{T}
-    oϕ::Vector{T}
+    o::Vector{Vector{T}}
+    oe::Vector{Vector{T}}
+    oϕ::Vector{Vector{T}}
     ϕ::T
 end
 
