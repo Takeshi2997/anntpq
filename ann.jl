@@ -61,7 +61,9 @@ network = Network()
 
 function save(filename)
     f = getfield(network, :f)
-    @save filename f[1] f[2]
+    f1 = f[1]
+    f2 = f[2]
+    @save filename f1 f2
 end
 
 function load(filename)
