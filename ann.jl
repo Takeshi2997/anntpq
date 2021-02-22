@@ -147,12 +147,12 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
     X = 1f0 / sqrt(real(paramset.ϕ.x))
     ϕ =  X * paramset.ϕ.y / Const.iters_num
     for i in 1:Const.layers_num
-        oW  = paramset.oX[i].W  / Const.iters_num
-        ob  = paramset.oX[i].b  / Const.iters_num
-        oeW = paramset.oXe[i].W / Const.iters_num
-        oeb = paramset.oXe[i].b / Const.iters_num
-        oϕW = X * paramset.oXϕ[i].W / Const.iters_num
-        oϕb = X * paramset.oXϕ[i].b / Const.iters_num
+        oW  = paramset.o[i].W  / Const.iters_num
+        ob  = paramset.o[i].b  / Const.iters_num
+        oeW = paramset.oe[i].W / Const.iters_num
+        oeb = paramset.oe[i].b / Const.iters_num
+        oϕW = X * paramset.oϕ[i].W / Const.iters_num
+        oϕb = X * paramset.oϕ[i].b / Const.iters_num
         realΔW =  real.(oeW) - e * real.(oW) - real.(oϕW) + real.(oW) .* real(ϕ)
         imagΔW = -imag.(oeW) + e * imag.(oW) + imag.(oϕW) - imag.(oW) .* real(ϕ)
         realΔb =  real.(oeb) - e * real.(ob) - real.(oϕb) + real.(ob) .* real(ϕ) 
