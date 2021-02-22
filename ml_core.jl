@@ -36,7 +36,7 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
     return error, energyS, energyB, numberB
 end
 
-function sampling(ϵ::Float32, lr::Float32, n::Integer)
+function sampling(ϵ::Float32, lr::Float32, m::Integer)
     # Initialize
     batchenergyS = zeros(Float32, Const.batchsize)
     batchenergyB = zeros(Float32, Const.batchsize)
@@ -67,7 +67,7 @@ function sampling(ϵ::Float32, lr::Float32, n::Integer)
     energyS = mean(batchenergyS)
     energyB = mean(batchenergyB)
     numberB = mean(batchnumberB)
-    Func.ANN.update(Δparamset, lr)
+    Func.ANN.update(Δparamset, lr, m)
 
     # Output
     return residue, energyS, energyB, numberB
