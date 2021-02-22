@@ -153,10 +153,10 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
         oeb = paramset.oe[i].b / Const.iters_num
         oϕW = X * paramset.oϕ[i].W / Const.iters_num
         oϕb = X * paramset.oϕ[i].b / Const.iters_num
-        realΔW =  real.(oeW) - e * real.(oW) - real.(oϕW) + real.(oW) .* real(ϕ)
-        imagΔW = -imag.(oeW) + e * imag.(oW) + imag.(oϕW) - imag.(oW) .* real(ϕ)
-        realΔb =  real.(oeb) - e * real.(ob) - real.(oϕb) + real.(ob) .* real(ϕ) 
-        imagΔb = -imag.(oeb) + e * imag.(ob) + imag.(oϕb) - imag.(ob) .* real(ϕ) 
+        realΔW = real.(oeW) - e * real.(oW) - real.(oϕW) + real.(oW) .* real(ϕ)
+        imagΔW = imag.(oeW) - e * imag.(oW) - imag.(oϕW) + imag.(oW) .* real(ϕ)
+        realΔb = real.(oeb) - e * real.(ob) - real.(oϕb) + real.(ob) .* real(ϕ) 
+        imagΔb = imag.(oeb) - e * imag.(ob) - imag.(oϕb) + imag.(ob) .* real(ϕ) 
         Δparamset[i][1] += realΔW
         Δparamset[i][2] += imagΔW
         Δparamset[i][3] += realΔb
