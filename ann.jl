@@ -164,11 +164,9 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
     end
 end
 
-opt1(lr::Float32) = Descent(lr)
-opt2(lr::Float32) = AMSGrad(lr, (0.9, 0.999))
+opt(lr::Float32) = AMSGrad(lr, (0.9, 0.999))
 
-function update(Δparamset::Vector, lr::Float32, m::Integer)
-    opt = ifelse(m > 10, opt1, opt2)
+function update(Δparamset::Vector, lr::Float32)
     for i in 1:Const.layers_num
         ΔrealW = Δparamset[i][1]
         ΔimagW = Δparamset[i][2]
