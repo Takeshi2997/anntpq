@@ -9,8 +9,8 @@ using BSON: @load
 # Initialize
 abstract type Parameters end
 mutable struct Params{S<:AbstractArray, T<:AbstractArray} <: Parameters
-    W::Vector{S}
-    b::Vector{T}
+    W::S
+    b::T
 end
 mutable struct WaveFunction{S<:Complex} <: Parameters
     x::S
@@ -18,9 +18,9 @@ mutable struct WaveFunction{S<:Complex} <: Parameters
 end
 
 mutable struct ParamSet{T <: Parameters}
-    o::Vector{T}
-    oe::Vector{T}
-    oϕ::Vector{T}
+    o::Vector{Vector{T}}
+    oe::Vector{Vector{T}}
+    oϕ::Vector{Vector{T}}
     ϕ::T
 end
 
@@ -161,8 +161,8 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
         oyϕW = imag.(paramset.oϕ[2][i].W / Const.iters_num .* X)
         oyϕb = imag.(paramset.oϕ[2][i].b / Const.iters_num .* X)
         realΔW = oxeW - e * oxW - oxϕW + oxW .* ϕ
-        imagΔW = oxeb - e * oxb - oxϕb + oxb .* ϕ
-        realΔb = oyeW - oyϕW
+        realΔb = oxeb - e * oxb - oxϕb + oxb .* ϕ
+        imagΔW = oyeW - oyϕW
         imagΔb = oyeb - oyϕb
         Δparamset[i][1] += realΔW
         Δparamset[i][2] += imagΔW
@@ -175,10 +175,10 @@ opt(lr::Float32) = Descent(lr)
 
 function update(Δparamset::Vector, lr::Float32)
     for i in 1:Const.layers_num
-        update!(opt(lr), network.gX[i].W, Δparamset[i][1])
-        update!(opt(lr), network.gY[i].W, Δparamset[i][2])
-        update!(opt(lr), network.gX[i].b, Δparamset[i][3])
-        update!(opt(lr), network.gY[i].b, Δparamset[i][4])
+        update!(opt(lr), network.g[1][i].W, Δparamset[i][1])
+        update!(opt(lr), network.g[2][i].W, Δparamset[i][2])
+        update!(opt(lr), network.g[1][i].b, Δparamset[i][3])
+        update!(opt(lr), network.g[2][i].b, Δparamset[i][4])
     end
 end
 end
