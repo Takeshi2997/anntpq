@@ -168,14 +168,10 @@ opt(lr::Float32) = AMSGrad(lr, (0.9, 0.999))
 
 function update(Δparamset::Vector, lr::Float32)
     for i in 1:Const.layers_num
-        ΔrealW = Δparamset[i][1]
-        ΔimagW = Δparamset[i][2]
-        Δrealb = Δparamset[i][3]
-        Δimagb = Δparamset[i][4]
-        update!(opt(lr), network.gX[i].W, ΔrealW)
-        update!(opt(lr), network.gY[i].W, ΔimagW)
-        update!(opt(lr), network.gX[i].b, Δrealb)
-        update!(opt(lr), network.gY[i].b, Δimagb)
+        update!(opt(lr), network.gX[i].W, Δparamset[i][1])
+        update!(opt(lr), network.gY[i].W, Δparamset[i][2])
+        update!(opt(lr), network.gX[i].b, Δparamset[i][3])
+        update!(opt(lr), network.gY[i].b, Δparamset[i][4])
     end
 end
 end
