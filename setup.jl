@@ -21,6 +21,6 @@ const lr = 1f-3
 # Network Params
 const layer = [dimB+dimS, 24, 24, 24, 1]
 const layers_num = length(layer) - 1
-const batchsize = 16
+const batchsize = 64
 
 end

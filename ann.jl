@@ -18,12 +18,9 @@ mutable struct WaveFunction{S<:Complex} <: Parameters
 end
 
 mutable struct ParamSet{T <: Parameters}
-    oX::Vector{T}
-    oXe::Vector{T}
-    oXϕ::Vector{T}
-    oY::Vector{T}
-    oYe::Vector{T}
-    oYϕ::Vector{T}
+    o::Vector{T}
+    oe::Vector{T}
+    oϕ::Vector{T}
     ϕ::T
 end
 
@@ -35,7 +32,7 @@ function ParamSet()
         p[i]  = Params(W, b)
     end
     ϕ = WaveFunction(0f0im, 0f0im)
-    ParamSet(p, p, p, p, p, p, ϕ)
+    ParamSet(p, p, p, ϕ)
 end
 
 # Define Network
@@ -132,22 +129,14 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     imaggs = gradient(() -> imagloss(x), network.qY)
     ϕ = exp(forward_f(x) - forward(x))
     for i in 1:Const.layers_num
-        realdw = realgs[network.gX[i].W]
-        realdb = realgs[network.gX[i].b]
-        imagdw = imaggs[network.gY[i].W]
-        imagdb = imaggs[network.gY[i].b]
-        paramset.oX[i].W  += realdw
-        paramset.oX[i].b  += realdb
-        paramset.oXe[i].W += realdw .* e
-        paramset.oXe[i].b += realdb .* e
-        paramset.oXϕ[i].W += realdw .* ϕ
-        paramset.oXϕ[i].b += realdb .* ϕ
-        paramset.oY[i].W  += imagdw
-        paramset.oY[i].b  += imagdb
-        paramset.oYe[i].W += imagdw .* e
-        paramset.oYe[i].b += imagdb .* e
-        paramset.oYϕ[i].W += imagdw .* ϕ
-        paramset.oYϕ[i].b += imagdb .* ϕ
+        dw = realgs[network.gX[i].W] - im * imaggs[network.gY[i].W]
+        db = realgs[network.gX[i].b] - im * imaggs[network.gY[i].b]
+        paramset.o[i].W  += dw
+        paramset.o[i].b  += db
+        paramset.oe[i].W += dw .* e
+        paramset.oe[i].b += db .* e
+        paramset.oϕ[i].W += dw .* ϕ
+        paramset.oϕ[i].b += db .* ϕ
     end
     paramset.ϕ.x += conj(ϕ) * ϕ
     paramset.ϕ.y += ϕ
@@ -158,22 +147,16 @@ function updateparams(e::Float32, lr::Float32, paramset::ParamSet, Δparamset::V
     X = 1f0 / sqrt(real(paramset.ϕ.x))
     ϕ =  X * paramset.ϕ.y / Const.iters_num
     for i in 1:Const.layers_num
-        oXW  = real.(paramset.oX[i].W  / Const.iters_num)
-        oXb  = real.(paramset.oX[i].b  / Const.iters_num)
-        oXeW = paramset.oXe[i].W / Const.iters_num
-        oXeb = paramset.oXe[i].b / Const.iters_num
-        oXϕW = X * paramset.oXϕ[i].W / Const.iters_num
-        oXϕb = X * paramset.oXϕ[i].b / Const.iters_num
-        oYW  = real.(paramset.oY[i].W  / Const.iters_num)
-        oYb  = real.(paramset.oY[i].b  / Const.iters_num)
-        oYeW = paramset.oYe[i].W / Const.iters_num
-        oYeb = paramset.oYe[i].b / Const.iters_num
-        oYϕW = X * paramset.oYϕ[i].W / Const.iters_num
-        oYϕb = X * paramset.oYϕ[i].b / Const.iters_num
-        realΔW = real.(oXeW) - e * oXW - real.(oXϕW) + oXW .* real(ϕ) + imag.(oYeW)  - imag.(oYϕW) + oYW .* imag(ϕ)
-        imagΔW = imag.(oXeW) - imag.(oXϕW) + oXW .* imag(ϕ) - real.(oYeW) + e .* oYW + real.(oYϕW) - oYW .* real(ϕ)
-        realΔb = real.(oXeb) - e * oXb - real.(oXϕb) + oXb .* real(ϕ) + imag.(oYeb)  - imag.(oYϕb) + oYb .* imag(ϕ)
-        imagΔb = imag.(oXeb) - imag.(oXϕb) + oXb .* imag(ϕ) - real.(oYeb) + e .* oYb + real.(oYϕb) - oYb .* real(ϕ)
+        oW  = paramset.oX[i].W  / Const.iters_num
+        ob  = paramset.oX[i].b  / Const.iters_num
+        oeW = paramset.oXe[i].W / Const.iters_num
+        oeb = paramset.oXe[i].b / Const.iters_num
+        oϕW = X * paramset.oXϕ[i].W / Const.iters_num
+        oϕb = X * paramset.oXϕ[i].b / Const.iters_num
+        realΔW =  real.(oeW) - e * real.(oW) - real.(oϕW) + real.(oW) .* real(ϕ)
+        imagΔW = -imag.(oeW) + e * imag.(oW) + imag.(oϕW) - imag.(oW) .* real(ϕ)
+        realΔb =  real.(oeb) - e * real.(ob) - real.(oϕb) + real.(ob) .* real(ϕ) 
+        imagΔb = -imag.(oeb) + e * imag.(ob) + imag.(oϕb) - imag.(ob) .* real(ϕ) 
         Δparamset[i][1] += realΔW
         Δparamset[i][2] += imagΔW
         Δparamset[i][3] += realΔb
