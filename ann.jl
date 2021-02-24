@@ -12,10 +12,9 @@ mutable struct Params{S<:AbstractArray, T<:AbstractArray} <: Parameters
     W::S
     b::T
 end
-mutable struct WaveFunction{S<:Complex, T<:Real} <: Parameters
+mutable struct WaveFunction{S<:Complex} <: Parameters
     x::S
     y::S
-    λ::T
 end
 
 mutable struct ParamSet{T <: Parameters}
@@ -33,7 +32,7 @@ function ParamSet()
         p[i]  = Params(W, b)
     end
     pvec = [p, p]
-    ϕ = WaveFunction(0f0im, 0f0im, 0f0)
+    ϕ = WaveFunction(0f0im, 0f0im)
     ParamSet(pvec, pvec, pvec, ϕ)
 end
 
@@ -50,12 +49,12 @@ end
 function Network()
     layers = Vector(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layers[i] = Dense(Const.layer[i], Const.layer[i+1], swish)
+        layers[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
     end
     layers[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layers[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
-    Network([f, f], [f, f], [p, p], [p, p], 1f0)
+    Network([f, f], [f, f], [p, p], [p, p], 0.0f0)
 end
 
 network = Network()
@@ -96,7 +95,7 @@ end
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i])
+        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
