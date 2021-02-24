@@ -75,40 +75,4 @@ function residue(e::Complex{Float32}, x::Vector{Float32})
     ϕ = exp(ANN.forward_f(x) - ANN.forward(x))
     return abs2(e - ϕ)
 end
-
-function propagationS(x::Vector{Float32},
-                      z::Complex{Float32}, ix::Integer)
-    out = 0f0im
-    ixnext = Const.dimB + (ix - Const.dimB) % Const.dimS + 1
-    if x[ix] != x[ixnext]
-        zflip = ANN.forward_f(a.flip[ixnext] * a.flip[ix] * x)
-        out  += 2f0 * exp(zflip - z) - 1f0
-    else
-        out += 1f0
-    end
-    return -Const.J * out / 4f0
-end
-
-function propagationB(x::Vector{Float32},
-                      z::Complex{Float32}, iy::Integer)
-    out = 0f0im
-    iynext = iy%Const.dimB + 1
-    if x[iy] != x[iynext]
-        zflip = ANN.forward_f(a.flip[iynext] * a.flip[iy] * x)
-        out  += exp(zflip - z)
-    end
-    return -Const.t * out
-end
-
-function propaga(x::Vector{Float32})
-    z = ANN.forward(x)
-    sum = 0.0f0im
-    for iy in 1:Const.dimB 
-        sum += propagationB(x, z, iy)
-    end
-    for ix in Const.dimB+1:Const.dimB+Const.dimS
-        sum += propagationS(x, z, ix)
-    end
-    return sum
-end
 end
