@@ -42,6 +42,7 @@ function sampling(ϵ::Float32, lr::Float32)
     batchenergyB = zeros(Float32, Const.batchsize)
     batchnumberB = zeros(Float32, Const.batchsize)
     batchresidue = zeros(Float32, Const.batchsize)
+    batchaction  = zeros(Float32, Const.batchsize)
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
         W = zeros(Float32, Const.layer[i+1], Const.layer[i])
@@ -55,7 +56,8 @@ function sampling(ϵ::Float32, lr::Float32)
         batchresidue[n],
         batchenergyS[n],
         batchenergyB[n],
-        batchnumberB[n] = mcmc(paramsetvec[n], Δparamset, ϵ, lr)
+        batchnumberB[n],
+        batchaction[n] = mcmc(paramsetvec[n], Δparamset, ϵ, lr)
     end
     for i in 1:Const.layers_num
         Δparamset[i][1] ./= Const.batchsize
@@ -67,8 +69,8 @@ function sampling(ϵ::Float32, lr::Float32)
     energyS = mean(batchenergyS)
     energyB = mean(batchenergyB)
     numberB = mean(batchnumberB)
-    Δenergy = energyS + energyB - ϵ
-    Func.ANN.update(Δenergy, Δparamset, lr)
+    action  = mean(batchaction)
+    Func.ANN.update(action, Δparamset, lr)
 
     # Output
     return residue, energyS, energyB, numberB
@@ -84,6 +86,7 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     energyB = 0f0
     numberB = 0f0
     residue = 0f0
+    ϕ = 0f0
     x = shuffle(X)
     xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
     
@@ -116,9 +119,10 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     numberB /= Const.iters_num
 
     # Update Parameters
-    Func.ANN.updateparams(energy, lr, paramset, Δparamset)
+    Func.ANN.updateparams(energy, ϕ, lr, paramset, Δparamset)
+    action   = (energy - ϵ) / 2f0 - ϕ
 
-    return residue, energyS, energyB, numberB
+    return residue, energyS, energyB, numberB, action
 end
 
 function calculation_energy(num::Integer)

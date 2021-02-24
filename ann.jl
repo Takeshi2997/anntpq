@@ -54,7 +54,7 @@ function Network()
     layers[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layers[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
-    Network([f, f], [f, f], [p, p], [p, p], 0.0f0)
+    Network([f, f], [f, f], [p, p], [p, p], 1.0f0)
 end
 
 network = Network()
@@ -146,10 +146,10 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     paramset.ϕ.y += ϕ
 end
 
-function updateparams(energy::Float32, lr::Float32, paramset::ParamSet, Δparamset::Vector)
+function updateparams(energy::Float32, ϕ::Float32, lr::Float32, paramset::ParamSet, Δparamset::Vector)
     paramset.ϕ.x /= Const.iters_num
     X = 1f0 / sqrt(real(paramset.ϕ.x))
-    ϕ  = real(paramset.ϕ.y / Const.iters_num * X)
+    ϕ = real(paramset.ϕ.y / Const.iters_num * X)
     for i in 1:Const.layers_num
         oWx   = real.(paramset.o[1][i].W  / Const.iters_num)
         obx   = real.(paramset.o[1][i].b  / Const.iters_num)
@@ -161,10 +161,10 @@ function updateparams(energy::Float32, lr::Float32, paramset::ParamSet, Δparams
         oeby  = imag.(paramset.oe[2][i].b / Const.iters_num)
         oϕWy  = imag.(paramset.oϕ[2][i].W / Const.iters_num .* X)
         oϕby  = imag.(paramset.oϕ[2][i].b / Const.iters_num .* X)
-        realΔW = (1f0 - 2f0 * network.λ) .* (oeWx - energy * oWx) - oϕWx + oWx .* ϕ
-        realΔb = (1f0 - 2f0 * network.λ) .* (oebx - energy * obx) - oϕbx + obx .* ϕ
-        imagΔW = (1f0 - 2f0 * network.λ) .*  oeWy - oϕWy
-        imagΔb = (1f0 - 2f0 * network.λ) .*  oeby - oϕby
+        realΔW = (1f0 - network.λ) .* (oeWx - energy * oWx) + network.λ .* (oϕWx - oWx .* ϕ)
+        realΔb = (1f0 - network.λ) .* (oebx - energy * obx) + network.λ .* (oϕbx - obx .* ϕ)
+        imagΔW = (1f0 - network.λ) .*  oeWy + network.λ .* oϕWy
+        imagΔb = (1f0 - network.λ) .*  oeby + network.λ .* oϕby
         Δparamset[i][1] += realΔW
         Δparamset[i][2] += imagΔW
         Δparamset[i][3] += realΔb
@@ -174,14 +174,14 @@ end
 
 opt(lr::Float32) = AMSGrad(lr, (0.9, 0.999))
 
-function update(e::Float32, Δparamset::Vector, lr::Float32)
+function update(s::Float32, Δparamset::Vector, lr::Float32)
     for i in 1:Const.layers_num
         update!(opt(lr), network.g[1][i].W, Δparamset[i][1])
         update!(opt(lr), network.g[2][i].W, Δparamset[i][2])
         update!(opt(lr), network.g[1][i].b, Δparamset[i][3])
         update!(opt(lr), network.g[2][i].b, Δparamset[i][4])
     end
-    Δλ = network.λ + lr * e
+    Δλ = network.λ + lr * s
     setfield!(network, :λ, Δλ)
 end
 end
