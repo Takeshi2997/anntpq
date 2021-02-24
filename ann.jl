@@ -43,18 +43,18 @@ mutable struct Network
     g::Vector{Flux.Chain}
     p::Vector{Zygote.Params}
     q::Vector{Zygote.Params}
-    λ::Float32
+    λ::Vector{Float32}
 end
 
 function Network()
     layers = Vector(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layers[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
+        layers[i] = Dense(Const.layer[i], Const.layer[i+1], swish)
     end
     layers[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layers[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
-    Network([f, f], [f, f], [p, p], [p, p], 1.0f0)
+    Network([f, f], [f, f], [p, p], [p, p], [0f0])
 end
 
 network = Network()
@@ -95,7 +95,7 @@ end
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i])
+        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i])
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
@@ -161,10 +161,10 @@ function updateparams(energy::Float32, ϕ::Float32, lr::Float32, paramset::Param
         oeby  = imag.(paramset.oe[2][i].b / Const.iters_num)
         oϕWy  = imag.(paramset.oϕ[2][i].W / Const.iters_num .* X)
         oϕby  = imag.(paramset.oϕ[2][i].b / Const.iters_num .* X)
-        realΔW = (1f0 - network.λ) .* (oeWx - energy * oWx) + network.λ .* (oϕWx - oWx .* ϕ)
-        realΔb = (1f0 - network.λ) .* (oebx - energy * obx) + network.λ .* (oϕbx - obx .* ϕ)
-        imagΔW = (1f0 - network.λ) .*  oeWy + network.λ .* oϕWy
-        imagΔb = (1f0 - network.λ) .*  oeby + network.λ .* oϕby
+        realΔW = (1f0 - network.λ[1]) .* (oeWx - energy * oWx) + network.λ[1] .* (oϕWx - oWx .* ϕ)
+        realΔb = (1f0 - network.λ[1]) .* (oebx - energy * obx) + network.λ[1] .* (oϕbx - obx .* ϕ)
+        imagΔW = (1f0 - network.λ[1]) .*  oeWy + network.λ[1] .* oϕWy
+        imagΔb = (1f0 - network.λ[1]) .*  oeby + network.λ[1] .* oϕby
         Δparamset[i][1] += realΔW
         Δparamset[i][2] += imagΔW
         Δparamset[i][3] += realΔb
@@ -181,7 +181,7 @@ function update(s::Float32, Δparamset::Vector, lr::Float32)
         update!(opt(lr), network.g[1][i].b, Δparamset[i][3])
         update!(opt(lr), network.g[2][i].b, Δparamset[i][4])
     end
-    Δλ = network.λ + lr * s
-    setfield!(network, :λ, Δλ)
+    Δλ = -lr * [s]
+    update!(opt(lr), network.λ, Δλ)
 end
 end
