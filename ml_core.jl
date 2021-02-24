@@ -83,6 +83,7 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     energyB = 0f0
     numberB = 0f0
     residue = 0f0
+    propaga = 0f0im
     x = shuffle(X)
     xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
     
@@ -101,21 +102,24 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
         eB = Func.energyB(x)
         e  = eS + eB
         r  = Func.residue(e - ϵ, x)
+        pr = Func.propaga(x)
         energyS += eS
         energyB += eB
         energy  += e
         numberB += sum(x[1:Const.dimB])
         residue += r
-        Func.ANN.backward(x, e - ϵ, paramset)
+        propaga += pr
+        Func.ANN.backward(x, e, pr, paramset)
     end
     energy   = real(energy)  / Const.iters_num
     energyS  = real(energyS) / Const.iters_num
     energyB  = real(energyB) / Const.iters_num
     residue  = sqrt(residue  / Const.iters_num)
+    propaga  = real(propaga) / Const.iters_num
     numberB /= Const.iters_num
 
     # Update Parameters
-    Func.ANN.updateparams(energy - ϵ, lr, paramset, Δparamset)
+    Func.ANN.updateparams(ϵ, energy, propaga, lr, paramset, Δparamset)
 
     return residue, energyS, energyB, numberB
 end
