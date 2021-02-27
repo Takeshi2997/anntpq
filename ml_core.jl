@@ -116,7 +116,7 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     numberB /= Const.iters_num
 
     # Update Parameters
-    Func.ANN.updateparams(energy, ϕ, lr, paramset, Δparamset)
+    Func.ANN.updateparams(ϵ, energy, ϕ, lr, paramset, Δparamset)
 
     return residue, energyS, energyB, numberB
 end
