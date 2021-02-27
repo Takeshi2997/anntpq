@@ -145,11 +145,10 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     paramset.ϕ.y += ϕ
 end
 
-function updateparams(ϵ::Float32, energy::Float32, ϕ::Float32, lr::Float32, paramset::ParamSet, Δparamset::Vector)
+function updateparams(energy::Float32, ϕ::Float32, lr::Float32, paramset::ParamSet, Δparamset::Vector)
     paramset.ϕ.x /= Const.iters_num
     X = 1f0 / sqrt(real(paramset.ϕ.x))
     ϕ = real(paramset.ϕ.y / Const.iters_num * X)
-    s = (energy - ϵ) / 2f0 - ϕ
     for i in 1:Const.layers_num
         oWx   = real.(paramset.o[1][i].W  / Const.iters_num)
         obx   = real.(paramset.o[1][i].b  / Const.iters_num)
@@ -161,10 +160,10 @@ function updateparams(ϵ::Float32, energy::Float32, ϕ::Float32, lr::Float32, pa
         oeby  = imag.(paramset.oe[2][i].b / Const.iters_num)
         oϕWy  = imag.(paramset.oϕ[2][i].W / Const.iters_num .* X)
         oϕby  = imag.(paramset.oϕ[2][i].b / Const.iters_num .* X)
-        realΔW = s .* (oeWx - energy * oWx - oϕWx + oWx .* ϕ)
-        realΔb = s .* (oebx - energy * obx - oϕbx + obx .* ϕ)
-        imagΔW = s .* (oeWy - oϕWy)
-        imagΔb = s .* (oeby - oϕby)
+        realΔW = oeWx - energy * oWx - oϕWx + oWx .* ϕ
+        realΔb = oebx - energy * obx - oϕbx + obx .* ϕ
+        imagΔW = oeWy - oϕWy
+        imagΔb = oeby - oϕby
         Δparamset[i][1] += realΔW
         Δparamset[i][2] += imagΔW
         Δparamset[i][3] += realΔb
