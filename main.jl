@@ -17,7 +17,8 @@ function learning(iϵ::Integer, dirname::String, dirnameerror::String, inv_n::In
 
     # Learning
     for n in 1:Const.it_num
-        error, energyS, energyB, numberB = MLcore.sampling(ϵ, lr)
+        energy, energyS, energyB, numberB = MLcore.sampling(ϵ, lr)
+        error = ((energy - ϵ) / (Const.dimS + Const.dimB))^2 / 2f0
         open(filename, "a") do io
             write(io, string(n))
             write(io, "\t")

@@ -25,7 +25,7 @@ function sampling(ϵ::Float32, lr::Float32)
     energyS = mean(batchenergyS)
     energyB = mean(batchenergyB)
     numberB = mean(batchnumberB)
-    error   = (energyS + energyB - ϵ)^2 / 2f0
+    energy  = energyS + energyB
     for i in 1:Const.layers_num
         Δparamset[i][1] ./= Const.batchsize
         Δparamset[i][2] ./= Const.batchsize
@@ -33,7 +33,7 @@ function sampling(ϵ::Float32, lr::Float32)
     Func.ANN.update(Δparamset, lr)
 
     # Output
-    return error, energyS, energyB, numberB
+    return energy, energyS, energyB, numberB
 end
 
 const X = vcat(ones(Float32, Int((Const.dimB+Const.dimS)/2)), -ones(Float32, Int((Const.dimB+Const.dimS)/2)))
