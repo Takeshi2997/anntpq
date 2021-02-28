@@ -3,7 +3,7 @@ include("./ml_core.jl")
 using .Const, .MLcore
 using Flux
 
-function learning(iϵ::Integer, dirname::String, dirnameerror::String, inv_n::Integer, lr::Float32)
+function learning(iϵ::Integer, dirname::String, dirnameerror::String, lr::Float32)
     # Initialize
     error   = 0f0
     energyS = 0f0
@@ -46,7 +46,7 @@ function main()
     mkdir(dirnameerror)
     MLcore.Func.ANN.init()
     MLcore.Func.ANN.save(dirname * "/params_at_000.bson")
-    map(iϵ -> learning(iϵ, dirname, dirnameerror, Const.inv_n, Const.lr), 1:Const.iϵmax)
+    map(iϵ -> learning(iϵ, dirname, dirnameerror, Const.lr), 1:Const.iϵmax)
 end
 
 main()
