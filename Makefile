@@ -8,7 +8,7 @@ VIEW        = view.jl
 
 main: $(BASE) $(CORE) $(OBJS) $(CALC)
 	$(JL) $(OPTS) $(OBJS)
-	$(JL) $(CALC)
+	$(JL) $(OPTS) $(CALC)
 
 calc: $(BASE) $(CORE) $(CALC)
 	$(JL) $(CALC)
