@@ -1,5 +1,5 @@
 module LegendreTF
-using QuadGK, ForwardDiff, NLsolve
+using QuadGK, NLsolve
 
 πf0 = Float32(π)
 u   = 0f0
