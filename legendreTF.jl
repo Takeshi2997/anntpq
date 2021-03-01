@@ -1,57 +1,37 @@
 module LegendreTF
-using QuadGK
+using QuadGK, ForwardDiff, NLsolve
 
 πf0 = Float32(π)
+u   = 0f0
 
-function f(t)
-    fm = x -> -log(cosh((abs(cos(x)) / t))) / πf0 * t
-    return quadgk(fm, 0f0, πf0)[1]
-end
-
-function df(t)
-    dfm = x -> -log(cosh((abs(cos(x)) / t))) / πf0 + 
-    tanh((abs(cos(x)) / t)) * abs(cos(x)) / t / πf0
-    return quadgk(dfm, 0f0, πf0)[1]
-end
-
-function s(u, t)
-    return (u - f(t)) / t
-end
-
-function ds(u, t)
-    return -(u - f(t)) / t^2 - df(t) / t
-end
-
-function translate(u)
-    sout = 0f0
-    t = 5.0f0
-    tm = 0.0f0
-    tv = 0.0f0
-    for n in 1:1000
-        dt = ds(u, t)
-        lr_t = 0.5f0 * sqrt(1.0f0 - 0.999f0^n) / (1.0f0 - 0.9f0^n)
-        tm += (1.0f0 - 0.9f0) * (dt - tm)
-        tv += (1.0f0 - 0.999f0) * (dt.^2 - tv)
-        t  -= lr_t * tm ./ (sqrt.(tv) .+ 10.0f0^(-7))
-        sout = s(u, t)
+function nls(func, params...; ini = [0.0])
+    if typeof(ini) <: Number
+        return nlsolve((vout,vin)->vout[1]=func(vin[1],params...), [ini]).zero[1]
+    else
+        return nlsolve((vout,vin)->vout .= func(vin,params...), ini).zero
     end
-    return sout
 end
 
-function calc_temperature(u)
-    sout = 0f0
-    t = 5.0f0
-    tm = 0.0f0
-    tv = 0.0f0
-    for n in 1:1000
-        dt = ds(u, t)
-        lr_t = 0.5f0 * sqrt(1.0f0 - 0.999f0^n) / (1.0f0 - 0.9f0^n)
-        tm += (1.0f0 - 0.9f0) * (dt - tm)
-        tv += (1.0f0 - 0.999f0) * (dt.^2 - tv)
-        t  -= lr_t * tm ./ (sqrt.(tv) .+ 10.0f0^(-7))
-        sout = s(u, t)
-    end
-    return 1f0 / t
+function initu(u1::Float32)
+    global u = u1
+end
+
+function ds(t)
+    gm = x -> tanh(abs(cos(x)) / t) / πf0 * abs(cos(x))
+    g = quadgk(gm, 0f0, πf0)[1]
+    return (u + g)
+end
+
+function energy(t)
+    um = x -> -tanh(abs(cos(x)) / t) / πf0 * abs(cos(x))
+    return quadgk(um, 0f0, πf0)[1]
+end
+
+function calc_temperature(u1)
+    initu(u1)
+    println(u1)
+    t = nls(ds, ini=0.1f0)
+    return 1/t
 end
 
 end
