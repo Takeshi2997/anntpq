@@ -6,8 +6,10 @@ using LinearAlgebra, Flux
 
 function calculate()
 
-    dirname = "./data"
-    f = open("energy_data.txt", "w")
+    refdir  = "."
+    dirname = refdir * "/data"
+    filename = refdir * "/energy_data.txt"
+    f = open(filename, "w")
     num = 10000
     for iϵ in 1:Const.iϵmax
         filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
