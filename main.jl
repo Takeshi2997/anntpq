@@ -1,35 +1,26 @@
-using Distributed
-@everywhere include("./setup.jl")
-@everywhere include("./ml_core.jl")
-@everywhere using .Const, .MLcore
-@everywhere using Flux
+include("./setup.jl")
+include("./ml_core.jl")
+using .Const, .MLcore
+using Flux
 
-@everywhere function learning(iϵ::Integer, 
-                              dirname::String, dirnameerror::String, 
-                              lr::Float32, it_num::Integer)
+function learning(iϵ::Integer, dirname::String, dirnameerror::String, lr::Float32)
     # Initialize
     error   = 0f0
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
-    MLcore.Func.ANN.load(dirname * "/params_at_000.bson")
-    ϵ = (-0.3f0 - 0.2f0 * iϵ / Const.iϵmax) * Const.t * Const.dimB
+    ϵ = -0.4f0 * iϵ / Const.iϵmax * Const.t * Const.dimB
     filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
     filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
-    dirnameonestep = dirnameerror * "/erroronestep"
-    mkdir(dirnameonestep)
+    MLcore.Func.ANN.load(dirname * "/params_at_000.bson")
+    touch(filename)
 
     # Learning
-    touch(filename)
-    for it in 1:Const.inv_n
-
-        # Reset ANN Params
-        MLcore.Func.ANN.reset()
- 
-        # Calculate expected value
-        error, energyS, energyB, numberB = MLcore.inv_iterative_method(ϵ, lr, dirnameonestep, it)
+    for n in 1:Const.it_num
+        energy, energyS, energyB, numberB = MLcore.sampling(ϵ, lr)
+        error = ((energy - ϵ) / (Const.dimS + Const.dimB))^2 / 2f0
         open(filename, "a") do io
-            write(io, string(it))
+            write(io, string(n))
             write(io, "\t")
             write(io, string(error))
             write(io, "\t")
@@ -55,7 +46,7 @@ function main()
     mkdir(dirnameerror)
     MLcore.Func.ANN.init()
     MLcore.Func.ANN.save(dirname * "/params_at_000.bson")
-    map(iϵ -> learning(iϵ, dirname, dirnameerror, Const.lr, Const.it_num), 1:Const.iϵmax)
+    map(iϵ -> learning(iϵ, dirname, dirnameerror, Const.lr), 1:Const.iϵmax)
 end
 
 main()

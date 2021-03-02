@@ -70,5 +70,4 @@ function energyB(x::Vector{Float32})
     end
     return sum
 end
-
 end
