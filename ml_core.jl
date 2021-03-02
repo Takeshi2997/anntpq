@@ -43,6 +43,7 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     # Initialize
     energyS = 0f0
     energyB = 0f0
+    energy  = 0f0
     numberB = 0f0
     x = shuffle(X)
     xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
@@ -64,12 +65,13 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
         e  = eS + eB + eI
         energyS += eS
         energyB += eB
+        energy  += e
         numberB += sum(x[1:Const.dimB])
         Func.ANN.backward(x, e, paramset)
     end
     energyS  = real(energyS) / Const.iters_num
     energyB  = real(energyB) / Const.iters_num
-    energy   = energyS + energyB
+    energy   = real(energy)  / Const.iters_num
     numberB /= Const.iters_num
 
     # Update Parameters
