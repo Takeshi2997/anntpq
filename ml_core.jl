@@ -60,7 +60,8 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     @simd for x in xdata
         eS = Func.energyS(x)
         eB = Func.energyB(x)
-        e  = eS + eB
+        eI = Funx.energyI(x)
+        e  = eS + eB + eI
         energyS += eS
         energyB += eB
         numberB += sum(x[1:Const.dimB])
