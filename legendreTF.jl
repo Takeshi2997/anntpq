@@ -29,7 +29,6 @@ end
 
 function calc_temperature(u1)
     initu(u1)
-    println(u1)
     t = nls(ds, ini=0.1f0)
     return 1/t
 end
