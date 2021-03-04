@@ -79,14 +79,14 @@ function hamiltonianI(x::Vector{Float32},
         zflip = ANN.forward(xflip)
         out  += exp(zflip - z)
     end
-    return Const.λ * out
+    return -Const.λ * out
 end
 
 function energyI(x::Vector{Float32})
     z = ANN.forward(x)
     sum = 0f0im
-    for ixy in CartesianIndices((Const.dimB+1:Const.dimB+Const.dimS, 1:Const.dimB))
-        ix, iy = Tuple(ixy)
+    for iy in 1:Const.dimS
+        ix = Const.dimB + iy
         sum += hamiltonianI(x, z, ix, iy)
     end
     return sum
