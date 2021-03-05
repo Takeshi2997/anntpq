@@ -74,12 +74,10 @@ end
 function hamiltonianI(x::Vector{Float32},
                       z::Complex{Float32}, ix::Integer, iy::Integer)
     out = 0f0im
-    if x[ix] != x[iy]
-        xflip = a.flip[ix] * a.flip[iy] * x
-        zflip = ANN.forward(xflip)
-        out  += exp(zflip - z)
+    if x[iy] > 0f0
+        out  += x[ix]
     end
-    return Const.λ * out
+    return Const.λ * out / 2f0
 end
 
 function energyI(x::Vector{Float32})
