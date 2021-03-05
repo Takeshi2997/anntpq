@@ -79,7 +79,7 @@ function hamiltonianI(x::Vector{Float32},
         zflip = ANN.forward(xflip)
         out  += exp(zflip - z)
     end
-    return -Const.λ * out
+    return Const.λ * out
 end
 
 function energyI(x::Vector{Float32})
