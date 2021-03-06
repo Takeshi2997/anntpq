@@ -1,7 +1,7 @@
 module MLcore
 include("./setup.jl")
 include("./functions.jl")
-using .Const, .Func, Random, Statistics, Base.Threads
+using .Const, .Func, Random, Statistics, Base.Threads, NNlib
 
 function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Integer)
     # Initialize
@@ -42,7 +42,6 @@ function sampling(ϵ::Float32, lr::Float32)
     batchenergyB = zeros(Float32, Const.batchsize)
     batchnumberB = zeros(Float32, Const.batchsize)
     batchresidue = zeros(Float32, Const.batchsize)
-    batchaction  = zeros(Float32, Const.batchsize)
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
         W = zeros(Float32, Const.layer[i+1], Const.layer[i])
@@ -56,19 +55,18 @@ function sampling(ϵ::Float32, lr::Float32)
         batchresidue[n],
         batchenergyS[n],
         batchenergyB[n],
-        batchnumberB[n],
-        batchaction[n] = mcmc(paramsetvec[n], Δparamset, ϵ, lr)
+        batchnumberB[n] = mcmc(paramsetvec[n], Δparamset, ϵ, lr)
     end
     residue = mean(batchresidue)
     energyS = mean(batchenergyS)
     energyB = mean(batchenergyB)
     numberB = mean(batchnumberB)
-    action  = mean(batchaction) 
+    α = hardtanh(residue)
     for i in 1:Const.layers_num
-        Δparamset[i][1] .*= action / Const.batchsize
-        Δparamset[i][2] .*= action / Const.batchsize
-        Δparamset[i][3] .*= action / Const.batchsize
-        Δparamset[i][4] .*= action / Const.batchsize
+        Δparamset[i][1] .*= α / Const.batchsize
+        Δparamset[i][2] .*= α / Const.batchsize
+        Δparamset[i][3] .*= α / Const.batchsize
+        Δparamset[i][4] .*= α / Const.batchsize
     end
     Func.ANN.update(Δparamset, lr)
 
@@ -120,9 +118,8 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
 
     # Update Parameters
     Func.ANN.updateparams(energy, ϕ, lr, paramset, Δparamset)
-    action = (energy - ϵ) / 2f0 - ϕ
 
-    return residue, energyS, energyB, numberB, action
+    return residue, energyS, energyB, numberB
 end
 
 function calculation_energy(num::Integer)
