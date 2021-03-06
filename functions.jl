@@ -73,11 +73,9 @@ end
 
 function hamiltonianI(x::Vector{Float32},
                       z::Complex{Float32}, ix::Integer, iy::Integer)
-    out = 0f0im
-    if x[iy] > 0f0
-        out  += x[ix]
-    end
-    return Const.λ * out / 2f0
+    out  = 0f0im
+    out += -x[ix] * x[iy]
+    return Const.λ * out / 4f0
 end
 
 function energyI(x::Vector{Float32})
