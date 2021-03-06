@@ -1,7 +1,7 @@
 module MLcore
 include("./setup.jl")
 include("./functions.jl")
-using .Const, .Func, Random, Statistics, Base.Threads, NNlib
+using .Const, .Func, Random, Statistics, Base.Threads
 
 function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Integer)
     # Initialize
@@ -14,7 +14,7 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
 
     # Inverse Iterative mathod Start
     for n in 1:Const.it_num
-        residue, energyS, energyB, numberB = sampling(ϵ, lr)
+        residue, energyS, energyB, numberB, action = sampling(ϵ, lr)
         open(filename, "a") do io
             write(io, string(n))
             write(io, "\t")
@@ -25,6 +25,8 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
             write(io, string(energyB / Const.dimB))
             write(io, "\t")
             write(io, string(numberB / Const.dimB))
+            write(io, "\t")
+            write(io, string(action))
             write(io, "\n")
         end
     end
@@ -42,6 +44,7 @@ function sampling(ϵ::Float32, lr::Float32)
     batchenergyB = zeros(Float32, Const.batchsize)
     batchnumberB = zeros(Float32, Const.batchsize)
     batchresidue = zeros(Float32, Const.batchsize)
+    batchaction  = zeros(Float32, Const.batchsize)
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
         W = zeros(Float32, Const.layer[i+1], Const.layer[i])
@@ -55,23 +58,24 @@ function sampling(ϵ::Float32, lr::Float32)
         batchresidue[n],
         batchenergyS[n],
         batchenergyB[n],
-        batchnumberB[n] = mcmc(paramsetvec[n], Δparamset, ϵ, lr)
+        batchnumberB[n],
+        batchaction[n] = mcmc(paramsetvec[n], Δparamset, ϵ, lr)
     end
     residue = mean(batchresidue)
     energyS = mean(batchenergyS)
     energyB = mean(batchenergyB)
     numberB = mean(batchnumberB)
-    α = hardtanh(residue)
+    action  = mean(batchaction)
     for i in 1:Const.layers_num
-        Δparamset[i][1] .*= α / Const.batchsize
-        Δparamset[i][2] .*= α / Const.batchsize
-        Δparamset[i][3] .*= α / Const.batchsize
-        Δparamset[i][4] .*= α / Const.batchsize
+        Δparamset[i][1] .*= 1f0 / Const.batchsize
+        Δparamset[i][2] .*= 1f0 / Const.batchsize
+        Δparamset[i][3] .*= 1f0 / Const.batchsize
+        Δparamset[i][4] .*= 1f0 / Const.batchsize
     end
     Func.ANN.update(Δparamset, lr)
 
     # Output
-    return residue, energyS, energyB, numberB
+    return residue, energyS, energyB, numberB, action
 end
 
 const X = vcat(ones(Float32, Int((Const.dimB+Const.dimS)/2)), -ones(Float32, Int((Const.dimB+Const.dimS)/2)))
@@ -117,9 +121,10 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     numberB /= Const.iters_num
 
     # Update Parameters
-    Func.ANN.updateparams(energy, ϕ, lr, paramset, Δparamset)
+    Func.ANN.updateparams(energy, ϕ, paramset, Δparamset)
+    action = energy / 2f0 - ϕ
 
-    return residue, energyS, energyB, numberB
+    return residue, energyS, energyB, numberB, action
 end
 
 function calculation_energy(num::Integer)
