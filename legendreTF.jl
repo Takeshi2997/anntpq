@@ -22,8 +22,8 @@ function ds(t)
     return (u + g)
 end
 
-function energy(t)
-    um = x -> -tanh(abs(cos(x)) / t) / πf0 * abs(cos(x))
+function energy(α, t)
+    um = x -> -tanh(abs(α - cos(x)) / t) / πf0 * abs(α - cos(x))
     return quadgk(um, 0f0, πf0)[1]
 end
 
