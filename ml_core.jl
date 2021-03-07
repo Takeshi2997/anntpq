@@ -62,8 +62,8 @@ function sampling(ϵ::Float32, lr::Float32)
     energyB = mean(batchenergyB)
     numberB = mean(batchnumberB)
     for i in 1:Const.layers_num
-        Δparamset[i][1] = Δparamset[i][1] / Const.batchsize .- 2f0 * ϵ
-        Δparamset[i][2] = Δparamset[i][2] / Const.batchsize .- 2f0 * ϵ
+        Δparamset[i][1] = Δparamset[i][1] / Const.batchsize
+        Δparamset[i][2] = Δparamset[i][2] / Const.batchsize
         Δparamset[i][3] = Δparamset[i][3] / Const.batchsize
         Δparamset[i][4] = Δparamset[i][4] / Const.batchsize
     end
@@ -102,8 +102,8 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
         eS = Func.energyS(x)
         eB = Func.energyB(x)
         e  = eS + eB
-        nB = (sum(x[1:Const.dimB]) + 0.5f0)
-        nS = (sum(x[1+Const.dimB:end]) + 0.5f0)
+        nB = (sum(x[1:Const.dimB] .+ 0.5f0))
+        nS = (sum(x[1+Const.dimB:end] .+ 0.5f0))
         n  = nB + nS
         ξ  = e - ϵ * n
         r  = Func.residue(ξ, x)
