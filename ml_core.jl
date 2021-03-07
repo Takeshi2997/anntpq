@@ -102,8 +102,8 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
         eS = Func.energyS(x)
         eB = Func.energyB(x)
         e  = eS + eB
-        nB = sum(x[1:Const.dimB])
-        nS = sum(x[1+Const.dimB:end])
+        nB = (sum(x[1:Const.dimB]) + 0.5f0)
+        nS = (sum(x[1+Const.dimB:end]) + 0.5f0)
         n  = nB + nS
         ξ  = e - ϵ * n
         r  = Func.residue(ξ, x)
