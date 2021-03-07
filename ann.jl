@@ -145,7 +145,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     paramset.ϕ.y += ϕ
 end
 
-function updateparams(energy::Float32, ϕ::Float32, paramset::ParamSet, Δparamset::Vector)
+function updateparams(e::Float32, ϕ::Float32, paramset::ParamSet, Δparamset::Vector)
     paramset.ϕ.x /= Const.iters_num
     X = 1f0 / sqrt(real(paramset.ϕ.x))
     ϕ = real(paramset.ϕ.y / Const.iters_num * X)
@@ -160,8 +160,8 @@ function updateparams(energy::Float32, ϕ::Float32, paramset::ParamSet, Δparams
         oeby  = imag.(paramset.oe[2][i].b / Const.iters_num)
         oϕWy  = imag.(paramset.oϕ[2][i].W / Const.iters_num .* X)
         oϕby  = imag.(paramset.oϕ[2][i].b / Const.iters_num .* X)
-        realΔW = oeWx - energy * oWx - oϕWx + oWx .* ϕ
-        realΔb = oebx - energy * obx - oϕbx + obx .* ϕ
+        realΔW = oeWx - e * oWx - oϕWx + oWx .* ϕ
+        realΔb = oebx - e * obx - oϕbx + obx .* ϕ
         imagΔW = oeWy - oϕWy
         imagΔb = oeby - oϕby
         Δparamset[i][1] += realΔW
