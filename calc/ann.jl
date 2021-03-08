@@ -80,7 +80,6 @@ imagloss(x::Vector{Float32}) = network.f[2](x)[1]
 function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     realgs = gradient(() -> realloss(x), network.p[1])
     imaggs = gradient(() -> imagloss(x), network.p[2])
-    ϕ = exp(forward_f(x) - forward(x))
     for i in 1:Const.layers_num
         dxw = realgs[network.f[1][i].W]
         dyw = imaggs[network.f[2][i].W]
