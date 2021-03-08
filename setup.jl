@@ -16,7 +16,7 @@ const inv_n = 10
 const iϵmax = 4
 
 # Learning Rate
-const lr = 1f-3
+const lr = 1f-5
 
 # Network Params
 const layer = [dimB+dimS, 48, 48, 48, 1]

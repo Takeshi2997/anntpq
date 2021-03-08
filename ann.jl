@@ -171,7 +171,7 @@ function updateparams(e::Float32, ϕ::Float32, paramset::ParamSet, Δparamset::V
     end
 end
 
-opt(lr::Float32) = AMSGrad(lr, (0.9, 0.999))
+opt(lr::Float32) = Dense(lr)
 
 function update(Δparamset::Vector, lr::Float32)
     for i in 1:Const.layers_num
