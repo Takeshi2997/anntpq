@@ -26,7 +26,7 @@ function ParamSet()
         p[i]  = Params(W, b)
     end
     pvec = [p, p]
-    ParamSet(pvec, pvec, pvec)
+    ParamSet(pvec, pvec)
 end
 
 # Define Network

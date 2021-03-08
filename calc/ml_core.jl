@@ -13,7 +13,7 @@ function sampling(ϵ::Float32, lr::Float32)
     for i in 1:Const.layers_num
         W = zeros(Float32, Const.layer[i+1], Const.layer[i])
         b = zeros(Float32, Const.layer[i+1])
-        parameters[i] = [W, b]
+        parameters[i] = [W, W, b, b]
     end
     Δparamset = [param for param in parameters]
     paramsetvec = [Func.ANN.ParamSet() for n in 1:Const.batchsize]
@@ -31,6 +31,8 @@ function sampling(ϵ::Float32, lr::Float32)
     for i in 1:Const.layers_num
         Δparamset[i][1] .*= (energy - ϵ) / Const.batchsize
         Δparamset[i][2] .*= (energy - ϵ) / Const.batchsize
+        Δparamset[i][3] .*= (energy - ϵ) / Const.batchsize
+        Δparamset[i][4] .*= (energy - ϵ) / Const.batchsize
     end
     Func.ANN.update(Δparamset, lr)
 
