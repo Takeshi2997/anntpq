@@ -30,8 +30,6 @@ function learning(iϵ::Integer, dirname::String, dirnameerror::String, it_num::I
             write(io, string(energyB / Const.dimB))
             write(io, "\t")
             write(io, string(numberB / Const.dimB))
-            write(io, "\t")
-            write(io, string(energyI / Const.dimS))
             write(io, "\n")
         end
     end
@@ -52,11 +50,11 @@ function initialize(dirname::String, dirnameerror::String, n::Integer, lr::Float
     for it in 1:n
         MLinit.Func.ANN.load(dirname * "/params_at_000.bson")
         # Calculate expected value
-        error, energyS, energyB, numberB = MLinit.initialize(lr, dirnameonestep, it)
+        energy, energyS, energyB, numberB = MLinit.initialize(lr, dirnameonestep, it)
         open(filename, "a") do io
             write(io, string(it))
             write(io, "\t")
-            write(io, string(error))
+            write(io, string(energy  / (Const.dimS + Const.dimB)))
             write(io, "\t")
             write(io, string(energyS / Const.dimS))
             write(io, "\t")
@@ -80,9 +78,8 @@ function main()
     mkdir(dirnameerror)
     MLinit.Func.ANN.init()
     MLinit.Func.ANN.save(dirname * "/params_at_000.bson")
-    learning(1, dirname, dirnameerror, Const.it_num, Const.lr)
     initialize(dirname, dirnameerror, 10, Const.lr)
-#    map(iϵ -> learning(iϵ, dirname, dirnameerror, Const.it_num, Const.lr), 1:Const.iϵmax)
+    map(iϵ -> learning(iϵ, dirname, dirnameerror, Const.it_num, Const.lr), 1:Const.iϵmax)
 end
 
 main()
