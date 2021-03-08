@@ -4,7 +4,7 @@ include("./calc/ml_core.jl")
 using .Const, .MLinit, .MLcore
 using Flux
 
-function learning(iϵ::Integer, dirname::String, dirnameerror::String, lr::Float32)
+function learning(iϵ::Integer, dirname::String, dirnameerror::String, it_num::Integer, lr::Float32)
     # Initialize
     error   = 0f0
     energyS = 0f0
@@ -17,7 +17,7 @@ function learning(iϵ::Integer, dirname::String, dirnameerror::String, lr::Float
     touch(filename)
 
     # Learning
-    for n in 1:Const.it_num
+    for n in 1:it_num
         energy, energyS, energyB, numberB = MLcore.sampling(ϵ, lr)
         error = ((energy - ϵ) / (Const.dimS + Const.dimB))^2 / 2f0
         open(filename, "a") do io
