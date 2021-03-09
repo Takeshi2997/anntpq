@@ -107,7 +107,7 @@ function updateparams(energy::Float32, lr::Float32, paramset::ParamSet, Δparams
     end
 end
 
-opt(lr::Float32) = AMSGrad(lr, (0.9, 0.999))
+opt(lr::Float32) = Descent(lr)
 
 function update(Δparamset::Vector, lr::Float32)
     for i in 1:Const.layers_num
