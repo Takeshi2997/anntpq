@@ -104,7 +104,8 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     @simd for x in xdata
         eS = Func.energyS(x)
         eB = Func.energyB(x)
-        e  = eS + eB
+        eI = Func.energyI(x)
+        e  = eS + eB + eI
         nB = (sum(x[1:Const.dimB]./2f0 .+ 0.5f0))
         r  = Func.residue(e, x)
         energyS += eS

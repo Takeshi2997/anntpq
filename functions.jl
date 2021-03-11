@@ -71,6 +71,23 @@ function energyB(x::Vector{Float32})
     return sum
 end
 
+function hamiltonianI(x::Vector{Float32},
+                      z::Complex{Float32}, ix::Integer, iy::Integer)
+    out  = 0f0im
+    out += -x[ix] * x[iy]
+    return Const.λ * out / 4f0
+end
+
+function energyI(x::Vector{Float32})
+    z = ANN.forward(x)
+    sum = 0f0im
+    for iy in 1:Const.dimS
+        ix = Const.dimB + iy
+        sum += hamiltonianI(x, z, ix, iy)
+    end
+    return sum
+end
+
 function residue(e::Complex{Float32}, x::Vector{Float32})
     ϕ = exp(ANN.forward_f(x) - ANN.forward(x))
     return abs2(e - ϕ)
