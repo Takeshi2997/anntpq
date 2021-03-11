@@ -173,7 +173,7 @@ function updateparams(energy::Float32, ϵ::Float32, ϕ::Float32, paramset::Param
     end
 end
 
-opt(lr::Float32) = Dense(lr)
+opt(lr::Float32) = Descent(lr)
 
 function update(energy::Float32, ϵ::Float32, Δparamset::Vector, lr::Float32)
     for i in 1:Const.layers_num
