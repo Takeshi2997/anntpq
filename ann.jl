@@ -147,7 +147,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     paramset.ϕ.y += ϕ
 end
 
-function updateparams(energy::Float32, ϵ::Float32, ϕ::Float32, paramset::ParamSet, Δparamset::Vector)
+function updateparams(energy::Float32, ϕ::Float32, paramset::ParamSet, Δparamset::Vector)
     paramset.ϕ.x /= Const.iters_num
     X = 1f0 / sqrt(real(paramset.ϕ.x))
     ϕ = real(paramset.ϕ.y / Const.iters_num * X)
@@ -183,7 +183,7 @@ function update(energy::Float32, ϵ::Float32, Δparamset::Vector, lr::Float32)
         update!(opt(lr), network.g[1][i].b, Δparamset[i][3])
         update!(opt(lr), network.g[2][i].b, Δparamset[i][4])
     end
-    λ = network.λ - lr * (energy - ϵ)
+    λ = network.λ + lr * (energy - ϵ)
     setfield!(network, :λ, λ)
 end
 end
