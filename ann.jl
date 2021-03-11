@@ -162,10 +162,10 @@ function updateparams(energy::Float32, ϵ::Float32, ϕ::Float32, paramset::Param
         oeby  = imag.(paramset.oe[2][i].b / Const.iters_num)
         oϕWy  = imag.(paramset.oϕ[2][i].W / Const.iters_num .* X)
         oϕby  = imag.(paramset.oϕ[2][i].b / Const.iters_num .* X)
-        realΔW = λ .* (energy - ϵ) .* (oeWx - energy * oWx) - oϕWx + oWx .* ϕ
-        realΔb = λ .* (energy - ϵ) .* (oebx - energy * obx) - oϕbx + obx .* ϕ
-        imagΔW = λ .* (energy - ϵ) .*  oeWy - oϕWy
-        imagΔb = λ .* (energy - ϵ) .*  oeby - oϕby
+        realΔW = λ .* (oeWx - energy * oWx) - oϕWx + oWx .* ϕ
+        realΔb = λ .* (oebx - energy * obx) - oϕbx + obx .* ϕ
+        imagΔW = λ .*  oeWy - oϕWy
+        imagΔb = λ .*  oeby - oϕby
         Δparamset[i][1] += realΔW
         Δparamset[i][2] += imagΔW
         Δparamset[i][3] += realΔb
