@@ -71,7 +71,7 @@ function sampling(ϵ::Float32, lr::Float32)
         Δparamset[i][3] = Δparamset[i][3] / Const.batchsize
         Δparamset[i][4] = Δparamset[i][4] / Const.batchsize
     end
-    Func.ANN.update(Δparamset, lr)
+    Func.ANN.update(energy, ϵ, Δparamset, lr)
 
     # Output
     return residue, energyS, energyB, numberB, energy
@@ -122,7 +122,7 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     numberB /= Const.iters_num
 
     # Update Parameters
-    Func.ANN.updateparams(energy, ϵ, lr, ϕ, paramset, Δparamset)
+    Func.ANN.updateparams(energy, ϕ, paramset, Δparamset)
 
     return residue, energyS, energyB, numberB, energy
 end
