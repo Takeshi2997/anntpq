@@ -9,7 +9,7 @@ function learning(iϵ::Integer, dirname::String, dirnameerror::String, inv_n::In
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
-    ϵ = -Const.t / 2f0 * iϵ / Const.iϵmax
+    ϵ = -0.5f0 * Const.t * iϵ / Const.iϵmax * Const.dimB
     filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
     filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
     dirnameonestep = dirnameerror * "/onestep" * lpad(iϵ, 3, "0")
