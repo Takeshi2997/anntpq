@@ -54,7 +54,7 @@ function Network()
     layers[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layers[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
-    Network([f, f], [f, f], [p, p], [p, p], 0f0)
+    Network([f, f], [f, f], [p, p], [p, p], 1f0)
 end
 
 network = Network()
@@ -90,6 +90,7 @@ function reset()
     q2 = Flux.params(g[2])
     Flux.loadparams!(network.f[1], q1)
     Flux.loadparams!(network.f[2], q2)
+    setfield!(network, :λ, 1f0)
 end
 
 function init()
