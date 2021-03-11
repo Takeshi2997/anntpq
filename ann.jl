@@ -43,7 +43,6 @@ mutable struct Network
     g::Vector{Flux.Chain}
     p::Vector{Zygote.Params}
     q::Vector{Zygote.Params}
-    λ::Float32
 end
 
 function Network()
@@ -54,7 +53,7 @@ function Network()
     layers[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layers[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
-    Network([f, f], [f, f], [p, p], [p, p], 1f0)
+    Network([f, f], [f, f], [p, p], [p, p])
 end
 
 network = Network()
@@ -90,7 +89,6 @@ function reset()
     q2 = Flux.params(g[2])
     Flux.loadparams!(network.f[1], q1)
     Flux.loadparams!(network.f[2], q2)
-    setfield!(network, :λ, 1f0)
 end
 
 function init()
@@ -147,11 +145,13 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     paramset.ϕ.y += ϕ
 end
 
-function updateparams(energy::Float32, ϕ::Float32, paramset::ParamSet, Δparamset::Vector)
+function updateparams(energy::Float32, ϵ::Float32, lr::Float32, ϕ::Float32, paramset::ParamSet, Δparamset::Vector)
     paramset.ϕ.x /= Const.iters_num
     X = 1f0 / sqrt(real(paramset.ϕ.x))
-    ϕ = real(paramset.ϕ.y / Const.iters_num * X)
-    λ = network.λ
+    ϕ = real(paramset.ϕ.y / Const.iters_num * X)    
+    penalty1 = sum(abs2, network.g[1].W) + sum(abs2, network.g[1].b)
+             + sum(abs2, network.g[2].W) + sum(abs2, network.g[2].b)
+    λ = (penalty / 2f0 / lr - ϕ) / ϵ
     for i in 1:Const.layers_num
         oWx   = real.(paramset.o[1][i].W  / Const.iters_num)
         obx   = real.(paramset.o[1][i].b  / Const.iters_num)
@@ -176,14 +176,12 @@ end
 
 opt(lr::Float32) = Descent(lr)
 
-function update(energy::Float32, ϵ::Float32, Δparamset::Vector, lr::Float32)
+function update(Δparamset::Vector, lr::Float32)
     for i in 1:Const.layers_num
         update!(opt(lr), network.g[1][i].W, Δparamset[i][1])
         update!(opt(lr), network.g[2][i].W, Δparamset[i][2])
         update!(opt(lr), network.g[1][i].b, Δparamset[i][3])
         update!(opt(lr), network.g[2][i].b, Δparamset[i][4])
     end
-    λ = network.λ + lr * (energy - ϵ)
-    setfield!(network, :λ, λ)
 end
 end
