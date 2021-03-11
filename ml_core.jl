@@ -9,12 +9,13 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
+    energy  = 0f0
     filename = dirname * "/errorstep" * lpad(it, 3, "0") * ".txt"
     touch(filename)
 
     # Inverse Iterative mathod Start
     for n in 1:Const.it_num
-        residue, energyS, energyB, numberB = sampling(ϵ, lr)
+        residue, energyS, energyB, numberB, energy = sampling(ϵ, lr)
         open(filename, "a") do io
             write(io, string(n))
             write(io, "\t")
@@ -32,7 +33,7 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
     # Reset ANN Params
     Func.ANN.reset()
 
-    error = ((energyS + energyB) - ϵ)^2
+    error = (energy - ϵ)^2
     return error, energyS, energyB, numberB
 end
 
@@ -65,15 +66,15 @@ function sampling(ϵ::Float32, lr::Float32)
     numberB = mean(batchnumberB)
     energy  = mean(batchenergy)
     for i in 1:Const.layers_num
-        Δparamset[i][1] = Δparamset[i][1] / Const.batchsize .* (energy - ϵ)
-        Δparamset[i][2] = Δparamset[i][2] / Const.batchsize .* (energy - ϵ)
-        Δparamset[i][3] = Δparamset[i][3] / Const.batchsize .* (energy - ϵ)
-        Δparamset[i][4] = Δparamset[i][4] / Const.batchsize .* (energy - ϵ)
+        Δparamset[i][1] = Δparamset[i][1] / Const.batchsize
+        Δparamset[i][2] = Δparamset[i][2] / Const.batchsize
+        Δparamset[i][3] = Δparamset[i][3] / Const.batchsize
+        Δparamset[i][4] = Δparamset[i][4] / Const.batchsize
     end
-    Func.ANN.update(Δparamset, lr)
+    Func.ANN.update(energy, ϵ, Δparamset, lr)
 
     # Output
-    return residue, energyS, energyB, numberB
+    return residue, energyS, energyB, numberB, energy
 end
 
 const X = vcat(ones(Float32, Int((Const.dimB+Const.dimS)/2)), -ones(Float32, Int((Const.dimB+Const.dimS)/2)))
@@ -120,7 +121,7 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     numberB /= Const.iters_num
 
     # Update Parameters
-    Func.ANN.updateparams(energy, ϕ, paramset, Δparamset)
+    Func.ANN.updateparams(energy, ϵ, ϕ, paramset, Δparamset)
 
     return residue, energyS, energyB, numberB, energy
 end

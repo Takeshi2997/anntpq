@@ -8,10 +8,9 @@ VIEW        = view.jl
 
 main: $(BASE) $(CORE) $(OBJS) $(CALC)
 	$(JL) $(OPTS) $(OBJS)
-	$(JL) $(OPTS) $(CALC)
 
 calc: $(BASE) $(CORE) $(CALC)
-	$(JL) $(CALC)
+	$(JL) $(OPTS) $(CALC)
 
 test: $(BASE) $(CORE) $(OBJS) $(VIEW)
 	$(JL) $(OBJS)
