@@ -182,7 +182,7 @@ function update(energy::Float32, ϵ::Float32, Δparamset::Vector, lr::Float32)
         update!(opt(lr), network.g[1][i].b, Δparamset[i][3])
         update!(opt(lr), network.g[2][i].b, Δparamset[i][4])
     end
-    λ = network.λ - lr * (energy - ϵ)^2 / 2f0
+    λ = network.λ - lr * (energy - ϵ)
     setfield!(network, :λ, λ)
 end
 end
