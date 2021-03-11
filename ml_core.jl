@@ -15,11 +15,11 @@ function inv_iterative_method(ϵ::Float32, lr::Float32, dirname::String, it::Int
 
     # Inverse Iterative mathod Start
     for n in 1:Const.it_num
-        residue, energyS, energyB, numberB, energy = sampling(ϵ, lr)
+        action, energyS, energyB, numberB, energy = sampling(ϵ, lr)
         open(filename, "a") do io
             write(io, string(n))
             write(io, "\t")
-            write(io, string(residue))
+            write(io, string(action))
             write(io, "\t")
             write(io, string(energyS / Const.dimS))
             write(io, "\t")
@@ -42,7 +42,7 @@ function sampling(ϵ::Float32, lr::Float32)
     batchenergyS = zeros(Float32, Const.batchsize)
     batchenergyB = zeros(Float32, Const.batchsize)
     batchnumberB = zeros(Float32, Const.batchsize)
-    batchresidue = zeros(Float32, Const.batchsize)
+    batchaction  = zeros(Float32, Const.batchsize)
     batchenergy  = zeros(Float32, Const.batchsize)
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
@@ -54,27 +54,27 @@ function sampling(ϵ::Float32, lr::Float32)
     paramsetvec = [Func.ANN.ParamSet() for n in 1:Const.batchsize]
 
     @threads for n in 1:Const.batchsize
-        batchresidue[n],
+        batchaction[n],
         batchenergyS[n],
         batchenergyB[n],
         batchnumberB[n],
         batchenergy[n] = mcmc(paramsetvec[n], Δparamset, ϵ, lr)
     end
-    residue = mean(batchresidue)
+    action  = mean(batchaction)
     energyS = mean(batchenergyS)
     energyB = mean(batchenergyB)
     numberB = mean(batchnumberB)
     energy  = mean(batchenergy)
     for i in 1:Const.layers_num
-        Δparamset[i][1] = Δparamset[i][1] / Const.batchsize
-        Δparamset[i][2] = Δparamset[i][2] / Const.batchsize
-        Δparamset[i][3] = Δparamset[i][3] / Const.batchsize
-        Δparamset[i][4] = Δparamset[i][4] / Const.batchsize
+        Δparamset[i][1] = Δparamset[i][1] * action / Const.batchsize
+        Δparamset[i][2] = Δparamset[i][2] * action / Const.batchsize
+        Δparamset[i][3] = Δparamset[i][3] * action / Const.batchsize
+        Δparamset[i][4] = Δparamset[i][4] * action / Const.batchsize
     end
-    Func.ANN.update(energy, ϵ, Δparamset, lr)
+    Func.ANN.update(Δparamset, lr)
 
     # Output
-    return residue, energyS, energyB, numberB, energy
+    return action, energyS, energyB, numberB, energy
 end
 
 const X = vcat(ones(Float32, Int((Const.dimB+Const.dimS)/2)), -ones(Float32, Int((Const.dimB+Const.dimS)/2)))
@@ -86,7 +86,6 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
-    residue = 0f0
     ϕ = 0f0
     x = shuffle(X)
     xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
@@ -107,24 +106,22 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
         eI = Func.energyI(x)
         e  = eS + eB + eI
         nB = (sum(x[1:Const.dimB]./2f0 .+ 0.5f0))
-        r  = Func.residue(e - ϵ, x)
         energyS += eS
         energyB += eB
         energy  += e
         numberB += nB
-        residue += r
         Func.ANN.backward(x, e, paramset)
     end
     energy   = real(energy)  / Const.iters_num
     energyS  = real(energyS) / Const.iters_num
     energyB  = real(energyB) / Const.iters_num
-    residue  = sqrt(residue  / Const.iters_num)
     numberB /= Const.iters_num
 
     # Update Parameters
     Func.ANN.updateparams(energy, ϕ, paramset, Δparamset)
+    action = (energy - ϵ) / 2f0 - ϕ
 
-    return residue, energyS, energyB, numberB, energy
+    return action, energyS, energyB, numberB, energy
 end
 
 function calculation_energy(num::Integer)

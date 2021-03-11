@@ -43,7 +43,6 @@ mutable struct Network
     g::Vector{Flux.Chain}
     p::Vector{Zygote.Params}
     q::Vector{Zygote.Params}
-    λ::Float32
 end
 
 function Network()
@@ -152,7 +151,6 @@ function updateparams(energy::Float32, ϕ::Float32, paramset::ParamSet, Δparams
     paramset.ϕ.x /= Const.iters_num
     X = 1f0 / sqrt(real(paramset.ϕ.x))
     ϕ = real(paramset.ϕ.y / Const.iters_num * X)    
-    λ = network.λ
     for i in 1:Const.layers_num
         oWx   = real.(paramset.o[1][i].W  / Const.iters_num)
         obx   = real.(paramset.o[1][i].b  / Const.iters_num)
@@ -164,10 +162,10 @@ function updateparams(energy::Float32, ϕ::Float32, paramset::ParamSet, Δparams
         oeby  = imag.(paramset.oe[2][i].b / Const.iters_num)
         oϕWy  = imag.(paramset.oϕ[2][i].W / Const.iters_num .* X)
         oϕby  = imag.(paramset.oϕ[2][i].b / Const.iters_num .* X)
-        realΔW = λ .* (oeWx - energy * oWx) - oϕWx + oWx .* ϕ
-        realΔb = λ .* (oebx - energy * obx) - oϕbx + obx .* ϕ
-        imagΔW = λ .*  oeWy - oϕWy
-        imagΔb = λ .*  oeby - oϕby
+        realΔW = oeWx - energy * oWx - oϕWx + oWx .* ϕ
+        realΔb = oebx - energy * obx - oϕbx + obx .* ϕ
+        imagΔW = oeWy - oϕWy
+        imagΔb = oeby - oϕby
         Δparamset[i][1] += realΔW
         Δparamset[i][2] += imagΔW
         Δparamset[i][3] += realΔb
@@ -177,14 +175,12 @@ end
 
 opt(lr::Float32) = Descent(lr)
 
-function update(energy::Float32, ϵ::Float32, Δparamset::Vector, lr::Float32)
+function update(Δparamset::Vector, lr::Float32)
     for i in 1:Const.layers_num
         update!(opt(lr), network.g[1][i].W, Δparamset[i][1])
         update!(opt(lr), network.g[2][i].W, Δparamset[i][2])
         update!(opt(lr), network.g[1][i].b, Δparamset[i][3])
         update!(opt(lr), network.g[2][i].b, Δparamset[i][4])
     end
-    λ = network.λ - lr * (energy - λ) / 2f0
-    setfield!(network, :λ, λ)
 end
 end
