@@ -145,12 +145,13 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     paramset.ϕ.y += ϕ
 end
 
+sqnorm(x) = sum(abs2, x)
+
 function updateparams(energy::Float32, ϵ::Float32, lr::Float32, ϕ::Float32, paramset::ParamSet, Δparamset::Vector)
     paramset.ϕ.x /= Const.iters_num
     X = 1f0 / sqrt(real(paramset.ϕ.x))
     ϕ = real(paramset.ϕ.y / Const.iters_num * X)    
-    penalty1 = sum(abs2, network.g[1].W) + sum(abs2, network.g[1].b)
-             + sum(abs2, network.g[2].W) + sum(abs2, network.g[2].b)
+    penalty = sum(sqnorm, Flux.params(network.g[1])) + sum(sqnorm, Flux.params(network.g[2]))
     λ = (penalty / 2f0 / lr - ϕ) / ϵ
     for i in 1:Const.layers_num
         oWx   = real.(paramset.o[1][i].W  / Const.iters_num)
