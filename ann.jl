@@ -40,9 +40,7 @@ function Network()
     for i in 1:Const.layers_num-1
         layers[i] = Dense(Const.layer[i], Const.layer[i+1], swish)
     end
-    W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
-    b = zeros(Complex{Float32}, Const.layer[end])
-    layers[end] = Dense(W, b)
+    layers[end] = Dense(Const.layer[end], Const.layaer[end-1])
     f = Chain([layers[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
     Network(f, p)
@@ -65,14 +63,11 @@ end
 
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
-    for i in 1:Const.layers_num-1
+    for i in 1:Const.layers_num
         W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i])
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
-    W = randn(Complex{Float32}, Const.layer[end], Const.layer[end-1])
-    b = zeros(Complex{Float32}, Const.layer[end])
-    parameters[i] = [W, b]
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
     Flux.loadparams!(network.f, p)
@@ -82,7 +77,7 @@ end
 
 function forward(x::Vector{Float32})
     out = network.f(x)
-    return transpose(x) * out
+    return out[1] + im * out[2]
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
@@ -100,7 +95,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
 end
 
 function updateparams(energy::Float32, lr::Float32, paramset::ParamSet, Δparamset::Vector)
-    for i in 1:Const.layers_num - 1
+    for i in 1:Const.layers_num
         oW   = real.(paramset.o[i].W  / Const.iters_num)
         ob   = real.(paramset.o[i].b  / Const.iters_num)
         oeW  = real.(paramset.oe[i].W / Const.iters_num)
@@ -110,14 +105,6 @@ function updateparams(energy::Float32, lr::Float32, paramset::ParamSet, Δparams
         Δparamset[i][1] += ΔW
         Δparamset[i][2] += Δb
     end
-    oW   = paramset.o[end].W  / Const.iters_num
-    ob   = paramset.o[end].b  / Const.iters_num
-    oeW  = paramset.oe[end].W / Const.iters_num
-    oeb  = paramset.oe[end].b / Const.iters_num
-    ΔW = oeW - energy * oW
-    Δb = oeb - energy * ob
-    Δparamset[end][1] += ΔW
-    Δparamset[end][2] += Δb
 end
 
 opt(lr::Float32) = Descent(lr)
