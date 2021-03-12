@@ -40,7 +40,7 @@ function Network()
     for i in 1:Const.layers_num-1
         layers[i] = Dense(Const.layer[i], Const.layer[i+1], swish)
     end
-    layers[end] = Dense(Const.layer[end], Const.layaer[end-1])
+    layers[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layers[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
     Network(f, p)
