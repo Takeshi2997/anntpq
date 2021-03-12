@@ -1,5 +1,5 @@
 module MLcore
-include("../setup.jl")
+include("./setup.jl")
 include("./functions.jl")
 using .Const, .Func, Random, Statistics, Base.Threads
 
@@ -9,11 +9,12 @@ function sampling(ϵ::Float32, lr::Float32)
     batchenergyS = zeros(Float32, Const.batchsize)
     batchenergyB = zeros(Float32, Const.batchsize)
     batchnumberB = zeros(Float32, Const.batchsize)
+    batchenergyI = zeros(Float32, Const.batchsize)
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
         W = zeros(Float32, Const.layer[i+1], Const.layer[i])
         b = zeros(Float32, Const.layer[i+1])
-        parameters[i] = [W, W, b, b]
+        parameters[i] = [W, b]
     end
     Δparamset = [param for param in parameters]
     paramsetvec = [Func.ANN.ParamSet() for n in 1:Const.batchsize]
@@ -22,22 +23,22 @@ function sampling(ϵ::Float32, lr::Float32)
         batchenergy[n], 
         batchenergyS[n],
         batchenergyB[n],
-        batchnumberB[n] = mcmc(paramsetvec[n], Δparamset, ϵ, lr)
+        batchnumberB[n],
+        batchenergyI[n] = mcmc(paramsetvec[n], Δparamset, ϵ, lr)
     end
     energy  = mean(batchenergy)
     energyS = mean(batchenergyS)
     energyB = mean(batchenergyB)
     numberB = mean(batchnumberB)
+    energyI = mean(batchenergyI)
     for i in 1:Const.layers_num
         Δparamset[i][1] .*= (energy - ϵ) / Const.batchsize
         Δparamset[i][2] .*= (energy - ϵ) / Const.batchsize
-        Δparamset[i][3] .*= (energy - ϵ) / Const.batchsize
-        Δparamset[i][4] .*= (energy - ϵ) / Const.batchsize
     end
     Func.ANN.update(Δparamset, lr)
 
     # Output
-    return energy, energyS, energyB, numberB
+    return energy, energyS, energyB, numberB, energyI
 end
 
 const X = vcat(ones(Float32, Int((Const.dimB+Const.dimS)/2)), -ones(Float32, Int((Const.dimB+Const.dimS)/2)))
@@ -47,6 +48,7 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     # Initialize
     energyS = 0f0
     energyB = 0f0
+    energyI = 0f0
     energy  = 0f0
     numberB = 0f0
     x = shuffle(X)
@@ -69,19 +71,21 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
         e  = eS + eB + eI
         energyS += eS
         energyB += eB
+        energyI += eI
         energy  += e
         numberB += sum(x[1:Const.dimB])
-        Func.ANN.backward(x, e - ϵ, paramset)
+        Func.ANN.backward(x, e, paramset)
     end
     energyS  = real(energyS) / Const.iters_num
     energyB  = real(energyB) / Const.iters_num
+    energyI  = real(energyI) / Const.iters_num
     energy   = real(energy)  / Const.iters_num
     numberB /= Const.iters_num
 
     # Update Parameters
-    Func.ANN.updateparams(energy - ϵ, paramset, Δparamset)
+    Func.ANN.updateparams(energy, lr, paramset, Δparamset)
 
-    return energy, energyS, energyB, numberB
+    return energy, energyS, energyB, numberB, energyI
 end
 
 function calculation_energy(num::Integer)

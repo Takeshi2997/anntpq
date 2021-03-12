@@ -1,6 +1,6 @@
 include("./setup.jl")
-include("./calc/ml_core.jl")
-include("./calc/legendreTF.jl")
+include("./ml_core.jl")
+include("./legendreTF.jl")
 using .Const, .MLcore, .LegendreTF
 using LinearAlgebra, Flux
 
@@ -32,4 +32,5 @@ function calculate()
 end
 
 calculate()
+
 

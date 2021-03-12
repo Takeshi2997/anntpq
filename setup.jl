@@ -16,11 +16,11 @@ const it_num = 100
 const iϵmax = 4
 
 # Learning Rate
-const lr = 1f-3
+const lr = 1f-5
 
 # Network Params
-const layer = [dimB+dimS, 24, 24, 24, 1]
+const layer = [dimB, 48, 48, 48, dimS]
 const layers_num = length(layer) - 1
-const batchsize = 32
+const batchsize = 128
 
 end

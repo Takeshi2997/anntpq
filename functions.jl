@@ -1,5 +1,5 @@
 module Func
-include("../setup.jl")
+include("./setup.jl")
 include("./ann.jl")
 using .Const, .ANN, LinearAlgebra, Random
 
