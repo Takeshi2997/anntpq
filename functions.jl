@@ -7,9 +7,9 @@ struct Flip
     flip::Vector{Diagonal{Float32}}
 end
 function Flip()
-    flip = Vector{Diagonal{Float32}}(undef, Const.layer[1])
-    for i in 1:Const.layer[1]
-        o = Diagonal(ones(Float32, Const.layer[1]))
+    flip = Vector{Diagonal{Float32}}(undef, Const.dimB+Const.dimS)
+    for i in 1:Const.dimB+Const.dimS
+        o = Diagonal(ones(Float32, Const.dimB+Const.dimS))
         o[i, i] *= -1f0
         flip[i] = o
     end
@@ -67,23 +67,6 @@ function energyB(x::Vector{Float32})
     sum = 0.0f0im
     for iy in 1:Const.dimB 
         sum += hamiltonianB(x, z, iy)
-    end
-    return sum
-end
-
-function hamiltonianI(x::Vector{Float32},
-                      z::Complex{Float32}, ix::Integer, iy::Integer)
-    out  = 0f0im
-    out += -x[ix] * x[iy]
-    return Const.λ * out / 4f0
-end
-
-function energyI(x::Vector{Float32})
-    z = ANN.forward(x)
-    sum = 0f0im
-    for iy in 1:Const.dimS
-        ix = Const.dimB + iy
-        sum += hamiltonianI(x, z, ix, iy)
     end
     return sum
 end
