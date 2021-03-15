@@ -9,7 +9,6 @@ function sampling(ϵ::Float32, lr::Float32)
     batchenergyS = zeros(Float32, Const.batchsize)
     batchenergyB = zeros(Float32, Const.batchsize)
     batchnumberB = zeros(Float32, Const.batchsize)
-    batchenergyI = zeros(Float32, Const.batchsize)
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
         W1 = zeros(Float32, Const.layer1[i+1], Const.layer1[i])
@@ -85,7 +84,7 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     numberB /= Const.iters_num
 
     # Update Parameters
-    Func.ANN.updateparams(energy, lr, paramset, Δparamset)
+    Func.ANN.updateparams(energy, paramset, Δparamset)
 
     return energy, energyS, energyB, numberB
 end

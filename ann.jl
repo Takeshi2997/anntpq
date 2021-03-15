@@ -126,7 +126,7 @@ function forward(x::Vector{Float32})
     out1 = network.f[1](@views x[1:Const.dimB])
     out2 = network.f[2](@views x[1+Const.dimB:end])
     out3 = network.f[3](x)
-    return out1[1] + im * out1[2] + out2[1] + im * out2[2] + out3[1] + im * out3[2]
+    return out1[1] + im * out1[2] + out2[1] + im * out2[2] + Const.λ * (out3[1] + im * out3[2])
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
@@ -157,7 +157,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     end
 end
 
-function updateparams(energy::Float32, lr::Float32, paramset::ParamSet, Δparamset::Vector)
+function updateparams(energy::Float32, paramset::ParamSet, Δparamset::Vector)
     for i in 1:Const.layers_num
         o1W   = real.(paramset.o[1][i].W  / Const.iters_num)
         o1b   = real.(paramset.o[1][i].b  / Const.iters_num)
@@ -186,7 +186,7 @@ function updateparams(energy::Float32, lr::Float32, paramset::ParamSet, Δparams
     end
 end
 
-opt(lr::Float32) = Descent(lr)
+opt(lr::Float32) = AMSGrad(lr, (0.9, 0.999))
 
 function update(Δparamset::Vector, lr::Float32)
     for i in 1:Const.layers_num
