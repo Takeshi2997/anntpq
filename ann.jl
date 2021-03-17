@@ -125,8 +125,8 @@ end
 function forward(x::Vector{Float32})
     out1 = network.f[1](@views x[1:Const.dimB])
     out2 = network.f[2](@views x[1+Const.dimB:end])
-    out3 = network.f[3](@views x[1+Const.dimB-Const.dimS:end])
-    return out1[1] + im * out1[2] + out2[1] + im * out2[2] + Conat.λ * (out3[1] + im * out3[2])
+    out3 = network.f[3](x)
+    return out1[1] + im * out1[2] + out2[1] + im * out2[2] + out3[1] + im * out3[2]
 end
 
 loss(x::Vector{Float32}) = real(forward(x))
