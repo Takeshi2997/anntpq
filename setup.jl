@@ -7,7 +7,7 @@ const dimB = 80
 # System Param
 const t = 1.0f0
 const J = 1.0f0
-const λ = 0.01f0
+const λ = 0.1f0
 
 # Repeat Number
 const burnintime = 10
@@ -24,6 +24,5 @@ const layer2 = [dimS,       8,  8, 2]
 const layer3 = [dimB+dimS, 48, 48, 2]
 const layers_num = length(layer3) - 1
 const batchsize = 128
-const η = 0.01f0
 
 end
