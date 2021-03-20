@@ -117,7 +117,7 @@ function mcmc_calc(num::Integer)
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
-    x = shuffle(X)
+    x = vcat(shuffle(X), shuffle(Y))
     xdata = Vector{Vector{Float32}}(undef, num)
     
     # MCMC Start!
