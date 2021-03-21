@@ -11,7 +11,7 @@ const λ = 0.01f0
 
 # Repeat Number
 const burnintime = 10
-const iters_num = 100
+const iters_num = 500
 const it_num = 100
 const iϵmax = 4
 
@@ -23,6 +23,6 @@ const layer1 = [dimB,      40, 40, 2]
 const layer2 = [dimS,       8,  8, 2]
 const layer3 = [dimB+dimS, 48, 48, 2]
 const layers_num = length(layer3) - 1
-const batchsize = 80
+const batchsize = 128
 
 end
