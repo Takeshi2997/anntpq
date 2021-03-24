@@ -108,13 +108,16 @@ function calculation_energy(num::Integer)
     return energyS, energyB, numberB
 end
 
+const X = vcat(ones(Float32, Int((Const.dimB)/2)), -ones(Float32, Int((Const.dimB)/2)))
+const Y = vcat(ones(Float32, Int((Const.dimS)/2)), -ones(Float32, Int((Const.dimS)/2)))
+
 function mcmc_calc(num::Integer)
 
     # Initialize
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
-    x = rand([1f0, -1f0], Const.dimS+Const.dimB)
+    x = vcat(shuffle(X), shuffle(Y))
     xdata = Vector{Vector{Float32}}(undef, num)
     
     # MCMC Start!
