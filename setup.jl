@@ -7,16 +7,16 @@ const dimB = 80
 # System Param
 const t = 1.0f0
 const J = 1.0f0
-const λ = 0.001f0
+const λ = 1f-3
 
 # Repeat Number
 const burnintime = 10
-const iters_num = 500
+const iters_num = 100
 const it_num = 100
 const iϵmax = 4
 
 # Learning Rate
-const lr = 1f-5
+const lr = 1f-3
 
 # Network Params
 const layer1 = [dimB,      40, 40, 2]
