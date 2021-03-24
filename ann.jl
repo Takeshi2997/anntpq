@@ -158,7 +158,7 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     end
 end
 
-function updateparams(energy::Float32, paramset::ParamSet, Δparamset::Vector)
+function updateparams(energy::Float32, ϵ::Float32, paramset::ParamSet, Δparamset::Vector)
     for i in 1:Const.layers_num
         o1W   = real.(paramset.o[1][i].W  / Const.iters_num)
         o1b   = real.(paramset.o[1][i].b  / Const.iters_num)
@@ -172,12 +172,12 @@ function updateparams(energy::Float32, paramset::ParamSet, Δparamset::Vector)
         o3b   = real.(paramset.o[3][i].b  / Const.iters_num)
         oe3W  = real.(paramset.oe[3][i].W / Const.iters_num)
         oe3b  = real.(paramset.oe[3][i].b / Const.iters_num)
-        ΔW1 = oe1W - energy * o1W
-        Δb1 = oe1b - energy * o1b
-        ΔW2 = oe2W - energy * o2W
-        Δb2 = oe2b - energy * o2b
-        ΔW3 = oe3W - energy * o3W
-        Δb3 = oe3b - energy * o3b
+        ΔW1 = (energy - ϵ) .* (oe1W - energy * o1W)
+        Δb1 = (energy - ϵ) .* (oe1b - energy * o1b)
+        ΔW2 = (energy - ϵ) .* (oe2W - energy * o2W)
+        Δb2 = (energy - ϵ) .* (oe2b - energy * o2b)
+        ΔW3 = (energy - ϵ) .* (oe3W - energy * o3W)
+        Δb3 = (energy - ϵ) .* (oe3b - energy * o3b)
         Δparamset[i][1] += ΔW1
         Δparamset[i][2] += Δb1
         Δparamset[i][3] += ΔW2

@@ -11,7 +11,7 @@ const λ = 1f-3
 
 # Repeat Number
 const burnintime = 10
-const iters_num = 100
+const iters_num = 500
 const it_num = 100
 const iϵmax = 4
 
