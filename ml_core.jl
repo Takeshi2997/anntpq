@@ -33,12 +33,12 @@ function sampling(ϵ::Float32, lr::Float32)
     energyB = mean(batchenergyB)
     numberB = mean(batchnumberB)
     for i in 1:Const.layers_num
-        Δparamset[i][1] ./= Const.batchsize
-        Δparamset[i][2] ./= Const.batchsize
-        Δparamset[i][3] ./= Const.batchsize
-        Δparamset[i][4] ./= Const.batchsize
-        Δparamset[i][5] ./= Const.batchsize
-        Δparamset[i][6] ./= Const.batchsize
+        Δparamset[i][1] .*= (energy - ϵ) / Const.batchsize
+        Δparamset[i][2] .*= (energy - ϵ) / Const.batchsize
+        Δparamset[i][3] .*= (energy - ϵ) / Const.batchsize
+        Δparamset[i][4] .*= (energy - ϵ) / Const.batchsize
+        Δparamset[i][5] .*= (energy - ϵ) / Const.batchsize
+        Δparamset[i][6] .*= (energy - ϵ) / Const.batchsize
     end
     Func.ANN.update(Δparamset, lr)
 
