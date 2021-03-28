@@ -8,6 +8,7 @@ function sampling(ϵ::Float32, lr::Float32)
     batchenergy  = zeros(Float32, Const.batchsize)
     batchenergyS = zeros(Float32, Const.batchsize)
     batchenergyB = zeros(Float32, Const.batchsize)
+    batchenergyI = zeros(Float32, Const.batchsize)
     batchnumberB = zeros(Float32, Const.batchsize)
     parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
@@ -26,11 +27,13 @@ function sampling(ϵ::Float32, lr::Float32)
         batchenergy[n], 
         batchenergyS[n],
         batchenergyB[n],
-        batchnumberB[n] = mcmc(paramsetvec[n], Δparamset, ϵ, lr)
+        batchnumberB[n],
+        batchenergyI[n] = mcmc(paramsetvec[n], Δparamset, ϵ, lr)
     end
     energy  = mean(batchenergy)
     energyS = mean(batchenergyS)
     energyB = mean(batchenergyB)
+    energyI = mean(batchenergyI)
     numberB = mean(batchnumberB)
     for i in 1:Const.layers_num
         Δparamset[i][1] .*= (energy - ϵ) / Const.batchsize
@@ -43,7 +46,7 @@ function sampling(ϵ::Float32, lr::Float32)
     Func.ANN.update(Δparamset, lr)
 
     # Output
-    return energy, energyS, energyB, numberB
+    return energy, energyS, energyB, numberB, energyI
 end
 
 function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
@@ -51,6 +54,7 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     # Initialize
     energyS = 0f0
     energyB = 0f0
+    energyI = 0f0
     energy  = 0f0
     numberB = 0f0
     x = rand([1f0, -1f0], Const.dimS+Const.dimB)
@@ -73,19 +77,21 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
         e  = eS + eB + eI
         energyS += eS
         energyB += eB
+        energyI += eI
         energy  += e
         numberB += sum(x[1:Const.dimB])
         Func.ANN.backward(x, e, paramset)
     end
     energyS  = real(energyS) / Const.iters_num
     energyB  = real(energyB) / Const.iters_num
+    energyI  = real(energyI) / Const.iters_num
     energy   = real(energy)  / Const.iters_num
     numberB /= Const.iters_num
 
     # Update Parameters
     Func.ANN.updateparams(energy, paramset, Δparamset)
 
-    return energy, energyS, energyB, numberB
+    return energy, energyS, energyB, numberB, energyI
 end
 
 function calculation_energy(num::Integer)

@@ -17,7 +17,7 @@ function learning(iϵ::Integer, dirname::String, dirnameerror::String, lr::Float
 
     # Learning
     for n in 1:Const.it_num
-        energy, energyS, energyB, numberB = MLcore.sampling(ϵ, lr)
+        energy, energyS, energyB, energyI, numberB = MLcore.sampling(ϵ, lr)
         error = ((energy - ϵ) / (Const.dimS + Const.dimB))^2 / 2f0
         open(filename, "a") do io
             write(io, string(n))
@@ -27,6 +27,8 @@ function learning(iϵ::Integer, dirname::String, dirnameerror::String, lr::Float
             write(io, string(energyS / Const.dimS))
             write(io, "\t")
             write(io, string(energyB / Const.dimB))
+            write(io, "\t")
+            write(io, string(energyI))
             write(io, "\t")
             write(io, string(numberB / Const.dimB))
             write(io, "\n")
