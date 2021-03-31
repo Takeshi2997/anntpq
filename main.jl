@@ -9,7 +9,7 @@ function learning(iϵ::Integer, dirname::String, dirnameerror::String, lr::Float
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
-    ϵ = (-0.01f0 - 0.4f0 * iϵ / Const.iϵmax) * Const.t * Const.dimB
+    ϵ = -0.4f0 * iϵ / Const.iϵmax * Const.t * Const.dimB
     filenameparams = dirname * "/params_at_" * lpad(iϵ, 3, "0") * ".bson"
     filename = dirnameerror * "/error" * lpad(iϵ, 3, "0") * ".txt"
     MLcore.Func.ANN.load(dirname * "/params_at_000.bson")
