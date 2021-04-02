@@ -130,7 +130,7 @@ function forward(x::Vector{Float32})
 end
 
 sqnorm(x) = sum(abs2, x)
-loss(x::Vector{Float32}) = real(forward(x)) + sum(sqnorm, Flux.params(network.f[3]))
+loss(x::Vector{Float32}) = real(forward(x)) + Const.η * sum(sqnorm, Flux.params(network.f[3]))
 
 function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     gs1 = gradient(() -> loss(x), network.p[1])

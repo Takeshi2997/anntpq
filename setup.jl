@@ -24,5 +24,6 @@ const layer2 = [dimS,      32, 32, 32, 2]
 const layer3 = [dimB+dimS, 48, 48, 48, 2]
 const layers_num = length(layer3) - 1
 const batchsize = 64
+const η = 0.1f0
 
 end
