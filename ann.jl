@@ -105,7 +105,7 @@ function init()
         parameters2[i] = [W, b]
     end
     for i in 1:Const.layers_num
-        W = Flux.kaiming_normal(Const.layer3[i+1], Const.layer3[i])
+        W = Flux.kaiming_normal(Const.layer3[i+1], Const.layer3[i]) .* 0.1f0
         b = Flux.zeros(Const.layer3[i+1])
         parameters3[i] = [W, b]
     end
@@ -129,8 +129,7 @@ function forward(x::Vector{Float32})
     return out1[1] + im * out1[2] + out2[1] + im * out2[2] + out3[1] + im * out3[2]
 end
 
-sqnorm(x) = sum(abs2, x)
-loss(x::Vector{Float32}) = real(forward(x)) + sum(sqnorm, Flux.params(network.f[3][end]))
+loss(x::Vector{Float32}) = real(forward(x))
 
 function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     gs1 = gradient(() -> loss(x), network.p[1])
