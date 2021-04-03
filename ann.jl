@@ -56,7 +56,7 @@ function Network()
     end
     layers2[end] = Dense(Const.layer2[end-1], Const.layer2[end])
     for i in 1:Const.layers_num-1
-        layers3[i] = Dense(Const.layer3[i], Const.layer3[i+1], swish)
+        layers3[i] = Dense(Const.layer3[i], Const.layer3[i+1], tanh)
     end
     layers3[end] = Dense(Const.layer3[end-1], Const.layer3[end])
     f1 = Chain([layers1[i] for i in 1:Const.layers_num]...)
@@ -129,8 +129,7 @@ function forward(x::Vector{Float32})
     return out1[1] + im * out1[2] + out2[1] + im * out2[2] + out3[1] + im * out3[2]
 end
 
-sqnorm(x) = sum(abs2, x)
-loss(x::Vector{Float32}) = real(forward(x)) + Const.η * sum(sqnorm, Flux.params(network.f[3]))
+loss(x::Vector{Float32}) = real(forward(x))
 
 function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     gs1 = gradient(() -> loss(x), network.p[1])
