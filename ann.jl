@@ -56,7 +56,7 @@ function Network()
     end
     layers2[end] = Dense(Const.layer2[end-1], Const.layer2[end])
     for i in 1:Const.layers_num-1
-        layers3[i] = Dense(Const.layer3[i], Const.layer3[i+1], tanh)
+        layers3[i] = Dense(Const.layer3[i], Const.layer3[i+1], swish)
     end
     layers3[end] = Dense(Const.layer3[end-1], Const.layer3[end])
     f1 = Chain([layers1[i] for i in 1:Const.layers_num]...)
@@ -105,7 +105,7 @@ function init()
         parameters2[i] = [W, b]
     end
     for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer3[i+1], Const.layer3[i])
+        W = Flux.kaiming_normal(Const.layer3[i+1], Const.layer3[i])
         b = Flux.zeros(Const.layer3[i+1])
         parameters3[i] = [W, b]
     end
@@ -130,7 +130,7 @@ function forward(x::Vector{Float32})
 end
 
 sqnorm(x) = sum(abs2, x)
-loss(x::Vector{Float32}) = real(forward(x)) + sum(sqnorm, Flux.params(network.f[3]))
+loss(x::Vector{Float32}) = real(forward(x)) + sum(sqnorm, Flux.params(network.f[3][end]))
 
 function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     gs1 = gradient(() -> loss(x), network.p[1])
