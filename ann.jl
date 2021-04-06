@@ -105,7 +105,7 @@ function init()
         parameters2[i] = [W, b]
     end
     for i in 1:Const.layers_num
-        W = Flux.kaiming_normal(Const.layer3[i+1], Const.layer3[i]) .* 0.1f0
+        W = Flux.kaiming_normal(Const.layer3[i+1], Const.layer3[i])
         b = Flux.zeros(Const.layer3[i+1])
         parameters3[i] = [W, b]
     end
