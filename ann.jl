@@ -105,9 +105,7 @@ function forward(x::Vector{Float32})
     return out1[1] + im * out1[2] + out2[1] + im * out2[2]
 end
 
-sqnorm(x) = sum(abs2, x)
-loss(x::Vector{Float32}) = real(forward(x)) + 
-sum(sqnorm, Flux.params(network.f[1])) + sum(sqnorm, Flux.params(network.f[2])) 
+loss(x::Vector{Float32}) = real(forward(x))
 
 function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     gs1 = gradient(() -> loss(x), network.p[1])
@@ -149,7 +147,7 @@ function updateparams(energy::Float32, paramset::ParamSet, Δparamset::Vector)
     end
 end
 
-opt(lr::Float32) = AMSGrad(lr, (0.9, 0.999))
+opt(lr::Float32) = Descent(lr)
 
 function update(Δparamset::Vector, lr::Float32)
     for i in 1:Const.layers_num
