@@ -11,16 +11,16 @@ const λ = 1f0
 
 # Repeat Number
 const burnintime = 10
-const iters_num = 200
+const iters_num = 500
 const it_num = 100
 const iϵmax = 4
 
 # Learning Rate
-const lr = 1f-6
+const lr = 1f-3
 
 # Network Params
-const layer1 = [dimB, 80, 80, 80, 2]
-const layer2 = [dimS, 24, 24, 24, 2]
+const layer1 = [dimB, 80, 80, 2]
+const layer2 = [dimS, 48, 48, 2]
 const layers_num = length(layer1) - 1
 const batchsize = 64
 
