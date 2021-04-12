@@ -41,8 +41,6 @@ function sampling(ϵ::Float32, lr::Float32)
     return energy, energyS, energyB, numberB, energyI
 end
 
-const X = vcat(ones(Float32, Int((Const.dimB+Const.dimS)/2)), -ones(Float32, Int((Const.dimB+Const.dimS)/2)))
-
 function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
 
     # Initialize
@@ -51,7 +49,7 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     energyI = 0f0
     energy  = 0f0
     numberB = 0f0
-    x = shuffle(X)
+    x = rand([-1f0, 1f0], Const.dimB+Const.dimS)
     xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
     
     # MCMC Start!
@@ -114,7 +112,7 @@ function mcmc_calc(num::Integer)
     energyS = 0f0
     energyB = 0f0
     numberB = 0f0
-    x = shuffle(X)
+    x = rand([-1f0, 1f0], Const.dimB+Const.dimS)
     xdata = Vector{Vector{Float32}}(undef, num)
     
     # MCMC Start!
