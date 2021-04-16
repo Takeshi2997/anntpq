@@ -94,14 +94,14 @@ function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     end
 end
 
-function updateparams(energy::Float32, ϵ::Float32, lr::Float32, paramset::ParamSet, Δparamset::Vector)
+function updateparams(energy::Float32, lr::Float32, paramset::ParamSet, Δparamset::Vector)
     for i in 1:Const.layers_num
         oW   = real.(paramset.o[i].W  / Const.iters_num)
         ob   = real.(paramset.o[i].b  / Const.iters_num)
         oeW  = real.(paramset.oe[i].W / Const.iters_num)
         oeb  = real.(paramset.oe[i].b / Const.iters_num)
-        ΔW = (energy - ϵ) .* (oeW - energy * oW)
-        Δb = (energy - ϵ) .* (oeb - energy * ob)
+        ΔW = oeW - energy * oW
+        Δb = oeb - energy * ob
         Δparamset[i][1] += ΔW
         Δparamset[i][2] += Δb
     end
