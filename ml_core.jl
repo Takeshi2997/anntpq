@@ -32,8 +32,8 @@ function sampling(ϵ::Float32, lr::Float32)
     numberB = mean(batchnumberB)
     energyI = mean(batchenergyI)
     for i in 1:Const.layers_num
-        Δparamset[i][1] .*= (energy - ϵ) / Const.batchsize
-        Δparamset[i][2] .*= (energy - ϵ) / Const.batchsize
+        Δparamset[i][1] ./= Const.batchsize
+        Δparamset[i][2] ./= Const.batchsize
     end
     Func.ANN.update(Δparamset, lr)
 
@@ -81,7 +81,7 @@ function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
     numberB /= Const.iters_num
 
     # Update Parameters
-    Func.ANN.updateparams(energy, lr, paramset, Δparamset)
+    Func.ANN.updateparams(energy, ϵ, lr, paramset, Δparamset)
 
     return energy, energyS, energyB, numberB, energyI
 end
