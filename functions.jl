@@ -81,9 +81,10 @@ end
 function energyI(x::Vector{Float32})
     z = ANN.forward(x)
     sum = 0f0im
-    iy = 1
-    ix = Const.dimB + iy
-    sum += hamiltonianI(x, z, ix, iy)
+    for iy in 1:8
+        ix = Const.dimB + iy
+        sum += hamiltonianI(x, z, ix, iy)
+    end
     return sum
 end
 end
