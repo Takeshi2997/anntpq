@@ -11,11 +11,14 @@ function sampling(ϵ::Float32, lr::Float32)
     batchnumberB = zeros(Float32, Const.batchsize)
     batchenergyI = zeros(Float32, Const.batchsize)
     parameters = Vector{Array}(undef, Const.layers_num)
-    for i in 1:Const.layers_num
+    for i in 1:Const.layers_num-1
         W = zeros(Float32, Const.layer[i+1], Const.layer[i])
         b = zeros(Float32, Const.layer[i+1])
         parameters[i] = [W, b]
     end
+    W = zeros(Complex{Float32}, Const.layer[end], Const.layer[end-1])
+    b = zeros(Complex{Float32}, Const.layer[end])
+    parameters[end] = [W, b]
     Δparamset = [param for param in parameters]
     paramsetvec = [Func.ANN.ParamSet() for n in 1:Const.batchsize]
 

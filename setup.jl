@@ -1,7 +1,7 @@
 module Const
 
 # System Size
-const dimS = 16
+const dimS = 24
 const dimB = 64
 
 # System Param
@@ -16,10 +16,10 @@ const it_num = 100
 const iϵmax = 4
 
 # Learning Rate
-const lr = 1f-3
+const lr = 1f-5
 
 # Network Params
-const layer = [dimB+dimS, 80, 80, 2]
+const layer = [dimS, 64]
 const layers_num = length(layer) - 1
 const batchsize = 64
 

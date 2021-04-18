@@ -7,9 +7,9 @@ struct Flip
     flip::Vector{Diagonal{Float32}}
 end
 function Flip()
-    flip = Vector{Diagonal{Float32}}(undef, Const.layer[1])
-    for i in 1:Const.layer[1]
-        o = Diagonal(ones(Float32, Const.layer[1]))
+    flip = Vector{Diagonal{Float32}}(undef, Const.dimS+Const.dimB)
+    for i in 1:Const.dimS+Const.dimB
+        o = Diagonal(ones(Float32, Const.dimS+Const.dimB))
         o[i, i] *= -1f0
         flip[i] = o
     end
