@@ -71,4 +71,19 @@ function energyB(x::Vector{Float32})
     return sum
 end
 
+function hamiltonianI(x::Vector{Float32},
+                      z::Complex{Float32}, ix::Integer, iy::Integer)
+    out  = 0f0im
+    out += -x[ix] * x[iy]
+    return Const.λ * out / 4f0
+end
+
+function energyI(x::Vector{Float32})
+    z = ANN.forward(x)
+    sum = 0f0im
+    iy = 1
+    ix = Const.dimB + iy
+    sum += hamiltonianI(x, z, ix, iy)
+    return sum
+end
 end

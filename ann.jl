@@ -7,67 +7,49 @@ using BSON: @save
 using BSON: @load
 
 # Initialize Variables
-
-abstract type Parameters end
-mutable struct Params{S<:AbstractArray} <: Parameters
-    W::S
-end
-mutable struct WaveFunction{S<:Complex} <: Parameters
-    ϕ::S
+mutable struct ParamSet{T <: AbstractArray, S <: AbstractArray}
+    o::T
+    oe::T
+    oo::S
 end
 
-o   = Vector{Parameters}(undef, Const.layers_num)
-oe  = Vector{Parameters}(undef, Const.layers_num)
-ob  = Vector{Parameters}(undef, Const.layers_num)
-oo  = Vector{Parameters}(undef, Const.layers_num)
-b   = Parameters
-const I = [Diagonal(ones(Float32, Const.layer[i+1] * (Const.layer[i] + 1))) for i in 1:Const.layers_num]
-
-function initO()
-    for i in 1:Const.layers_num
-        W = zeros(Complex{Float32}, Const.layer[i+1] * (Const.layer[i] + 1))
-        S = transpose(W) .* W
-        global o[i]  = Params(W)
-        global oe[i] = Params(W)
-        global ob[i] = Params(W)
-        global oo[i] = Params(S)
-    end
-    global b = WaveFunction(0f0im)
+function ParamSet()
+    W = zeros(Complex{Float32}, Const.networkdim)
+    S = transpose(W) .* W
+    ParamSet(W, W, S)
 end
+
+const I = Diagonal(ones(Float32, Const.networkdim))
 
 # Define Network
 
-struct Layer{F,S<:AbstractArray}
+struct RBM{F,S<:AbstractArray,T<:AbstractArray}
     W::S
+    b::T
+    a::T
     σ::F
 end
-function Layer(in::Integer, out::Integer, σ = identity;
-               initW = Flux.glorot_uniform)
-    return Layer(initW(out, in+1), σ)
+function RBM(in::Integer, out::Integer, σ = identity;
+             initW = randn, initb = zeros, inita = randn)
+    return RBM(initW(Complex{Float32}, out, in), initb(Complex{Float32}, out), inita(Complex{Float32}, in), σ)
 end
-@functor Layer
-function (m::Layer)(x::AbstractArray)
-    W, σ = m.W, m.σ
-    z = vcat(x, 1)
-    σ.(W*z)
+@functor RBM
+function (m::RBM)(x::AbstractArray)
+    W, b, a, σ = m.W, m.b, m.a, m.σ
+    sum(σ.(W*x+b))+transpose(a)*x
 end
 
+NNlib.logcosh(x::Complex{Float32}) = log(2f0 * cosh(x))
+
 mutable struct Network
-    f::Flux.Chain
-    g::Flux.Chain
+    f::RBM
     p::Zygote.Params
-    q::Zygote.Params
 end
 
 function Network()
-    layers = Vector(undef, Const.layers_num)
-    for i in 1:Const.layers_num-1
-        layers[i] = Layer(Const.layer[i], Const.layer[i+1], tanh)
-    end
-    layers[end] = Layer(Const.layer[end-1], Const.layer[end])
-    f = Chain([layers[i] for i in 1:Const.layers_num]...)
+    f = RBM(Const.layer[1], Const.layer[2], logcosh)
     p = Flux.params(f)
-    Network(f, f, p, p)
+    Network(f, p)
 end
 
 network = Network()
@@ -85,77 +67,51 @@ function load(filename)
     Flux.loadparams!(network.f, p)
 end
 
-function reset()
-    g = getfield(network, :g)
-    q = Flux.params(g)
-    Flux.loadparams!(network.f, q)
-end
-
-function init_sub()
-    parameters = Vector{Array}(undef, Const.layers_num)
-    for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1], Const.layer[i] + 1) 
-        parameters[i] = [W]
-    end
-    paramset = [param for param in parameters]
-    q = Flux.params(paramset...)
-    Flux.loadparams!(network.g, q)
-end
-
 function init()
-    parameters = Vector{Array}(undef, Const.layers_num)
-    for i in 1:Const.layers_num
-        W = Flux.glorot_uniform(Const.layer[i+1] , Const.layer[i] + 1)
-        parameters[i] = [W]
-    end
-    paramset = [param for param in parameters]
-    p = Flux.params(paramset...)
+    W = Flux.kaiming_uniform(Const.layer[2], Const.layer[1])
+    b = Flux.zeros(Const.layer[2])
+    a = Flux.zeros(Const.layer[1])
+    paramset = [W, b, a]
+    p = Flux.params(paramset)
     Flux.loadparams!(network.f, p)
 end
 
 # Learning Method
 
 function forward(x::Vector{Float32})
-    out = network.g(x)
-    return out[1] + im * out[2]
-end
-
-function forward_b(x::Vector{Float32})
     out = network.f(x)
-    return out[1] + im * out[2]
+    return out
 end
 
-loss(x::Vector{Float32}) = real(forward(x))
+loss(x::Vector{Float32}) = real(network.f(x))
 
-function backward(x::Vector{Float32}, e::Complex{Float32})
-    gs = gradient(() -> loss(x), network.q)
-    for i in 1:Const.layers_num
-        dw = gs[network.f[i].W]
-        dw = reshape(dw, length(dw))
-        o[i].W  += dw
-        oe[i].W += dw .* e
-        ob[i].W += dw .* forward_b(x) ./ forward(x)
-        oo[i].W += transpose(dw) .* conj.(dw)
-    end
-    b.ϕ += forward_b(x) ./ forward(x)
+function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
+    gs = gradient(() -> loss(x), network.p)
+    dW = reshape(gs[network.f.W], Const.layer[1]*Const.layer[2])
+    db = gs[network.f.b]
+    da = gs[network.f.a]
+    dθ = vcat(dW, db, da)
+    paramset.o  += dθ
+    paramset.oe += dθ .* e
+end
+
+function updateparams(energy::Float32, paramset::ParamSet, Δparamset::Array)
+    o  = paramset.o  / Const.iters_num
+    oe = paramset.oe / Const.iters_num
+    Δparamset += oe - energy * o
 end
 
 opt(lr::Float32) = Descent(lr)
 
-function update(energy::Float32, ϵ::Float32, lr::Float32)
-    for i in 1:Const.layers_num
-        o[i].W  ./= Const.iters_num
-        oe[i].W ./= Const.iters_num
-        ob[i].W ./= Const.iters_num
-        oo[i].W ./= Const.iters_num
-    end
-    b.ϕ /= Const.iters_num
-    for i in 1:Const.layers_num
-        R = real.(oe[i].W - (energy - ϵ) * o[i].W) - (real.(ob[i].W) - real.(o[i].W) .* real(b.ϕ))
-        S = real.(oo[i].W - transpose(o[i].W) .* conj.(o[i].W))
-        ΔW = reshape(svd(S + Const.η .* I[i])\R, (Const.layer[i+1], Const.layer[i]+1))
-        update!(opt(lr), network.g[i].W, ΔW)
-    end
+function update(Δparamset::Vector, lr::Float32)
+    ΔW = reshape(Δparamset[1:Const.layer[2]*Const.layer[1]], Const.layer[2], Const.layer[1])
+    n  = Const.layer[2] * Const.layer[1]
+    Δb = Δparamset[n+1:n+Const.layer[2]]
+    n += Const.layer[2]
+    Δa = Δparamset[n+1:n+Const.layer[1]]
+    update!(opt(lr), network.f.W, ΔW)
+    update!(opt(lr), network.f.b, Δb)
+    update!(opt(lr), network.f.a, Δa)
 end
 
 end
