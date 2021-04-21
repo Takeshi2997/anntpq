@@ -131,6 +131,8 @@ function srupdateparams(energy::Float32, paramset::ParamSet, Δparamset::Array)
     oo = CuArray(paramset.oo / Const.iters_num)
     R  = oe - energy * o
     S  = oo - transpose(o) .* conj.(o)
-    Δparamset += -im .* svd(S) \ R |> cpu
+    U, Δ, V = svd(S)
+    invΔ = Diagonal(1f0 ./ Δ .* (Δ .> 1f-6))
+    Δparamset += -im .* V * invΔ * U' * R |> cpu
 end
 end
