@@ -3,40 +3,7 @@ include("./setup.jl")
 include("./functions.jl")
 using .Const, .Func, Random, Statistics, Base.Threads
 
-function unitary(dt::Float32)
-    # Initialize
-    batchenergy  = zeros(Float32, Const.batchsize)
-    batchenergyS = zeros(Float32, Const.batchsize)
-    batchenergyB = zeros(Float32, Const.batchsize)
-    batchnumberB = zeros(Float32, Const.batchsize)
-    batchenergyI = zeros(Float32, Const.batchsize)
-    param = zeros(Complex{Float32}, Const.networkdim)
-    Δparamset = [param, param]
-    paramsetvec = [Func.ANN.ParamSet() for n in 1:Const.batchsize]
-
-    @threads for n in 1:Const.batchsize
-        batchenergy[n], 
-        batchenergyS[n],
-        batchenergyB[n],
-        batchnumberB[n],
-        batchenergyI[n] = mcmc(paramsetvec[n], Δparamset, ϵ, lr)
-    end
-    energy  = mean(batchenergy)
-    energyS = mean(batchenergyS)
-    energyB = mean(batchenergyB)
-    numberB = mean(batchnumberB)
-    energyI = mean(batchenergyI)
-
-    Δparamset[1] ./= Const.batchsize
-    Δparamset[2] ./= Const.batchsize
-    Func.ANN.unitary(Δparamset, dt)
-
-    # Output
-    return energy, energyS, energyB, numberB, energyI
-end
-
-
-function sampling(ϵ::Float32, lr::Float32)
+function imaginary(ϵ::Float32, lr::Float32)
     # Initialize
     batchenergy  = zeros(Float32, Const.batchsize)
     batchenergyS = zeros(Float32, Const.batchsize)
@@ -51,7 +18,7 @@ function sampling(ϵ::Float32, lr::Float32)
         batchenergyS[n],
         batchenergyB[n],
         batchnumberB[n],
-        batchenergyI[n] = mcmc(paramsetvec[n], Δparamset, ϵ, lr)
+        batchenergyI[n] = mcmc(paramsetvec[n], Δparamset, lr)
     end
     energy  = mean(batchenergy)
     energyS = mean(batchenergyS)
@@ -66,7 +33,82 @@ function sampling(ϵ::Float32, lr::Float32)
     return energy, energyS, energyB, numberB, energyI
 end
 
-function mcmc(paramset, Δparamset::Vector, ϵ::Float32, lr::Float32)
+function unitary(dt::Float32)
+    # Initialize
+    batchenergy  = zeros(Float32, Const.batchsize)
+    batchenergyS = zeros(Float32, Const.batchsize)
+    batchenergyB = zeros(Float32, Const.batchsize)
+    batchnumberB = zeros(Float32, Const.batchsize)
+    batchenergyI = zeros(Float32, Const.batchsize)
+    Δparamset    = zeros(Complex{Float32}, Const.networkdim)
+    paramsetvec  = [Func.ANN.ParamSet() for n in 1:Const.batchsize]
+
+    @threads for n in 1:Const.batchsize
+        batchenergy[n], 
+        batchenergyS[n],
+        batchenergyB[n],
+        batchnumberB[n],
+        batchenergyI[n] = srmcmc(paramsetvec[n], Δparamset, dt)
+    end
+    energy  = mean(batchenergy)
+    energyS = mean(batchenergyS)
+    energyB = mean(batchenergyB)
+    numberB = mean(batchnumberB)
+    energyI = mean(batchenergyI)
+
+    Δparamset ./= Const.batchsize
+    Func.ANN.update(Δparamset, dt)
+
+    # Output
+    return energy, energyS, energyB, numberB, energyI
+end
+
+function srmcmc(paramset, Δparamset::Vector, dt::Float32)
+
+    # Initialize
+    energyS = 0f0
+    energyB = 0f0
+    energyI = 0f0
+    energy  = 0f0
+    numberB = 0f0
+    x = rand([-1f0, 1f0], Const.dimB+Const.dimS)
+    xdata = Vector{Vector{Float32}}(undef, Const.iters_num)
+    
+    # MCMC Start!
+    for i in 1:Const.burnintime
+        Func.update(x)
+    end
+    for i in 1:Const.iters_num
+        Func.update(x)
+        @inbounds xdata[i] = x
+    end
+    
+    # Calcurate Physical Value
+    @simd for x in xdata
+        eS = Func.energyS(x)
+        eB = Func.energyB(x)
+        eI = Func.energyI(x)
+        e  = eS + eB + eI
+        energyS += eS
+        energyB += eB
+        energyI += eI
+        energy  += e
+        numberB += sum(x[1:Const.dimB])
+        Func.ANN.srbackward(x, e, paramset)
+    end
+    energyS  = real(energyS) / Const.iters_num
+    energyB  = real(energyB) / Const.iters_num
+    energyI  = real(energyI) / Const.iters_num
+    energy   = real(energy)  / Const.iters_num
+    numberB /= Const.iters_num
+
+    # Update Parameters
+    Func.ANN.srupdateparams(energy, paramset, Δparamset)
+
+    return energy, energyS, energyB, numberB, energyI
+end
+
+function mcmc(paramset, Δparamset::Vector, lr::Float32)
 
     # Initialize
     energyS = 0f0

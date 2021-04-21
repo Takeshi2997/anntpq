@@ -21,7 +21,8 @@ const layers_num = length(layer) - 1
 const networkdim = layer[2] * (layer[1] + 1) + layer[1]
 
 # Learning Rate
-const lr = 1f-5
+const lr = 1f-3
+const dt = 1f-5
 const batchsize = 64
 
 end

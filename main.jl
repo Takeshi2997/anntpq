@@ -3,7 +3,20 @@ include("./ml_core.jl")
 using .Const, .MLcore
 using Flux
 
-function learning(iϵ::Integer, dirname::String, dirnameerror::String, lr::Float32)
+function main()
+
+    dirname = "./data"
+    rm(dirname, force=true, recursive=true)
+    mkdir(dirname)
+    dirnameerror = "./error"
+    rm(dirnameerror, force=true, recursive=true)
+    mkdir(dirnameerror)
+    MLcore.Func.ANN.init()
+    MLcore.Func.ANN.save(dirname * "/params_at_000.bson")
+    map(iϵ -> learning(iϵ, dirname, dirnameerror, Const.lr, Const.dt), 1:Const.iϵmax)
+end
+
+function learning(iϵ::Integer, dirname::String, dirnameerror::String, lr::Float32, dt::Float32)
     # Initialize
     error   = 0f0
     energyS = 0f0
@@ -17,8 +30,27 @@ function learning(iϵ::Integer, dirname::String, dirnameerror::String, lr::Float
 
     # Learning
     for n in 1:Const.it_num
-        energy, energyS, energyB, numberB, energyI = MLcore.sampling(ϵ, lr)
-        error = ((energy - ϵ) / (Const.dimS + Const.dimB))^2 / 2f0
+        energy, energyS, energyB, numberB, energyI = MLcore.imaginary(ϵ, lr)
+        error = (energy - ϵ)^2 / 2f0
+        open(filename, "a") do io
+            write(io, string(n))
+            write(io, "\t")
+            write(io, string(error))
+            write(io, "\t")
+            write(io, string(energyS / Const.dimS))
+            write(io, "\t")
+            write(io, string(energyB / Const.dimB))
+            write(io, "\t")
+            write(io, string(numberB / Const.dimB))
+            write(io, "\t")
+            write(io, string(energyI / Const.dimS))
+            write(io, "\n")
+        end
+    end
+
+    for n in 1:Const.it_num
+        energy, energyS, energyB, numberB, energyI = MLcore.unitary(dt)
+        error = (energy - ϵ)^2 / 2f0
         open(filename, "a") do io
             write(io, string(n))
             write(io, "\t")
@@ -36,19 +68,6 @@ function learning(iϵ::Integer, dirname::String, dirnameerror::String, lr::Float
     end
 
     MLcore.Func.ANN.save(filenameparams)
-end
-
-function main()
-
-    dirname = "./data"
-    rm(dirname, force=true, recursive=true)
-    mkdir(dirname)
-    dirnameerror = "./error"
-    rm(dirnameerror, force=true, recursive=true)
-    mkdir(dirnameerror)
-    MLcore.Func.ANN.init()
-    MLcore.Func.ANN.save(dirname * "/params_at_000.bson")
-    map(iϵ -> learning(iϵ, dirname, dirnameerror, Const.lr), 1:Const.iϵmax)
 end
 
 main()

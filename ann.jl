@@ -1,6 +1,6 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote
+using .Const, LinearAlgebra, Flux, Zygote, CUDA
 using Flux: @functor
 using Flux.Optimise: update!
 using BSON: @save
@@ -114,4 +114,23 @@ function update(Δparamset::Vector, lr::Float32)
     update!(opt(lr), network.f.a, Δa)
 end
 
+function srbackward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
+    gs = gradient(() -> loss(x), network.p)
+    dW = reshape(gs[network.f.W], Const.layer[1]*Const.layer[2])
+    db = gs[network.f.b]
+    da = gs[network.f.a]
+    dθ = vcat(dW, db, da)
+    paramset.o  += dθ
+    paramset.oe += dθ .* e
+    paramset.oo += transpose(dθ) .* conj.(dθ)
+end
+
+function srupdateparams(energy::Float32, paramset::ParamSet, Δparamset::Array)
+    o  = CuArray(paramset.o  / Const.iters_num)
+    oe = CuArray(paramset.oe / Const.iters_num)
+    oo = CuArray(paramset.oo / Const.iters_num)
+    R  = oe - energy * o
+    S  = oo - transpose(o) .* conj.(o)
+    Δparamset += -im .* svd(S) \ R |> cpu
+end
 end
