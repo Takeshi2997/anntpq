@@ -31,7 +31,7 @@ function learning(iϵ::Integer, dirname::String, dirnameerror::String, lr::Float
     # Learning
     for n in 1:Const.it_num
         energy, energyS, energyB, numberB, energyI = MLcore.imaginary(ϵ, lr)
-        error = (energy - ϵ)^2 / 2f0
+        error = ((energy - ϵ)/(Const.dimB+Const.dimS))^2 / 2f0
         open(filename, "a") do io
             write(io, string(n))
             write(io, "\t")
@@ -50,7 +50,7 @@ function learning(iϵ::Integer, dirname::String, dirnameerror::String, lr::Float
 
     for n in 1:Const.it_num
         energy, energyS, energyB, numberB, energyI = MLcore.unitary(dt)
-        error = (energy - ϵ)^2 / 2f0
+        error = ((energy - ϵ)/(Const.dimB+Const.dimS))^2 / 2f0
         open(filename, "a") do io
             write(io, string(n))
             write(io, "\t")
