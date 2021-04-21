@@ -23,6 +23,6 @@ const networkdim = layer[2] * (layer[1] + 1) + layer[1]
 # Learning Rate
 const lr = 1f-3
 const dt = 1f-3
-const batchsize = 64
+const batchsize = 24
 
 end
