@@ -114,6 +114,14 @@ function update(Δparamset::Vector, lr::Float32)
     update!(opt(lr), network.f.a, Δa)
 end
 
+function calc(Δparamset::Paramset, e::Float32, ϵ::Float32)
+    o  = paramset.o  ./ Const.iters_num ./ Const.batchsize
+    oe = paramset.oe ./ Const.iters_num ./ Const.batchsize
+    oo = paramset.oo ./ Const.iters_num ./ Const.batchsize
+    Δparam = (e - ϵ) .* (oe - e * o)
+    return Δparam
+end
+
 function srbackward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     gs = gradient(() -> loss(x), network.p)
     dW = reshape(gs[network.f.W], Const.layer[1]*Const.layer[2])
@@ -125,14 +133,15 @@ function srbackward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     paramset.oo += transpose(dθ) .* conj.(dθ)
 end
 
-function srupdateparams(energy::Float32, paramset::ParamSet, Δparamset::Array)
-    o  = CuArray(paramset.o  / Const.iters_num)
-    oe = CuArray(paramset.oe / Const.iters_num)
-    oo = CuArray(paramset.oo / Const.iters_num)
-    R  = oe - energy * o
+function calcsr(paramset::ParamSet, e::Float32)
+    o  = paramset.o  ./ Const.iters_num ./ Const.batchsize
+    oe = paramset.oe ./ Const.iters_num ./ Const.batchsize
+    oo = paramset.oo ./ Const.iters_num ./ Const.batchsize
+    R  = oe - e * o
     S  = oo - transpose(o) .* conj.(o)
     U, Δ, V = svd(S)
     invΔ = Diagonal(1f0 ./ Δ .* (Δ .> 1f-6))
-    Δparamset += -im .* V * invΔ * U' * R |> cpu
+    Δparam = -im .* V * invΔ * U' * R |> cpu
+    return Δparam
 end
 end

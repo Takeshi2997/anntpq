@@ -10,15 +10,14 @@ function imaginary(ϵ::Float32, lr::Float32)
     batchenergyB = zeros(Float32, Const.batchsize)
     batchnumberB = zeros(Float32, Const.batchsize)
     batchenergyI = zeros(Float32, Const.batchsize)
-    Δparamset    = zeros(Complex{Float32}, Const.networkdim)
-    paramsetvec  = [Func.ANN.ParamSet() for n in 1:Const.batchsize]
+    paramset    = Func.ANN.Paramset()
 
     @threads for n in 1:Const.batchsize
         batchenergy[n], 
         batchenergyS[n],
         batchenergyB[n],
         batchnumberB[n],
-        batchenergyI[n] = mcmc(paramsetvec[n], Δparamset, lr)
+        batchenergyI[n] = mcmc(paramset, lr)
     end
     energy  = mean(batchenergy)
     energyS = mean(batchenergyS)
@@ -26,7 +25,7 @@ function imaginary(ϵ::Float32, lr::Float32)
     numberB = mean(batchnumberB)
     energyI = mean(batchenergyI)
 
-    Δparamset .*= (energy - ϵ) / Const.batchsize
+    Δparamset = Func.ANN.calc(paramset, energy, ϵ)
     Func.ANN.update(Δparamset, lr)
 
     # Output
@@ -40,15 +39,14 @@ function unitary(dt::Float32)
     batchenergyB = zeros(Float32, Const.batchsize)
     batchnumberB = zeros(Float32, Const.batchsize)
     batchenergyI = zeros(Float32, Const.batchsize)
-    Δparamset    = zeros(Complex{Float32}, Const.networkdim)
-    paramsetvec  = [Func.ANN.ParamSet() for n in 1:Const.batchsize]
+    paramset    = Func.ANN.ParamSet()
 
     @threads for n in 1:Const.batchsize
         batchenergy[n], 
         batchenergyS[n],
         batchenergyB[n],
         batchnumberB[n],
-        batchenergyI[n] = srmcmc(paramsetvec[n], Δparamset, dt)
+        batchenergyI[n] = srmcmc(paramset, dt)
     end
     energy  = mean(batchenergy)
     energyS = mean(batchenergyS)
@@ -56,14 +54,14 @@ function unitary(dt::Float32)
     numberB = mean(batchnumberB)
     energyI = mean(batchenergyI)
 
-    Δparamset ./= Const.batchsize
+    Δparamset = Func.ANN.calcsr(paramset, energy)
     Func.ANN.update(Δparamset, dt)
 
     # Output
     return energy, energyS, energyB, numberB, energyI
 end
 
-function srmcmc(paramset, Δparamset::Vector, dt::Float32)
+function srmcmc(paramset::Vector, dt::Float32)
 
     # Initialize
     energyS = 0f0
@@ -102,13 +100,10 @@ function srmcmc(paramset, Δparamset::Vector, dt::Float32)
     energy   = real(energy)  / Const.iters_num
     numberB /= Const.iters_num
 
-    # Update Parameters
-    Func.ANN.srupdateparams(energy, paramset, Δparamset)
-
     return energy, energyS, energyB, numberB, energyI
 end
 
-function mcmc(paramset, Δparamset::Vector, lr::Float32)
+function mcmc(paramset::Vector, lr::Float32)
 
     # Initialize
     energyS = 0f0
@@ -146,9 +141,6 @@ function mcmc(paramset, Δparamset::Vector, lr::Float32)
     energyI  = real(energyI) / Const.iters_num
     energy   = real(energy)  / Const.iters_num
     numberB /= Const.iters_num
-
-    # Update Parameters
-    Func.ANN.updateparams(energy, paramset, Δparamset)
 
     return energy, energyS, energyB, numberB, energyI
 end
