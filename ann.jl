@@ -134,9 +134,9 @@ function srbackward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
 end
 
 function calcsr(paramset::ParamSet, e::Float32)
-    o  = paramset.o  ./ Const.iters_num ./ Const.batchsize
-    oe = paramset.oe ./ Const.iters_num ./ Const.batchsize
-    oo = paramset.oo ./ Const.iters_num ./ Const.batchsize
+    o  = CuArray(paramset.o  ./ Const.iters_num ./ Const.batchsize)
+    oe = CuArray(paramset.oe ./ Const.iters_num ./ Const.batchsize)
+    oo = CuArray(paramset.oo ./ Const.iters_num ./ Const.batchsize)
     R  = oe - e * o
     S  = oo - transpose(o) .* conj.(o)
     U, Δ, V = svd(S)

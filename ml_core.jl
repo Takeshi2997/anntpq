@@ -61,7 +61,7 @@ function unitary(dt::Float32)
     return energy, energyS, energyB, numberB, energyI
 end
 
-function srmcmc(paramset::Vector, dt::Float32)
+function srmcmc(paramset, dt::Float32)
 
     # Initialize
     energyS = 0f0
@@ -103,7 +103,7 @@ function srmcmc(paramset::Vector, dt::Float32)
     return energy, energyS, energyB, numberB, energyI
 end
 
-function mcmc(paramset::Vector, lr::Float32)
+function mcmc(paramset, lr::Float32)
 
     # Initialize
     energyS = 0f0

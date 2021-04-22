@@ -2,7 +2,7 @@ module Const
 
 # System Size
 const dimS = 8
-const dimB = 56
+const dimB = 80
 
 # System Param
 const t = 1f0
@@ -16,7 +16,7 @@ const it_num = 100
 const iϵmax = 1
 
 # Network Params
-const layer = [dimB+dimS, 32]
+const layer = [dimB+dimS, 40]
 const layers_num = length(layer) - 1
 const networkdim = layer[2] * (layer[1] + 1) + layer[1]
 
