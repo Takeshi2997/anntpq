@@ -114,7 +114,7 @@ function update(Δparamset::Vector, lr::Float32)
     update!(opt(lr), network.f.a, Δa)
 end
 
-function calc(Δparamset::Paramset, e::Float32, ϵ::Float32)
+function calc(Δparamset::ParamSet, e::Float32, ϵ::Float32)
     o  = paramset.o  ./ Const.iters_num ./ Const.batchsize
     oe = paramset.oe ./ Const.iters_num ./ Const.batchsize
     oo = paramset.oo ./ Const.iters_num ./ Const.batchsize

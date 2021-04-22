@@ -49,10 +49,11 @@ function learning(iϵ::Integer, dirname::String, dirnameerror::String, lr::Float
     end
 
     for n in 1:Const.it_num
+        m = Const.it_num + n
         energy, energyS, energyB, numberB, energyI = MLcore.unitary(dt)
         error = ((energy - ϵ)/(Const.dimB+Const.dimS))^2 / 2f0
         open(filename, "a") do io
-            write(io, string(n))
+            write(io, string(m))
             write(io, "\t")
             write(io, string(error))
             write(io, "\t")
