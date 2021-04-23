@@ -92,12 +92,9 @@ function backward(x::Vector{Float32}, e::Complex{Float32})
         append!(dθ, dW)
         append!(dθ, db)
     end
-    o′  = paramset.o  + dθ
-    oe′ = paramset.oe + dθ .* e
-    oo′ = paramset.oo + transpose(dθ) .* conj.(dθ)
-    setfield!(paramset,  :o, o′)
-    setfield!(paramset, :oe, oe′)
-    setfield!(paramset, :oo, oo′)
+    setfield!(paramset,  :o, paramset.o  + dθ)
+    setfield!(paramset, :oe, paramset.oe + dθ .* e)
+    setfield!(paramset, :oo, paramset.oo + transpose(dθ) .* conj.(dθ))
 end
 
 opt(lr::Float32) = Descent(lr)
@@ -110,7 +107,7 @@ function calc(e::Float32, ϵ::Float32)
     S  = oo - transpose(o) .* conj.(o)
     U, Δ, V = svd(S)
     invΔ = Diagonal(1f0 ./ Δ .* (Δ .> 1f-6))
-    Δparam = 2f0 .* real.(V * invΔ * U' * R) |> cpu
+    Δparam = (e - ϵ) .* 2f0 .* real.(V * invΔ * U' * R) |> cpu
     return Δparam
 end
 
