@@ -75,7 +75,7 @@ loss(x::Vector{Float32}) = real(forward(x))
 
 function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     gs = gradient(() -> loss(x), network.p)
-    dθ = Float32[]
+    dθ = Complex{Float32}[]
     for i in 1:Const.layers_num
         dW = reshape(gs[network.f[i].W], Const.layer[i+1]*Const.layer[i])
         db = gs[network.f[i].b]
