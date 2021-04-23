@@ -10,7 +10,7 @@ function imaginary(ϵ::Float32, lr::Float32)
     batchenergyB = zeros(Float32, Const.batchsize)
     batchnumberB = zeros(Float32, Const.batchsize)
     batchenergyI = zeros(Float32, Const.batchsize)
-    paramset     = Func.ANN.Paramset()
+    paramset     = Func.ANN.ParamSet()
 
     @threads for n in 1:Const.batchsize
         batchenergy[n], 
