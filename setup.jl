@@ -18,7 +18,7 @@ const iϵmax = 1
 # Network Params
 const layer = [dimB+dimS, 48, 2]
 const layers_num = length(layer) - 1
-const networkdim = layer[2] * (layer[1] + 1) + layer[1]
+const networkdim = sum([layer[i+1] * (layer[i] + 1) for i in 1:layers_num])
 
 # Learning Rate
 const lr = 1f-3
