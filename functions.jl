@@ -1,84 +1,89 @@
 module Func
 include("./setup.jl")
 include("./ann.jl")
-using .Const, .ANN, LinearAlgebra, CuArrays, CUDAnative
+using .Const, .ANN, LinearAlgebra, Random
 
-function makeflip()
-
-    flip = Vector{CuArray{Float32, 1}}(undef, Const.layer[1])
+struct Flip
+    flip::Vector{Diagonal{Float32}}
+end
+function Flip()
+    flip = Vector{Diagonal{Float32}}(undef, Const.layer[1])
     for i in 1:Const.layer[1]
-        o = ones(Float32, Const.layer[1])
-        o[i] *= -1f0
-        flip[i] = CuArray(o)
+        o = Diagonal(ones(Float32, Const.layer[1]))
+        o[i, i] *= -1f0
+        flip[i] = o
     end
-    return flip
+    Flip(flip)
+end
+a = Flip()
+
+function update(x::Vector{Float32})
+    rng = MersenneTwister(1234)
+    randomnum = rand(rng, Float32, length(x))
+    for ix in 1:length(x)
+        x₁ = x[ix]
+        z = ANN.forward(x)
+        zflip = ANN.forward(a.flip[ix] * x)
+        prob = exp(2.0f0 * real(zflip - z))
+        @inbounds x[ix] = ifelse(randomnum[ix] < prob, -x₁, x₁)
+    end
 end
 
-const flip = makeflip()
-
-function update(x::CuArray{Float32, 1}, α::CuArray{Float32, 1}, randvec::CuArray{Float32, 1})
-
-    l = length(x)
-    for iα in 1:l
-        z = ANN.forward(α) + dot(x, ANN.interaction(α))
-        αflip = α .* flip[iα]
-        zflip = ANN.forward(αflip) + transpose(x) * ANN.interaction(αflip)
-        prob = exp(2f0 * real(zflip - z))
-        @inbounds α = ifelse(randvec[iα] < prob, αflip, α)
-    end
-
-    prob = exp.(-2f0 .* 2f0 .* real.(x .* ANN.interaction(α)))
-    x  .*= ifelse.((@view randvec[l+1:end]) .< prob, -1f0, 1f0)
-end
-
-function hamiltonianS(x::Vector{Float32}, z::Vector{Complex{Float32}})
-
+function hamiltonianS(x::Vector{Float32},
+                      z::Complex{Float32}, ix::Integer)
     out = 0f0im
-    if x[1] != x[2]
-        out += 2f0 * exp(-2f0 * transpose(x) * z) - 1f0
+    ixnext = Const.dimB + (ix - Const.dimB) % Const.dimS + 1
+    if x[ix] != x[ixnext]
+        zflip = ANN.forward(a.flip[ixnext] * a.flip[ix] * x)
+        out  += 2f0 * exp(zflip - z) - 1f0
     else
         out += 1f0
     end
-
     return -Const.J * out / 4f0
 end
 
-function energyS(x::CuArray{Float32, 1}, α::CuArray{Float32, 1})
-
-    z = ANN.interaction(α)
+function energyS(x::Vector{Float32})
+    z = ANN.forward(x)
     sum = 0f0im
-    @simd for ix in Const.dimB+1:Const.dimB+Const.dimS
-        ixnext = Const.dimB + (ix - Const.dimB) % Const.dimS + 1
-        xloc = [x[ix], x[ixnext]]
-        zloc = [z[ix], z[ixnext]]
-        sum += hamiltonianS(xloc, zloc)
+    for ix in Const.dimB+1:Const.dimB+Const.dimS
+        sum += hamiltonianS(x, z, ix)
     end
-
     return sum
 end
 
-function hamiltonianB(x::Vector{Float32}, z::Vector{Complex{Float32}})
-
+function hamiltonianB(x::Vector{Float32},
+                      z::Complex{Float32}, iy::Integer)
     out = 0f0im
-    if x[1] != x[2]
-        out  += exp(-2f0 * transpose(x) * z)
+    iynext = iy%Const.dimB + 1
+    if x[iy] != x[iynext]
+        zflip = ANN.forward(a.flip[iynext] * a.flip[iy] * x)
+        out  += exp(zflip - z)
     end
-
     return -Const.t * out
 end
 
-function energyB(x::CuArray{Float32, 1}, α::CuArray{Float32, 1})
-
-    z = ANN.interaction(α)
+function energyB(x::Vector{Float32})
+    z = ANN.forward(x)
     sum = 0.0f0im
-    @simd for iy in 1:Const.dimB 
-        iynext = iy%Const.dimB + 1
-        xloc = [x[iy], x[iynext]]
-        zloc = [z[iy], z[iynext]]
-        sum += hamiltonianB(xloc, zloc)
+    for iy in 1:Const.dimB 
+        sum += hamiltonianB(x, z, iy)
     end
-
     return sum
 end
 
+function hamiltonianI(x::Vector{Float32},
+                      z::Complex{Float32}, ix::Integer, iy::Integer)
+    out  = 0f0im
+    out += -x[ix] * x[iy]
+    return Const.λ * out / 4f0
+end
+
+function energyI(x::Vector{Float32})
+    z = ANN.forward(x)
+    sum = 0f0im
+    iy = 1
+    ix = Const.dimB + iy
+    sum += hamiltonianI(x, z, ix, iy)
+    return sum
+end
 end

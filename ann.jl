@@ -1,172 +1,116 @@
 module ANN
 include("./setup.jl")
-using .Const, LinearAlgebra, Flux, Zygote, CuArrays, CUDAnative
+using .Const, LinearAlgebra, Flux, Zygote, CUDA
 using Flux: @functor
 using Flux.Optimise: update!
 using BSON: @save
 using BSON: @load
 
-mutable struct Parameters
-
-    W::CuArray
-    b::CuArray
+# Initialize Variables
+mutable struct ParamSet{T <: AbstractArray, S <: AbstractArray}
+    o::T
+    oe::T
+    oo::S
 end
 
-o   = Vector{Any}(undef, Const.layers_num)
-oe  = Vector{Any}(undef, Const.layers_num)
-oI  = Parameters
-oIe = Parameters
-
-function initO()
-
-    for i in 1:Const.layers_num
-        W = CuArray(zeros(Complex{Float32}, Const.layer[i+1], Const.layer[i]))
-        b = CuArray(zeros(Complex{Float32}, Const.layer[i+1]))
-        global o[i]  = Parameters(W, b)
-        global oe[i] = Parameters(W, b)
-    end
-    W = CuArray(zeros(Complex{Float32}, 2*Const.layer[1], Const.layer[1]))
-    b = CuArray(zeros(Complex{Float32}, 2*Const.layer[1]))
-    global oI  = Parameters(W, b)
-    global oIe = Parameters(W, b)
+function ParamSet()
+    W = zeros(Complex{Float32}, Const.networkdim)
+    S = transpose(W) .* W
+    ParamSet(W, W, S)
 end
 
-mutable struct Network{F,P<:Zygote.Params}
+# Define Network
 
-    f::F
-    p::P
-end
-
-struct Res{F,S<:AbstractArray,T<:AbstractArray}
-    W::S
-    b::T
-    σ::F
-end
-
-function Res(in::Integer, out::Integer, σ = identity;
-             initW = Flux.glorot_uniform, initb = zeros)
-    return Res(initW(out, in), initb(Float32, out), σ)
-end
-
-@functor Res
-
-function (m::Res)(x::AbstractArray)
-    W, b, σ = m.W, m.b, m.σ
-    x .+ σ.(W*x.+b)
+mutable struct Network
+    f::Flux.Chain
+    p::Zygote.Params
 end
 
 function Network()
-
-    layer = Vector{Any}(undef, Const.layers_num)
+    layers = Vector(undef, Const.layers_num)
     for i in 1:Const.layers_num-1
-        layer[i] = Dense(Const.layer[i], Const.layer[i+1], hardtanh) |> gpu
+        layers[i] = Dense(Const.layer[i], Const.layer[i+1], swish)
     end
-    layer[end] = Dense(Const.layer[end-1], Const.layer[end]) |> gpu
-    f = Chain([layer[i] for i in 1:Const.layers_num]...)
-    p = params(f)
-    Network(f, p)
-end
-
-function Affine()
-
-    f = Dense(Const.layer[1], 2*Const.layer[1]) |> gpu
-    p = params(f)
+    layers[end] = Dense(Const.layer[end-1], Const.layer[end])
+    f = Chain([layers[i] for i in 1:Const.layers_num]...)
+    p = Flux.params(f)
     Network(f, p)
 end
 
 network = Network()
-affineI = Affine()
+
+# Network Utility
 
 function save(filename)
-
     f = getfield(network, :f)
-    g = getfield(affineI, :f)
-    @save filename f g
+    @save filename f
 end
 
 function load(filename)
-
-    @load filename f g
-    p = params(f)
-    q = params(g)
+    @load filename f
+    p = Flux.params(f)
     Flux.loadparams!(network.f, p)
-    Flux.loadparams!(affineI.f, q)
 end
 
 function init()
-
-    parameters = Vector{Array{CuArray}}(undef, Const.layers_num)
+    parameters = Vector{Array}(undef, Const.layers_num)
     for i in 1:Const.layers_num
-        W = CuArray(Flux.glorot_normal(Const.layer[i+1], Const.layer[i]))
-        b = CuArray(zeros(Float32, Const.layer[i+1]))
+        W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i])
+        b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
     paramset = [param for param in parameters]
-    p = params(paramset...)
-    W = CuArray(randn(Float32, 2*Const.layer[1], Const.layer[1]) ./ Float32(Const.layer[1]))
-    b = CuArray(zeros(Float32, 2*Const.layer[1]))
-    q = params([W, b])
+    p = Flux.params(paramset...)
     Flux.loadparams!(network.f, p)
-    Flux.loadparams!(affineI.f, q)
 end
 
-function forward(α::CuArray{Float32, 1})
+# Learning Method
 
-    out = network.f(α)
+function forward(x::Vector{Float32})
+    out = network.f(x)
     return out[1] + im * out[2]
 end
 
-function interaction(α::CuArray{Float32, 1})
+loss(x::Vector{Float32}) = real(forward(x))
 
-    l = Const.layer[1]
-    int =  affineI.f(α)
-    return (@view int[1:l]) .+ im .* (@view int[l+1:end])
-end
-
-function loss(x::CuArray{Float32, 1}, α::CuArray{Float32, 1})
-
-    out = network.f(α)
-    l = Const.layer[1]
-    int =  affineI.f(α)
-    return out[1] + transpose(x) * (@view int[1:l])
-end
-
-function backward(x::CuArray{Float32, 1}, α::CuArray{Float32, 1}, e::Complex{Float32})
-
-    gs = gradient(() -> loss(x, α), network.p)
+function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
+    gs = gradient(() -> loss(x), network.p)
+    dθ = Float32[]
     for i in 1:Const.layers_num
-        dw = gs[network.f[i].W]
+        dW = reshape(gs[network.f[i].W], Const.layer[i+1]*Const.layer[i])
         db = gs[network.f[i].b]
-        o[i].W  += dw
-        oe[i].W += dw * e
-        o[i].b  += db
-        oe[i].b += db * e
+        append!(dθ, dW)
+        append!(dθ, db)
     end
-    gs = gradient(() -> loss(x, α), affineI.p)
-    dw = gs[affineI.f.W]
-    db = gs[affineI.f.b]
-    oI.W  += dw
-    oIe.W += dw * e
-    oI.b  += db
-    oIe.b += db * e
+    paramset.o  += dθ
+    paramset.oe += dθ .* e
+    paramset.oo += transpose(dθ) .* conj.(dθ)
 end
 
-opt(lr::Float32) = ADAM(lr, (0.9, 0.999))
+opt(lr::Float32) = Descent(lr)
 
-function update(energy::Float32, ϵ::Float32, lr::Float32)
+function calc(paramset::ParamSet, e::Float32, ϵ::Float32)
+    o  = CuArray(paramset.o  ./ Const.iters_num ./ Const.batchsize)
+    oe = CuArray(paramset.oe ./ Const.iters_num ./ Const.batchsize)
+    oo = CuArray(paramset.oo ./ Const.iters_num ./ Const.batchsize)
+    R  = oe - e * o
+    S  = oo - transpose(o) .* conj.(o)
+    U, Δ, V = svd(S)
+    invΔ = Diagonal(1f0 ./ Δ .* (Δ .> 1f-6))
+    Δparam = 2f0 .* real.(V * invΔ * U' * R) |> cpu
+    return Δparam
+end
 
-    x = (energy - ϵ)
-    α = 2f0 * x / Const.iters_num
+function update(Δparamset::Vector, lr::Float32)
+    n = 0
     for i in 1:Const.layers_num
-        ΔW = α .* 2f0 .* CUDAnative.real.(oe[i].W .- energy * o[i].W)
-        Δb = α .* 2f0 .* CUDAnative.real.(oe[i].b .- energy * o[i].b)
+        ΔW = reshape(Δparamset[n+1:Const.layer[i+1]*Const.layer[i]], Const.layer[i+1], Const.layer[i])
+        n += Const.layer[i+1] * Const.layer[i]
+        Δb = Δparamset[n+1:n+Const.layer[i+1]]
+        n += Const.layer[i+1]
         update!(opt(lr), network.f[i].W, ΔW)
         update!(opt(lr), network.f[i].b, Δb)
+        update!(opt(lr), network.f[i].a, Δa)
     end
-    ΔW = α .* 2f0 .* CUDAnative.real.(oIe.W .- energy * oI.W)
-    Δb = α .* 2f0 .* CUDAnative.real.(oIe.b .- energy * oI.b)
-    update!(opt(lr), affineI.f.W, ΔW)
-    update!(opt(lr), affineI.f.b, Δb)
 end
-
 end
