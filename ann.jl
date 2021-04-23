@@ -117,7 +117,7 @@ end
 function update(Δparamset::Vector, lr::Float32)
     n = 0
     for i in 1:Const.layers_num
-        ΔW = reshape(Δparamset[n+1:Const.layer[i+1]*Const.layer[i]], Const.layer[i+1], Const.layer[i])
+        ΔW = reshape(Δparamset[n+1:n+Const.layer[i+1]*Const.layer[i]], Const.layer[i+1], Const.layer[i])
         n += Const.layer[i+1] * Const.layer[i]
         Δb = Δparamset[n+1:n+Const.layer[i+1]]
         n += Const.layer[i+1]
