@@ -14,8 +14,8 @@ mutable struct ParamSet{T <: AbstractArray, S <: AbstractArray}
 end
 
 function ParamSet()
-    W = zeros(Complex{Float32}, Const.networkdim)
-    S = transpose(W) .* W
+    W = CuArray(zeros(Complex{Float32}, Const.networkdim))
+    S = CuArray(transpose(W) .* W)
     ParamSet(W, W, S)
 end
 
@@ -75,13 +75,14 @@ loss(x::Vector{Float32}) = real(forward(x))
 
 function backward(x::Vector{Float32}, e::Complex{Float32}, paramset::ParamSet)
     gs = gradient(() -> loss(x), network.p)
-    dθ = Complex{Float32}[]
+    dξ = Complex{Float32}[]
     for i in 1:Const.layers_num
         dW = reshape(gs[network.f[i].W], Const.layer[i+1]*Const.layer[i])
         db = gs[network.f[i].b]
-        append!(dθ, dW)
-        append!(dθ, db)
+        append!(dξ, dW)
+        append!(dξ, db)
     end
+    dθ = CuArray(dξ)
     paramset.o  += dθ
     paramset.oe += dθ .* e
     paramset.oo += transpose(dθ) .* conj.(dθ)
@@ -90,9 +91,9 @@ end
 opt(lr::Float32) = Descent(lr)
 
 function calc(paramset::ParamSet, e::Float32, ϵ::Float32)
-    o  = CuArray(paramset.o  ./ Const.iters_num ./ Const.batchsize)
-    oe = CuArray(paramset.oe ./ Const.iters_num ./ Const.batchsize)
-    oo = CuArray(paramset.oo ./ Const.iters_num ./ Const.batchsize)
+    o  = paramset.o  ./ Const.iters_num ./ Const.batchsize
+    oe = paramset.oe ./ Const.iters_num ./ Const.batchsize
+    oo = paramset.oo ./ Const.iters_num ./ Const.batchsize
     R  = oe - e * o
     S  = oo - transpose(o) .* conj.(o)
     U, Δ, V = svd(S)
@@ -110,7 +111,6 @@ function update(Δparamset::Vector, lr::Float32)
         n += Const.layer[i+1]
         update!(opt(lr), network.f[i].W, ΔW)
         update!(opt(lr), network.f[i].b, Δb)
-        update!(opt(lr), network.f[i].a, Δa)
     end
 end
 end
