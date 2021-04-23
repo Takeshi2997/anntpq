@@ -10,14 +10,14 @@ function imaginary(ϵ::Float32, lr::Float32)
     batchenergyB = zeros(Float32, Const.batchsize)
     batchnumberB = zeros(Float32, Const.batchsize)
     batchenergyI = zeros(Float32, Const.batchsize)
-    paramset     = Func.ANN.ParamSet()
+    Func.ANN.initParamSet()
 
     @threads for n in 1:Const.batchsize
         batchenergy[n], 
         batchenergyS[n],
         batchenergyB[n],
         batchnumberB[n],
-        batchenergyI[n] = mcmc(paramset, lr)
+        batchenergyI[n] = mcmc(lr)
     end
     energy  = mean(batchenergy)
     energyS = mean(batchenergyS)
@@ -25,14 +25,14 @@ function imaginary(ϵ::Float32, lr::Float32)
     numberB = mean(batchnumberB)
     energyI = mean(batchenergyI)
 
-    Δparamset = Func.ANN.calc(paramset, energy, ϵ)
+    Δparamset = Func.ANN.calc(energy, ϵ)
     Func.ANN.update(Δparamset, lr)
 
     # Output
     return energy, energyS, energyB, numberB, energyI
 end
 
-function mcmc(paramset, lr::Float32)
+function mcmc(lr::Float32)
 
     # Initialize
     energyS = 0f0
@@ -63,7 +63,7 @@ function mcmc(paramset, lr::Float32)
         energyI += eI
         energy  += e
         numberB += sum(x[1:Const.dimB])
-        Func.ANN.backward(x, e, paramset)
+        Func.ANN.backward(x, e)
     end
     energyS  = real(energyS) / Const.iters_num
     energyB  = real(energyB) / Const.iters_num
