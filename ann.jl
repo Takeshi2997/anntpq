@@ -31,7 +31,7 @@ end
 
 # Define Network
 
-rbf(x::Float32) = exp(-x^2 / 0.01f0)
+rbf(x::Float32) = exp(-x^2 / 1f-2)
 
 mutable struct Network
     f::Flux.Chain
@@ -41,9 +41,9 @@ end
 function Network()
     layers = Vector(undef, Const.layers_num)
     for i in 1:Const.layers_num-2
-        layers[i] = Dense(Const.layer[i], Const.layer[i+1], swish)
+        layers[i] = Dense(Const.layer[i], Const.layer[i+1], tanh)
     end
-    layers[end-1] = Dense(Const.layer[i], Const.layer[i+1], rbf)
+    layers[end-1] = Dense(Const.layer[end-2], Const.layer[end-1], rbf)
     layers[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layers[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
