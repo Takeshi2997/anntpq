@@ -100,14 +100,14 @@ end
 opt(lr::Float32) = Descent(lr)
 
 function calc(e::Float32, ϵ::Float32)
-    o  = CuArray(paramset.o  ./ Const.iters_num ./ Const.batchsize)
-    oe = CuArray(paramset.oe ./ Const.iters_num ./ Const.batchsize)
-    oo = CuArray(paramset.oo ./ Const.iters_num ./ Const.batchsize)
+    o  = CuArray(real.(paramset.o)  ./ Const.iters_num ./ Const.batchsize)
+    oe = CuArray(real.(paramset.oe) ./ Const.iters_num ./ Const.batchsize)
+    oo = CuArray(real.(paramset.oo) ./ Const.iters_num ./ Const.batchsize)
     R  = oe - e * o
-    S  = oo - transpose(o) .* conj.(o)
+    S  = oo - transpose(o) .* o
     U, Δ, V = svd(S)
     invΔ = Diagonal(1f0 ./ Δ .* (Δ .> 1f-6))
-    Δparam = (e - ϵ) .* 2f0 .* real.(V * invΔ * U' * R) |> cpu
+    Δparam = (e - ϵ) .* 2f0 .* V * invΔ * U' * R |> cpu
     return Δparam
 end
 
