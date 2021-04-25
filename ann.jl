@@ -31,6 +31,8 @@ end
 
 # Define Network
 
+rbf(x::Float32) = exp(-x^2 / 0.01f0)
+
 mutable struct Network
     f::Flux.Chain
     p::Zygote.Params
@@ -38,9 +40,10 @@ end
 
 function Network()
     layers = Vector(undef, Const.layers_num)
-    for i in 1:Const.layers_num-1
+    for i in 1:Const.layers_num-2
         layers[i] = Dense(Const.layer[i], Const.layer[i+1], swish)
     end
+    layers[end-1] = Dense(Const.layer[i], Const.layer[i+1], rbf)
     layers[end] = Dense(Const.layer[end-1], Const.layer[end])
     f = Chain([layers[i] for i in 1:Const.layers_num]...)
     p = Flux.params(f)
@@ -64,11 +67,14 @@ end
 
 function init()
     parameters = Vector{Array}(undef, Const.layers_num)
-    for i in 1:Const.layers_num
+    for i in 1:Const.layers_num-1
         W = Flux.kaiming_normal(Const.layer[i+1], Const.layer[i])
         b = Flux.zeros(Const.layer[i+1])
         parameters[i] = [W, b]
     end
+    W = randn(Float32, Const.layer[end], Const.layer[end-1])
+    b = Flux.zeros(Const.layer[end])
+    parameters[end] = [W, b]
     paramset = [param for param in parameters]
     p = Flux.params(paramset...)
     Flux.loadparams!(network.f, p)
