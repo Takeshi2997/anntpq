@@ -43,7 +43,7 @@ function learning(iϵ::Integer, dirname::String, dirnameerror::String, lr::Float
             write(io, "\t")
             write(io, string(numberB / Const.dimB))
             write(io, "\t")
-            write(io, string(energyI / Const.dimS))
+            write(io, string(energyI))
             write(io, "\n")
         end
     end
